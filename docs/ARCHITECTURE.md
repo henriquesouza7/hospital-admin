@@ -116,7 +116,8 @@ Registrar decisões arquiteturais relevantes em `docs/adr/`.
 ## Integração Neon
 
 A integração fica concentrada em `src/lib/neon/`, com `@neondatabase/neon-js`
-como cliente oficial para Neon Auth e Data API. O proxy e as rotas de autenticação
-são adaptadores finos; componentes visuais não fazem chamadas de infraestrutura
-diretamente. A identidade é a fornecida pelo Neon Auth (`neon_auth`), sem tabela
-paralela de usuários nesta fase.
+como cliente oficial para Neon Auth e Data API. O proxy, as rotas de autenticação
+e o helper `data-api.ts` são server-only; o helper obtém o JWT de RLS com
+`auth.token()` e o injeta sob demanda no Data API. Componentes visuais não fazem
+chamadas de infraestrutura diretamente. A identidade é a fornecida pelo Neon Auth
+(`neon_auth`), sem tabela paralela de usuários nesta fase.

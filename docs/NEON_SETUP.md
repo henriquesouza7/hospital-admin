@@ -17,19 +17,19 @@ real ou connection string deve ser versionado.
 ## Variáveis locais
 
 Copie `.env.example` para `.env.local` e preencha os valores exibidos no painel do
-Neon. As variáveis `NEXT_PUBLIC_*` são expostas ao navegador; `NEON_AUTH_BASE_URL`
-e `NEON_AUTH_COOKIE_SECRET` são apenas server-side. O cookie secret deve ser um
-valor aleatório com pelo menos 32 caracteres.
+Neon. Todas as variáveis desta etapa são server-side; `NEON_AUTH_COOKIE_SECRET`
+deve ser um valor aleatório com pelo menos 32 caracteres.
 
 ```text
-NEXT_PUBLIC_NEON_AUTH_URL=
-NEXT_PUBLIC_NEON_DATA_API_URL=
 NEON_AUTH_BASE_URL=
 NEON_AUTH_COOKIE_SECRET=
+NEON_DATA_API_URL=
 ```
 
-Não use uma connection string do banco no cliente. Não compartilhe o cookie secret,
-tokens ou valores copiados de produção.
+Não use uma connection string do banco no cliente. O Data API é acessado pelo
+helper server-only, que obtém o JWT atual via `auth.token()` e o envia apenas nas
+requisições de servidor. Não compartilhe o cookie secret, tokens ou valores
+copiados de produção.
 
 ## Desenvolvimento e branches
 

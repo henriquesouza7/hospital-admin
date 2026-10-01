@@ -1,3 +1,5 @@
+import "server-only";
+
 import { createNeonAuth } from "@neondatabase/neon-js/auth/next/server";
 import { getNeonServerEnv } from "@/lib/neon/env";
 

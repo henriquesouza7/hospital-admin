@@ -1,25 +1,11 @@
 import { getNeonAuth } from "@/lib/neon/auth-server";
 
-type AuthRouteContext = Readonly<{
-  params: Promise<{ path: string[] }>;
-}>;
+type AuthHandler = ReturnType<ReturnType<typeof getNeonAuth>["handler"]>;
 
-export async function GET(request: Request, context: AuthRouteContext) {
-  return getNeonAuth().handler().GET(request, context);
-}
+const getAuthHandler = () => getNeonAuth().handler();
 
-export async function POST(request: Request, context: AuthRouteContext) {
-  return getNeonAuth().handler().POST(request, context);
-}
+export const GET: AuthHandler["GET"] = (...args) =>
+  getAuthHandler().GET(...args);
 
-export async function PUT(request: Request, context: AuthRouteContext) {
-  return getNeonAuth().handler().PUT(request, context);
-}
-
-export async function DELETE(request: Request, context: AuthRouteContext) {
-  return getNeonAuth().handler().DELETE(request, context);
-}
-
-export async function PATCH(request: Request, context: AuthRouteContext) {
-  return getNeonAuth().handler().PATCH(request, context);
-}
+export const POST: AuthHandler["POST"] = (...args) =>
+  getAuthHandler().POST(...args);
