@@ -15,8 +15,11 @@ No painel do Supabase:
 1. Ative o provedor **Email**.
 2. Desative o cadastro público (`Allow new users to sign up`), pois o MVP usa
    usuários administrativos criados pelo responsável.
-3. Crie manualmente o primeiro usuário administrativo.
-4. Não é necessário configurar recuperação de senha nesta etapa.
+3. Não é necessário configurar recuperação de senha nesta etapa.
+
+Ainda não crie o primeiro usuário. A migration deve ser aplicada antes, para
+que usuários existentes sejam preenchidos em `public.profiles` e novos usuários
+sejam atendidos pelo trigger.
 
 ## 3. Configurar variáveis locais
 
@@ -44,7 +47,12 @@ O `project-ref` é fornecido pelo painel do projeto e não deve ser inventado ou
 versionado. Como alternativa, o responsável pode revisar e executar o SQL da
 pasta `supabase/migrations/` no SQL Editor do painel.
 
-## 5. Executar a aplicação
+## 5. Criar o primeiro usuário
+
+Depois de aplicar as migrations, crie manualmente o primeiro usuário
+administrativo no painel do Supabase.
+
+## 6. Executar a aplicação
 
 Depois de configurar o `.env.local` e aplicar as migrations:
 

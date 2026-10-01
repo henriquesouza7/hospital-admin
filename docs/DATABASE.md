@@ -13,11 +13,12 @@ Um trigger cria o perfil mínimo quando um usuário é criado no Auth. A migrati
 `supabase/migrations/20260930000000_create_profiles_and_audit_logs.sql` é a fonte
 versionada da estrutura inicial.
 
-As duas tabelas públicas têm RLS habilitada. Um usuário autenticado pode ler e
-atualizar apenas o próprio perfil. Logs podem ser inseridos e lidos somente pelo
-usuário autenticado identificado em `actor_id`; não há políticas de atualização ou
-remoção. A aplicação deverá registrar alterações relevantes no servidor quando os
-módulos forem implementados.
+As duas tabelas públicas têm RLS habilitada. Um usuário autenticado pode ler
+somente o próprio perfil; não há edição de perfil self-service nesta fase. O campo
+`active` será administrado pelo sistema ou pelo responsável do projeto. Logs podem
+ser lidos somente pelo usuário autenticado identificado em `actor_id`; clientes
+autenticados não podem inseri-los, atualizá-los ou removê-los. A escrita futura
+será feita por um caminho server-side controlado ou RPC junto dos módulos.
 
 ## Financeiro
 - suppliers
@@ -69,6 +70,7 @@ Campos importantes em production_entries:
 
 A auditoria começa com `audit_logs` genérica, contendo ator, entidade, ação,
 identificador opcional, payload JSON e timestamp. Esta etapa não implementa
-gravação automática nem regras específicas dos módulos. A camada de aplicação
-deverá validar o evento e gravá-lo junto da alteração transacional quando cada
-módulo for criado.
+gravação automática nem regras específicas dos módulos. Clientes autenticados não
+possuem permissão de insert; a camada de aplicação deverá validar o evento e
+gravá-lo por um caminho server-side controlado ou RPC, junto da alteração
+transacional, quando cada módulo for criado.

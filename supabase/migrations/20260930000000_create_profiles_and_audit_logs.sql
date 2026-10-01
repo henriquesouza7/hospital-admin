@@ -56,6 +56,14 @@ create trigger on_auth_user_created
 after insert on auth.users
 for each row execute function public.handle_new_user();
 
+-- Backfill profiles for Auth users that existed before this migration ran.
+insert into public.profiles (id, name)
+select
+  users.id,
+  coalesce(users.raw_user_meta_data ->> 'full_name', 'Usuário')
+from auth.users as users
+on conflict (id) do nothing;
+
 alter table public.profiles enable row level security;
 alter table public.audit_logs enable row level security;
 
@@ -65,21 +73,11 @@ for select
 to authenticated
 using (id = (select auth.uid()));
 
-create policy "profiles_update_own"
-on public.profiles
-for update
-to authenticated
-using (id = (select auth.uid()))
-with check (id = (select auth.uid()));
-
 create policy "audit_logs_select_own"
 on public.audit_logs
 for select
 to authenticated
 using (actor_id = (select auth.uid()));
 
-create policy "audit_logs_insert_own"
-on public.audit_logs
-for insert
-to authenticated
-with check (actor_id = (select auth.uid()));
+-- Audit writes remain denied to client roles. Future modules will write through
+-- a controlled server-side path or RPC executed with the required authorization.

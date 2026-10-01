@@ -5,10 +5,20 @@ import { getLoginRedirectUrl, isPublicPath } from "@/lib/auth/redirect";
 import { getSupabaseEnv } from "@/lib/env";
 import type { Database } from "@/types/database";
 
-function copyCookies(source: NextResponse, target: NextResponse) {
-  source.cookies.getAll().forEach(({ name, value }) => {
-    target.cookies.set(name, value);
+function copySupabaseResponseMetadata(
+  source: NextResponse,
+  target: NextResponse,
+) {
+  source.cookies.getAll().forEach((cookie) => {
+    target.cookies.set(cookie);
   });
+
+  for (const headerName of ["cache-control", "expires", "pragma"]) {
+    const value = source.headers.get(headerName);
+    if (value) {
+      target.headers.set(headerName, value);
+    }
+  }
 
   return target;
 }
@@ -25,8 +35,11 @@ export async function updateSupabaseSession(request: NextRequest) {
       return supabaseResponse;
     }
 
-    return NextResponse.redirect(
-      getLoginRedirectUrl(request.nextUrl.origin, pathname, "configuration"),
+    return copySupabaseResponseMetadata(
+      supabaseResponse,
+      NextResponse.redirect(
+        getLoginRedirectUrl(request.nextUrl.origin, pathname, "configuration"),
+      ),
     );
   }
 
@@ -40,7 +53,9 @@ export async function updateSupabaseSession(request: NextRequest) {
           request.cookies.set(name, value);
         });
 
-        supabaseResponse = NextResponse.next({ request });
+        supabaseResponse = NextResponse.next({
+          request: { headers: new Headers(request.headers) },
+        });
         cookiesToSet.forEach(({ name, value, options }) => {
           supabaseResponse.cookies.set(name, value, options);
         });
@@ -48,12 +63,11 @@ export async function updateSupabaseSession(request: NextRequest) {
     },
   });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const hasClaims = Boolean(claimsData?.claims);
 
-  if (!user && !isPublicPath(pathname)) {
-    return copyCookies(
+  if (!hasClaims && !isPublicPath(pathname)) {
+    return copySupabaseResponseMetadata(
       supabaseResponse,
       NextResponse.redirect(
         getLoginRedirectUrl(request.nextUrl.origin, pathname, "session"),
@@ -61,8 +75,8 @@ export async function updateSupabaseSession(request: NextRequest) {
     );
   }
 
-  if (user && pathname === "/login") {
-    return copyCookies(
+  if (hasClaims && pathname === "/login") {
+    return copySupabaseResponseMetadata(
       supabaseResponse,
       NextResponse.redirect(new URL("/", request.url)),
     );
