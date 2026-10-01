@@ -5,20 +5,20 @@
 - [x] Criar documentação-base
 - [x] Definir stack final
 - [x] Definir estratégia inicial de branches e PRs
-- [ ] Preparar ambiente do Codex
+- [x] Preparar ambiente do Codex
 
 ## Fase 1 — Bootstrap
-- [ ] Criar aplicação Next.js
-- [ ] Configurar TypeScript
-- [ ] Configurar ESLint e formatter
-- [ ] Configurar Tailwind CSS
-- [ ] Configurar shadcn/ui
-- [ ] Criar estrutura modular inicial
-- [ ] Criar shell administrativo
-- [ ] Criar navegação base
-- [ ] Configurar testes Vitest
-- [ ] Configurar Playwright
-- [ ] Validar lint, typecheck e testes
+- [x] Criar aplicação Next.js
+- [x] Configurar TypeScript
+- [x] Configurar ESLint e formatter
+- [x] Configurar Tailwind CSS
+- [x] Configurar shadcn/ui
+- [x] Criar estrutura modular inicial
+- [x] Criar shell administrativo
+- [x] Criar navegação base
+- [x] Configurar testes Vitest
+- [x] Configurar Playwright
+- [x] Validar lint, typecheck e testes
 
 ## Fase 2 — Infraestrutura de dados
 - [ ] Criar projeto Supabase
