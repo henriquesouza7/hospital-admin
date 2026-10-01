@@ -1,18 +1,29 @@
 import { describe, expect, it } from "vitest";
-import { navigationItems } from "./navigation";
+import { isNavigationItemActive, navigationGroups } from "./navigation";
 
-describe("navigationItems", () => {
-  it("contains every route required by the application shell", () => {
-    expect(navigationItems.map(({ href }) => href)).toEqual([
-      "/",
-      "/financeiro",
+describe("navigation", () => {
+  it("keeps finance subitems grouped under Financeiro", () => {
+    const finance = navigationGroups.find(({ href }) => href === "/financeiro");
+
+    expect(finance?.items?.map(({ href }) => href)).toEqual([
       "/financeiro/farmacia",
       "/financeiro/laboratorio",
       "/financeiro/feira",
-      "/internacoes",
-      "/producao",
-      "/pequenas-cirurgias",
-      "/configuracoes",
     ]);
+  });
+
+  it("matches the exact root route without activating it elsewhere", () => {
+    expect(isNavigationItemActive("/", "/")).toBe(true);
+    expect(isNavigationItemActive("/financeiro", "/")).toBe(false);
+  });
+
+  it("keeps a parent active for its nested routes", () => {
+    expect(isNavigationItemActive("/financeiro/farmacia", "/financeiro")).toBe(
+      true,
+    );
+    expect(
+      isNavigationItemActive("/financeiro/farmacia", "/financeiro/farmacia"),
+    ).toBe(true);
+    expect(isNavigationItemActive("/producao", "/financeiro")).toBe(false);
   });
 });
