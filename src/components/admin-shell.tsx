@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Building2, ChevronDown } from "lucide-react";
+import { Building2 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { isNavigationItemActive, navigationGroups } from "@/lib/navigation";
 
@@ -39,7 +39,6 @@ export function AdminShell({ children }: AdminShellProps) {
         >
           {navigationGroups.map((group) => {
             const isGroupActive = isNavigationItemActive(pathname, group.href);
-            const hasItems = Boolean(group.items?.length);
 
             return (
               <div key={group.href} className="shrink-0 md:shrink">
@@ -50,12 +49,6 @@ export function AdminShell({ children }: AdminShellProps) {
                 >
                   <group.icon aria-hidden="true" className="size-4" />
                   <span>{group.label}</span>
-                  {hasItems ? (
-                    <ChevronDown
-                      aria-hidden="true"
-                      className={`ml-auto hidden size-4 transition-transform md:block ${isGroupActive ? "rotate-180" : ""}`}
-                    />
-                  ) : null}
                 </Link>
 
                 {group.items ? (
