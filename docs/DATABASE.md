@@ -1,10 +1,16 @@
 # Modelo Conceitual de Dados
 
-Este documento é conceitual. O SQL final será criado somente após validação.
+Neon Postgres é a fonte de verdade. O acesso HTTP inicial usa a Neon Data API
+(PostgREST) com RLS; não há ORM nesta etapa. A identidade é gerenciada pelo Neon
+Auth e armazenada no schema `neon_auth`.
 
 ## Shared
-- users
-- audit_logs
+- `audit_logs` (fundação criada em `db/migrations/20261001000000_create_audit_logs.sql`)
+
+`audit_logs` mantém `actor_id` como o identificador da identidade Neon Auth e não
+possui política de inserção para clientes. A escrita será adicionada por caminho
+server-side controlado ou RPC junto dos módulos. Nesta fase, a política permite
+apenas que uma identidade autenticada leia os próprios eventos.
 
 ## Financeiro
 - suppliers
@@ -51,3 +57,10 @@ Campos importantes em production_entries:
 - constraints para impedir estados inválidos.
 - índices definidos de acordo com consultas reais.
 - dados calculáveis não devem ser duplicados sem motivo.
+
+## Segurança e branches
+
+As tabelas públicas criadas devem permanecer com RLS habilitada. Policies devem
+usar `auth.user_id()` quando compararem a identidade da sessão. Branches Neon
+devem ser usadas para desenvolvimento e testes isolados; dados reais de pacientes
+não devem ser copiados para branches locais ou de CI.

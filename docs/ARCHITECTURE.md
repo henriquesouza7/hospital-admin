@@ -10,7 +10,9 @@ A prioridade do MVP é simplicidade operacional, organização do domínio, rast
 - TypeScript
 - Tailwind CSS
 - shadcn/ui
-- Supabase/PostgreSQL
+- Neon Postgres
+- Neon Auth
+- Neon Data API
 - Zod
 - React Hook Form
 - Recharts
@@ -25,12 +27,13 @@ A prioridade do MVP é simplicidade operacional, organização do domínio, rast
 - Server Components/Actions quando fizer sentido
 - Camada de aplicação e integração com serviços
 
-### Supabase/PostgreSQL
-- Persistência relacional
-- Autenticação
-- Storage quando necessário
-- Constraints e políticas de acesso
-- Migrations versionadas no repositório
+### Neon Postgres, Neon Auth e Data API
+- Persistência relacional no PostgreSQL gerenciado pela Neon
+- Identidade e sessão com Neon Auth
+- Acesso de dados via Neon Data API e RLS no PostgreSQL
+- Constraints e políticas de acesso no banco
+- Migrations SQL versionadas no repositório
+- Nenhum ORM nesta etapa
 
 ### Zod
 - Validação de entrada e contratos
@@ -70,7 +73,7 @@ src/
   types/
   styles/
 
-supabase/
+db/
   migrations/
 
 tests/
@@ -109,3 +112,12 @@ A estrutura final pode ser ajustada pelo bootstrap, desde que preserve modularid
 
 ## Decisões futuras
 Registrar decisões arquiteturais relevantes em `docs/adr/`.
+
+## Integração Neon
+
+A integração fica concentrada em `src/lib/neon/`, com `@neondatabase/neon-js`
+como cliente oficial para Neon Auth e Data API. O proxy, as rotas de autenticação
+e o helper `data-api.ts` são server-only; o helper obtém o JWT de RLS com
+`auth.token()` e o injeta sob demanda no Data API. Componentes visuais não fazem
+chamadas de infraestrutura diretamente. A identidade é a fornecida pelo Neon Auth
+(`neon_auth`), sem tabela paralela de usuários nesta fase.

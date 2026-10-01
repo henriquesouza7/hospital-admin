@@ -21,12 +21,14 @@
 - [x] Validar lint, typecheck e testes
 
 ## Fase 2 — Infraestrutura de dados
-- [ ] Criar projeto Supabase
+- [x] Definir Neon Postgres como fonte de verdade
+- [x] Integrar Neon Auth e Neon Data API
 - [ ] Configurar variáveis de ambiente local
-- [ ] Criar estrutura de migrations
-- [ ] Criar autenticação inicial
-- [ ] Definir políticas de acesso
-- [ ] Preparar auditoria
+- [x] Criar estrutura de migrations
+- [x] Criar autenticação inicial com email/senha
+- [x] Definir RLS inicial
+- [x] Preparar base de auditoria
+- [ ] Configurar projeto Neon e primeiro usuário manualmente
 
 ## Fase 3 — Financeiro
 - [ ] Farmácia
