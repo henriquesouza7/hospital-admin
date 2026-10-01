@@ -47,6 +47,25 @@ A prioridade do MVP é simplicidade operacional, organização do domínio, rast
 ### Playwright
 - Fluxos críticos end-to-end
 
+## Infraestrutura de dados e autenticação
+
+O acesso ao Supabase fica isolado em `src/lib/supabase/`. O cliente de servidor usa
+cookies gerenciados por `@supabase/ssr`, enquanto o cliente de browser só deve ser
+usado por componentes que realmente precisem observar a sessão no cliente.
+
+`src/proxy.ts` renova a sessão e redireciona visitantes não autenticados para
+`/login`. As rotas administrativas ficam no grupo `(admin)` e passam por uma
+verificação server-side adicional em `requireAuthenticatedUser`, evitando que a
+proteção dependa apenas da navegação do frontend.
+
+A autenticação inicial usa somente email e senha. Não existe cadastro público,
+recuperação de senha ou RBAC nesta fase. As variáveis públicas são validadas com
+Zod em `src/lib/env.ts`; nenhuma service role key é aceita pelo código do cliente.
+
+As migrations transversais vivem em `supabase/migrations/`. A primeira cria
+`profiles` e `audit_logs`, ativa RLS e define políticas mínimas. Detalhes de
+configuração manual do projeto remoto estão em `docs/SUPABASE_SETUP.md`.
+
 ## Módulos de domínio
 - finance
 - admissions

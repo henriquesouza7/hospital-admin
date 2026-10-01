@@ -1,47 +1,20 @@
 import { expect, test } from "@playwright/test";
 
-const pages = [
-  { path: "/", title: "Visão geral", active: "Visão geral" },
-  { path: "/financeiro", title: "Financeiro", active: "Financeiro" },
-  {
-    path: "/financeiro/farmacia",
-    title: "Farmácia",
-    active: "Farmácia",
-  },
-  {
-    path: "/financeiro/laboratorio",
-    title: "Laboratório",
-    active: "Laboratório",
-  },
-  { path: "/financeiro/feira", title: "Feira", active: "Feira" },
-  { path: "/internacoes", title: "Internações", active: "Internações" },
-  { path: "/producao", title: "Produção hospitalar", active: "Produção" },
-  {
-    path: "/pequenas-cirurgias",
-    title: "Pequenas cirurgias",
-    active: "Pequenas cirurgias",
-  },
-  {
-    path: "/configuracoes",
-    title: "Configurações",
-    active: "Configurações",
-  },
-] as const;
+test("redirects unauthenticated visitors from an admin route to login", async ({
+  page,
+}) => {
+  await page.goto("/");
 
-for (const page of pages) {
-  test(`${page.path} renders its placeholder`, async ({
-    page: browserPage,
-  }) => {
-    await browserPage.goto(page.path);
+  await expect(page).toHaveURL(/\/login/);
+  await expect(
+    page.getByRole("heading", { name: "Acesso administrativo" }),
+  ).toBeVisible();
+});
 
-    await expect(
-      browserPage.getByRole("heading", { level: 1, name: page.title }),
-    ).toBeVisible();
-    await expect(
-      browserPage.getByRole("navigation", { name: "Navegação principal" }),
-    ).toBeVisible();
-    await expect(
-      browserPage.getByRole("link", { name: page.active, exact: true }),
-    ).toHaveAttribute("aria-current", "page");
-  });
-}
+test("renders the email and password login fields", async ({ page }) => {
+  await page.goto("/login");
+
+  await expect(page.getByLabel("Email")).toBeVisible();
+  await expect(page.getByLabel("Senha")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Entrar" })).toBeVisible();
+});

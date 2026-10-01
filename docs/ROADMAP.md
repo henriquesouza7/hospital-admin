@@ -22,11 +22,11 @@
 
 ## Fase 2 — Infraestrutura de dados
 - [ ] Criar projeto Supabase
-- [ ] Configurar variáveis de ambiente local
-- [ ] Criar estrutura de migrations
-- [ ] Criar autenticação inicial
-- [ ] Definir políticas de acesso
-- [ ] Preparar auditoria
+- [x] Documentar variáveis de ambiente local
+- [x] Criar estrutura de migrations
+- [x] Preparar autenticação inicial
+- [x] Definir políticas de acesso
+- [x] Preparar auditoria
 
 ## Fase 3 — Financeiro
 - [ ] Farmácia
