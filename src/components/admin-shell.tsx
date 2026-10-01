@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Building2 } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { LogoutButton } from "@/components/logout-button";
 import { isNavigationItemActive, navigationGroups } from "@/lib/navigation";
 
 type AdminShellProps = Readonly<{ children: React.ReactNode }>;
@@ -89,9 +90,12 @@ export function AdminShell({ children }: AdminShellProps) {
               Painel hospitalar
             </p>
           </div>
-          <span className="rounded-full border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
-            Ambiente de demonstração
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="hidden rounded-full border bg-card px-3 py-1 text-xs font-medium text-muted-foreground sm:inline-flex">
+              Ambiente de demonstração
+            </span>
+            <LogoutButton />
+          </div>
         </header>
         <main className="p-4 sm:p-6 lg:p-8">{children}</main>
       </div>

@@ -21,9 +21,11 @@ O sistema não é um prontuário eletrônico e não substitui sistemas clínicos
 
 ## Estratégia de desenvolvimento
 
-O projeto será desenvolvido de forma incremental, com documentação, migrations, testes e revisão por pull request.
+O projeto será desenvolvido de forma incremental, com documentação, migrations SQL,
+testes e revisão por pull request.
 
-Stack final ainda será validada antes do bootstrap da aplicação.
+Stack: Next.js, TypeScript, Tailwind CSS, Neon Postgres, Neon Auth, Neon Data API,
+Vitest e Playwright. O projeto não usa ORM nesta etapa.
 
 ## Documentação
 
@@ -31,4 +33,5 @@ Consulte a pasta `docs/` para visão do produto, arquitetura, requisitos, regras
 
 ## Estado do projeto
 
-Fase 0 — Fundação e documentação.
+Fase 2 — Fundação de dados com Neon. Consulte `docs/NEON_SETUP.md` para a
+configuração manual do projeto Neon.

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { AdminShell } from "@/components/admin-shell";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -22,9 +21,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
       lang="pt-BR"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full">
-        <AdminShell>{children}</AdminShell>
-      </body>
+      <body className="min-h-full">{children}</body>
     </html>
   );
 }
