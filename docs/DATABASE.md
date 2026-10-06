@@ -13,10 +13,12 @@ server-side controlado ou RPC junto dos módulos. Nesta fase, a política permit
 apenas que uma identidade autenticada leia os próprios eventos.
 
 ## Financeiro
-- suppliers
-- products
-- purchase_orders
-- purchase_order_items
+- `suppliers`: fornecedores, com status ativo/inativo e observações opcionais.
+- `products`: catálogo por setor e apresentação; não armazena preço.
+- `purchase_orders`: data, fornecedor, setor e observação do pedido.
+- `purchase_order_items`: quantidade, valor unitário e subtotal monetário
+  calculado no PostgreSQL. Cada compra preserva o preço histórico praticado.
+- `purchase_order_summaries`: view de leitura que agrega itens por pedido.
 - invoices
 - monthly_fair_expenses
 
@@ -25,6 +27,19 @@ Relacionamentos principais:
 - purchase_order 1:N purchase_order_items
 - product 1:N purchase_order_items
 - invoice 0..N:1 purchase_order conforme regra futura
+
+As quatro tabelas financeiras usam UUID, timestamps com fuso horário, foreign
+keys restritivas e RLS. A função `public.is_finance_admin()` consulta a role da
+identidade devolvida por `auth.user_id()` na tabela `neon_auth.user`; policies
+concedem leitura e alterações apenas a administradores autenticados. A criação
+de pedidos ocorre pela função transacional `public.create_purchase_order()`,
+que valida setor, fornecedor ativo, produtos ativos, quantidades e preços. Não
+há permissão de exclusão física para o papel `authenticated`.
+
+Triggers atualizam `updated_at` e registram criação/alteração de fornecedores e
+produtos, além de alterações de pedidos, em `audit_logs`. A criação do pedido
+registra fornecedor, data, setor, contagem de itens e total; `actor_id` vem de
+`auth.user_id()`, nunca de um parâmetro do cliente.
 
 ## Internações
 - doctors
