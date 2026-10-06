@@ -18,3 +18,17 @@ test("renders the email and password login form", async ({ page }) => {
   await expect(page.getByLabel("Senha")).toBeVisible();
   await expect(page.getByRole("button", { name: "Entrar" })).toBeVisible();
 });
+
+test("redirects pharmacy administration routes without a session", async ({
+  page,
+}) => {
+  for (const route of [
+    "/financeiro/farmacia",
+    "/financeiro/farmacia/fornecedores",
+    "/financeiro/farmacia/produtos",
+    "/financeiro/farmacia/pedidos/novo",
+  ]) {
+    await page.goto(route);
+    await expect(page).toHaveURL(/\/login/);
+  }
+});
