@@ -51,6 +51,16 @@ Preencha o `.env.local` com os valores server-side do Neon por um canal seguro;
 esse arquivo é ignorado pelo Git. Consulte `docs/NEON_SETUP.md` antes do
 primeiro login.
 
+Os arquivos de texto versionados usam LF em Windows e macOS, conforme
+`.gitattributes` e `.editorconfig`. Arquivos `.bat` e `.cmd` usam CRLF.
+
+Antes do primeiro teste E2E em cada computador, instale o Chromium usado pelo
+Playwright:
+
+```bash
+pnpm exec playwright install chromium
+```
+
 Comandos de validação:
 
 ```bash

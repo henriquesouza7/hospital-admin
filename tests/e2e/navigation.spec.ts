@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("redirects protected routes to login when Neon is not configured", async ({
+test("redirects protected routes to login without a session", async ({
   page,
 }) => {
   await page.goto("/");
