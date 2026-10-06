@@ -4,8 +4,12 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
 import { formatCurrency } from "@/modules/finance/pharmacy/format";
 import {
+  calculateAnnualComparison,
   currentCompetence,
+  formatDifference,
+  formatPercentage,
   getAnnualSummary,
+  type AnnualComparison,
   type FairExpense,
 } from "@/modules/finance/fair-expenses/domain";
 import { listFairExpenses } from "@/modules/finance/fair-expenses/repository";
@@ -38,6 +42,7 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
   }
 
   const annualSummary = getAnnualSummary(expenses, selectedYear);
+  const annualComparison = calculateAnnualComparison(expenses, selectedYear);
   const years = [
     ...new Set([
       defaultYear,
@@ -111,6 +116,10 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
             value={String(annualSummary.monthCount)}
           />
         </div>
+        <AnnualComparisonCard
+          comparison={annualComparison}
+          selectedYear={selectedYear}
+        />
       </section>
 
       <section className="space-y-4" aria-labelledby="history-title">
@@ -135,6 +144,86 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
       </section>
     </div>
   );
+}
+
+function AnnualComparisonCard({
+  comparison,
+  selectedYear,
+}: {
+  comparison: AnnualComparison;
+  selectedYear: number;
+}) {
+  return (
+    <article className="space-y-4 rounded-xl border bg-card p-5">
+      <div>
+        <h3 className="font-semibold">Comparação ano a ano</h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          A comparação usa os mesmos meses registrados no ano selecionado.
+        </p>
+      </div>
+      {comparison.status === "no_current_data" ? (
+        <p className="text-sm text-muted-foreground">
+          Sem meses registrados em {selectedYear} para comparar com{" "}
+          {comparison.previousYear}.
+        </p>
+      ) : comparison.status === "incomplete_previous" ? (
+        <p className="text-sm text-muted-foreground" role="status">
+          Sem período equivalente suficiente em {comparison.previousYear}: há{" "}
+          {comparison.availableMonths} de {comparison.expectedMonths} meses
+          necessários.
+        </p>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <ComparisonValue
+            label={`Total nos meses registrados em ${selectedYear}`}
+            value={formatCurrency(comparison.currentCents)}
+          />
+          <ComparisonValue
+            label={`Total nos mesmos meses de ${comparison.previousYear}`}
+            value={formatCurrency(comparison.previousCents)}
+          />
+          <ComparisonValue
+            label="Diferença"
+            value={formatDifference(comparison.differenceCents)}
+          />
+          <ComparisonValue
+            label="Variação e meses comparados"
+            value={
+              comparison.percentageBasisPoints === null
+                ? `Percentual indisponível (período anterior sem valor) · ${comparison.monthCount} meses`
+                : `${formatPercentage(comparison.percentageBasisPoints)} · ${comparison.monthCount} meses`
+            }
+          />
+          <p className="text-sm text-muted-foreground sm:col-span-2">
+            Meses comparados: {formatComparedMonths(comparison.competences)}.
+          </p>
+        </div>
+      )}
+    </article>
+  );
+}
+
+function ComparisonValue({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className="mt-1 font-medium">{value}</p>
+    </div>
+  );
+}
+
+function formatComparedMonths(competences: readonly string[]) {
+  const formatter = new Intl.DateTimeFormat("pt-BR", {
+    month: "long",
+    timeZone: "UTC",
+  });
+
+  return competences
+    .map((competence) => {
+      const [year, month] = competence.split("-").map(Number);
+      return formatter.format(new Date(Date.UTC(year, month - 1, 1)));
+    })
+    .join(", ");
 }
 
 function SummaryCard({ label, value }: { label: string; value: string }) {

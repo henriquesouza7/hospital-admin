@@ -6,6 +6,11 @@
 - Sistema pode identificar aumento; não deve inventar a causa do aumento.
 - Reimportações não podem somar valores duplicados.
 
+### Feira
+- A comparação anual usa somente os mesmos meses registrados nos dois anos.
+- Se faltar qualquer mês equivalente no ano anterior, a comparação não é calculada.
+- Alterações de observação preservam na auditoria os valores anterior e normalizado novo.
+
 ## Internações
 - Cada internação deve ser atribuída por uma regra administrativa única ao médico responsável.
 - Meses em andamento devem ser visualmente diferenciados de meses encerrados.

@@ -14,9 +14,47 @@ export type MonthlyComparison = Readonly<{
   percentageBasisPoints: bigint | null;
 }>;
 
+export type AnnualComparison =
+  | Readonly<{
+      status: "no_current_data";
+      previousYear: number;
+    }>
+  | Readonly<{
+      status: "incomplete_previous";
+      previousYear: number;
+      currentCents: bigint;
+      expectedMonths: number;
+      availableMonths: number;
+    }>
+  | Readonly<{
+      status: "comparable";
+      previousYear: number;
+      currentCents: bigint;
+      previousCents: bigint;
+      differenceCents: bigint;
+      percentageBasisPoints: bigint | null;
+      monthCount: number;
+      competences: readonly string[];
+    }>;
+
 function decimalToCents(value: string): bigint {
   const [whole, fraction = ""] = value.split(".");
   return BigInt(whole) * BigInt(100) + BigInt(fraction.padEnd(2, "0"));
+}
+
+function percentageForDifference(
+  differenceCents: bigint,
+  previousCents: bigint,
+): bigint | null {
+  if (previousCents === BigInt(0)) return null;
+
+  const absoluteDifference =
+    differenceCents < 0 ? -differenceCents : differenceCents;
+  const absolutePercentage =
+    (absoluteDifference * BigInt(10000) + previousCents / BigInt(2)) /
+    previousCents;
+
+  return differenceCents < 0 ? -absolutePercentage : absolutePercentage;
 }
 
 export function previousCompetence(competence: string): string {
@@ -35,19 +73,10 @@ export function calculateMonthlyComparison(
   const currentCents = decimalToCents(current.total_amount);
   const previousCents = decimalToCents(previous.total_amount);
   const differenceCents = currentCents - previousCents;
-  const absoluteDifference =
-    differenceCents < 0 ? -differenceCents : differenceCents;
-  const absolutePercentage =
-    previousCents === BigInt(0)
-      ? null
-      : (absoluteDifference * BigInt(10000) + previousCents / BigInt(2)) /
-        previousCents;
-  const percentageBasisPoints =
-    absolutePercentage === null
-      ? null
-      : differenceCents < 0
-        ? -absolutePercentage
-        : absolutePercentage;
+  const percentageBasisPoints = percentageForDifference(
+    differenceCents,
+    previousCents,
+  );
 
   return { differenceCents, percentageBasisPoints };
 }
@@ -85,6 +114,71 @@ export function getAnnualSummary(
       : (totalCents + BigInt(Math.floor(monthCount / 2))) / BigInt(monthCount);
 
   return { totalCents, averageCents, monthCount };
+}
+
+export function calculateAnnualComparison(
+  expenses: readonly FairExpense[],
+  year: number,
+): AnnualComparison {
+  const currentPrefix = `${year}-`;
+  const currentExpenses = expenses
+    .filter((expense) => expense.competence.startsWith(currentPrefix))
+    .sort((left, right) => left.competence.localeCompare(right.competence));
+  const previousYear = year - 1;
+
+  if (currentExpenses.length === 0) {
+    return { status: "no_current_data", previousYear };
+  }
+
+  const currentCents = currentExpenses.reduce(
+    (total, expense) => total + decimalToCents(expense.total_amount),
+    BigInt(0),
+  );
+  const previousByMonth = new Map(
+    expenses
+      .filter((expense) => expense.competence.startsWith(`${previousYear}-`))
+      .map((expense) => [expense.competence.slice(5, 7), expense]),
+  );
+  const currentMonths = currentExpenses.map((expense) =>
+    expense.competence.slice(5, 7),
+  );
+  const previousExpenses = currentMonths.map((month) =>
+    previousByMonth.get(month),
+  );
+  const availableMonths = previousExpenses.filter(Boolean).length;
+
+  if (availableMonths !== currentExpenses.length) {
+    return {
+      status: "incomplete_previous",
+      previousYear,
+      currentCents,
+      expectedMonths: currentExpenses.length,
+      availableMonths,
+    };
+  }
+
+  const previousCents = previousExpenses.reduce(
+    (total, expense) =>
+      total + (expense ? decimalToCents(expense.total_amount) : BigInt(0)),
+    BigInt(0),
+  );
+  const differenceCents = currentCents - previousCents;
+
+  return {
+    status: "comparable",
+    previousYear,
+    currentCents,
+    previousCents,
+    differenceCents,
+    percentageBasisPoints: percentageForDifference(
+      differenceCents,
+      previousCents,
+    ),
+    monthCount: currentExpenses.length,
+    competences: currentExpenses.map((expense) =>
+      expense.competence.slice(0, 7),
+    ),
+  };
 }
 
 export function formatCompetence(competence: string): string {
