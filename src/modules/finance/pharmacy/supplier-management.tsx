@@ -1,6 +1,9 @@
 "use client";
 
 import { useActionState } from "react";
+import { Building2 } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
+import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import {
   createSupplierAction,
@@ -41,7 +44,7 @@ export function SupplierCreateForm() {
           name="name"
           required
           maxLength={160}
-          className="h-10 rounded-lg border bg-background px-3 font-normal"
+          className="h-10 rounded-md border border-input bg-background px-3 text-sm font-normal"
         />
       </label>
       <label className="grid gap-1.5 text-sm font-medium sm:col-span-2">
@@ -51,7 +54,7 @@ export function SupplierCreateForm() {
           name="notes"
           maxLength={1000}
           rows={2}
-          className="rounded-lg border bg-background px-3 py-2 font-normal"
+          className="min-h-10 rounded-md border border-input bg-background px-3 py-2 text-sm font-normal"
         />
       </label>
       <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
@@ -67,12 +70,11 @@ export function SupplierCreateForm() {
 export function SupplierList({ suppliers }: { suppliers: Supplier[] }) {
   if (!suppliers.length) {
     return (
-      <div className="rounded-xl border border-dashed bg-card px-6 py-10 text-center">
-        <h2 className="font-semibold">Nenhum fornecedor cadastrado</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Cadastre um fornecedor para vinculá-lo aos pedidos de compra.
-        </p>
-      </div>
+      <EmptyState
+        icon={Building2}
+        title="Nenhum fornecedor cadastrado"
+        description="Cadastre um fornecedor para vinculá-lo aos pedidos de compra."
+      />
     );
   }
 
@@ -119,9 +121,10 @@ function SupplierRow({ supplier }: { supplier: Supplier }) {
         {supplier.notes || "—"}
       </td>
       <td className="px-4 py-4">
-        <span className="rounded-full border px-2.5 py-1 text-xs font-medium">
-          {supplier.is_active ? "Ativo" : "Inativo"}
-        </span>
+        <StatusBadge
+          label={supplier.is_active ? "Ativo" : "Inativo"}
+          tone={supplier.is_active ? "success" : "neutral"}
+        />
       </td>
       <td className="px-4 py-4">
         <div className="flex flex-wrap items-center gap-2">
@@ -141,7 +144,7 @@ function SupplierRow({ supplier }: { supplier: Supplier }) {
                   required
                   maxLength={160}
                   defaultValue={supplier.name}
-                  className="h-9 rounded-md border px-2 text-sm font-normal"
+                  className="h-9 rounded-md border border-input bg-background px-2 text-sm font-normal"
                 />
               </label>
               <label className="grid gap-1 text-xs font-medium">
@@ -151,7 +154,7 @@ function SupplierRow({ supplier }: { supplier: Supplier }) {
                   maxLength={1000}
                   rows={2}
                   defaultValue={supplier.notes ?? ""}
-                  className="rounded-md border px-2 py-1 text-sm font-normal"
+                  className="min-h-9 rounded-md border border-input bg-background px-2 py-1 text-sm font-normal"
                 />
               </label>
               <Button type="submit" size="sm" disabled={pending}>

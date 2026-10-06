@@ -1,6 +1,9 @@
 "use client";
 
 import { useActionState } from "react";
+import { PackageSearch } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
+import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import {
   createProductAction,
@@ -40,7 +43,7 @@ export function ProductCreateForm() {
           name="name"
           required
           maxLength={160}
-          className="h-10 rounded-lg border bg-background px-3 font-normal"
+          className="h-10 rounded-md border border-input bg-background px-3 text-sm font-normal"
         />
       </label>
       <label className="grid gap-1.5 text-sm font-medium">
@@ -49,7 +52,7 @@ export function ProductCreateForm() {
         <input
           name="category"
           maxLength={80}
-          className="h-10 rounded-lg border bg-background px-3 font-normal"
+          className="h-10 rounded-md border border-input bg-background px-3 text-sm font-normal"
         />
       </label>
       <label className="grid gap-1.5 text-sm font-medium">
@@ -62,7 +65,7 @@ export function ProductCreateForm() {
           required
           maxLength={120}
           placeholder="Ex.: caixa com 20 unidades"
-          className="h-10 rounded-lg border bg-background px-3 font-normal"
+          className="h-10 rounded-md border border-input bg-background px-3 text-sm font-normal"
         />
       </label>
       <div className="flex flex-wrap items-center gap-3 self-end">
@@ -78,12 +81,11 @@ export function ProductCreateForm() {
 export function ProductList({ products }: { products: Product[] }) {
   if (!products.length)
     return (
-      <div className="rounded-xl border border-dashed bg-card px-6 py-10 text-center">
-        <h2 className="font-semibold">Nenhum produto cadastrado</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Cadastre os itens que poderão ser incluídos nos pedidos.
-        </p>
-      </div>
+      <EmptyState
+        icon={PackageSearch}
+        title="Nenhum produto cadastrado"
+        description="Cadastre os itens que poderão ser incluídos nos pedidos."
+      />
     );
   return (
     <div className="overflow-hidden rounded-xl border bg-card">
@@ -132,9 +134,10 @@ function ProductRow({ product }: { product: Product }) {
       </td>
       <td className="px-4 py-4">{product.presentation}</td>
       <td className="px-4 py-4">
-        <span className="rounded-full border px-2.5 py-1 text-xs font-medium">
-          {product.is_active ? "Ativo" : "Inativo"}
-        </span>
+        <StatusBadge
+          label={product.is_active ? "Ativo" : "Inativo"}
+          tone={product.is_active ? "success" : "neutral"}
+        />
       </td>
       <td className="px-4 py-4">
         <div className="flex flex-wrap items-center gap-2">
@@ -154,7 +157,7 @@ function ProductRow({ product }: { product: Product }) {
                   required
                   maxLength={160}
                   defaultValue={product.name}
-                  className="h-9 rounded-md border px-2 text-sm font-normal"
+                  className="h-9 rounded-md border border-input bg-background px-2 text-sm font-normal"
                 />
               </label>
               <label className="grid gap-1 text-xs font-medium">
@@ -163,7 +166,7 @@ function ProductRow({ product }: { product: Product }) {
                   name="category"
                   maxLength={80}
                   defaultValue={product.category ?? ""}
-                  className="h-9 rounded-md border px-2 text-sm font-normal"
+                  className="h-9 rounded-md border border-input bg-background px-2 text-sm font-normal"
                 />
               </label>
               <label className="grid gap-1 text-xs font-medium">
@@ -173,7 +176,7 @@ function ProductRow({ product }: { product: Product }) {
                   required
                   maxLength={120}
                   defaultValue={product.presentation}
-                  className="h-9 rounded-md border px-2 text-sm font-normal"
+                  className="h-9 rounded-md border border-input bg-background px-2 text-sm font-normal"
                 />
               </label>
               <Button type="submit" size="sm" disabled={pending}>

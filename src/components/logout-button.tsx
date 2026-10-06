@@ -6,7 +6,7 @@ export function LogoutButton() {
   return (
     <form action={signOut}>
       <button
-        className="rounded-full border bg-card px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="h-9 rounded-lg border bg-card px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         type="submit"
       >
         Sair

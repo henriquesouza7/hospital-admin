@@ -21,7 +21,7 @@ export default function PharmacyError({
       <button
         type="button"
         onClick={reset}
-        className="mt-4 rounded-lg border px-3 py-2 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="mt-4 h-9 rounded-md border border-input bg-background px-3 text-sm font-medium hover:bg-muted"
       >
         Tentar novamente
       </button>

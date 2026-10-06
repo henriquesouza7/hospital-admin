@@ -9,7 +9,7 @@ type KpiCardProps = Readonly<{
 
 export function KpiCard({ label, value, detail, icon: Icon }: KpiCardProps) {
   return (
-    <article className="rounded-xl border bg-card p-5 shadow-sm shadow-slate-200/50 transition-shadow hover:shadow-md hover:shadow-slate-200/60">
+    <article className="rounded-xl border bg-card p-5 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <p className="text-sm font-medium text-muted-foreground">{label}</p>
         <span className="flex size-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">

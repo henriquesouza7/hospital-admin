@@ -31,7 +31,7 @@ export function RequestPasswordResetForm() {
         </label>
         <input
           autoComplete="email"
-          className="flex h-11 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+          className="flex h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
           id="email"
           name="email"
           placeholder="voce@hospital.com"
@@ -76,7 +76,7 @@ export function ResetPasswordForm({ token }: Readonly<{ token: string }>) {
         </label>
         <input
           autoComplete="new-password"
-          className="flex h-11 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+          className="flex h-11 w-full rounded-md border border-input bg-background px-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
           id="newPassword"
           minLength={8}
           name="newPassword"

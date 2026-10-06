@@ -1,5 +1,4 @@
 import {
-  Activity,
   ArrowUpRight,
   BarChart3,
   CalendarDays,
@@ -11,7 +10,6 @@ import { ChartCard } from "@/components/chart-card";
 import { KpiCard } from "@/components/kpi-card";
 import { PageHeader } from "@/components/page-header";
 import { SectionHeader } from "@/components/section-header";
-import { StatusBadge } from "@/components/status-badge";
 
 const monthlyBars = [
   { month: "Jan", value: "42%", amount: "42" },
@@ -29,9 +27,6 @@ export default function Home() {
         eyebrow="Visão geral"
         title="Bom dia, equipe administrativa"
         description="Uma visão rápida do cenário operacional. Os indicadores abaixo são demonstrativos e não representam dados reais."
-        actions={
-          <StatusBadge icon={Activity} label="Dados fictícios" tone="info" />
-        }
       />
 
       <section className="space-y-4">
@@ -85,7 +80,7 @@ export default function Home() {
                 <div className="flex h-full items-end">
                   <div
                     aria-label={`${bar.month}: ${bar.amount} unidades fictícias`}
-                    className="w-7 rounded-t-md bg-primary/80 transition-colors hover:bg-primary sm:w-10"
+                    className="w-7 rounded-t-md bg-chart-1 transition-colors hover:bg-chart-5 sm:w-10"
                     style={{ height: bar.value }}
                   />
                 </div>

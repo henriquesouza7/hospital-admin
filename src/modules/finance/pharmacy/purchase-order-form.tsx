@@ -129,7 +129,7 @@ export function PurchaseOrderForm({
             name="supplier_id"
             required
             defaultValue=""
-            className="h-10 rounded-lg border bg-background px-3 font-normal"
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm font-normal"
           >
             <option value="" disabled>
               Selecione um fornecedor
@@ -151,7 +151,7 @@ export function PurchaseOrderForm({
             type="date"
             required
             defaultValue={localOrderDate}
-            className="h-10 rounded-lg border bg-background px-3 font-normal"
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm font-normal"
           />
         </label>
         <label className="grid gap-1.5 text-sm font-medium sm:col-span-2">
@@ -161,7 +161,7 @@ export function PurchaseOrderForm({
             name="notes"
             maxLength={1000}
             rows={2}
-            className="rounded-lg border bg-background px-3 py-2 font-normal"
+            className="min-h-10 rounded-md border border-input bg-background px-3 py-2 text-sm font-normal"
           />
         </label>
       </section>
@@ -190,7 +190,7 @@ export function PurchaseOrderForm({
           </Button>
         </div>
         <input type="hidden" name="items" value={itemsJson} />
-        <div className="space-y-3">
+        <div className="space-y-3 @container">
           {items.map((item, index) => {
             const amount = (() => {
               try {
@@ -204,10 +204,10 @@ export function PurchaseOrderForm({
             return (
               <fieldset
                 key={item.key}
-                className="grid gap-3 rounded-xl border bg-card p-4 sm:grid-cols-[minmax(12rem,2fr)_minmax(6rem,0.7fr)_minmax(8rem,0.8fr)_minmax(7rem,0.8fr)_auto] sm:items-end"
+                className="grid min-w-0 grid-cols-1 gap-3 rounded-xl border bg-card p-4 @sm:grid-cols-2 @2xl:grid-cols-[minmax(0,2fr)_minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,1fr)_auto] @2xl:items-end"
               >
                 <legend className="sr-only">Item {index + 1}</legend>
-                <label className="grid gap-1.5 text-sm font-medium">
+                <label className="grid min-w-0 gap-1.5 text-sm font-medium @sm:col-span-2 @2xl:col-span-1">
                   Produto{" "}
                   <span className="text-destructive" aria-hidden="true">
                     *
@@ -218,7 +218,7 @@ export function PurchaseOrderForm({
                     onChange={(event) =>
                       updateItem(item.key, "product_id", event.target.value)
                     }
-                    className="h-10 rounded-lg border bg-background px-3 font-normal"
+                    className="h-10 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm font-normal"
                   >
                     <option value="" disabled>
                       Selecione
@@ -237,7 +237,7 @@ export function PurchaseOrderForm({
                     ))}
                   </select>
                 </label>
-                <label className="grid gap-1.5 text-sm font-medium">
+                <label className="grid min-w-0 gap-1.5 text-sm font-medium">
                   Quantidade{" "}
                   <span className="text-destructive" aria-hidden="true">
                     *
@@ -249,10 +249,10 @@ export function PurchaseOrderForm({
                     onChange={(event) =>
                       updateItem(item.key, "quantity", event.target.value)
                     }
-                    className="h-10 rounded-lg border bg-background px-3 font-normal"
+                    className="h-10 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm font-normal"
                   />
                 </label>
-                <label className="grid gap-1.5 text-sm font-medium">
+                <label className="grid min-w-0 gap-1.5 text-sm font-medium">
                   Valor unitário{" "}
                   <span className="text-destructive" aria-hidden="true">
                     *
@@ -265,10 +265,10 @@ export function PurchaseOrderForm({
                       updateItem(item.key, "unit_price", event.target.value)
                     }
                     placeholder="0,00"
-                    className="h-10 rounded-lg border bg-background px-3 font-normal"
+                    className="h-10 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm font-normal"
                   />
                 </label>
-                <div>
+                <div className="min-w-0">
                   <span className="text-sm font-medium">Subtotal</span>
                   <p className="mt-2 h-10 content-center font-semibold tabular-nums">
                     {amount}
@@ -279,6 +279,7 @@ export function PurchaseOrderForm({
                   variant="ghost"
                   size="icon"
                   aria-label={`Remover item ${index + 1}`}
+                  className="justify-self-start @sm:justify-self-end"
                   disabled={items.length === 1}
                   onClick={() =>
                     setItems((current) =>

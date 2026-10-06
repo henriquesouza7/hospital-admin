@@ -3,15 +3,20 @@ import { cn } from "@/lib/utils";
 
 type StatusBadgeProps = Readonly<{
   label: string;
-  tone?: "neutral" | "info" | "success" | "warning";
+  tone?: "neutral" | "info" | "success" | "warning" | "destructive";
   icon?: LucideIcon;
 }>;
 
 const toneClasses = {
-  neutral: "border-border bg-muted text-muted-foreground",
-  info: "border-primary/40 bg-accent text-accent-foreground",
-  success: "border-emerald-200 bg-emerald-50 text-emerald-800",
-  warning: "border-amber-200 bg-amber-50 text-amber-800",
+  neutral:
+    "border-status-neutral-border bg-status-neutral text-status-neutral-foreground",
+  info: "border-status-info-border bg-status-info text-status-info-foreground",
+  success:
+    "border-status-success-border bg-status-success text-status-success-foreground",
+  warning:
+    "border-status-warning-border bg-status-warning text-status-warning-foreground",
+  destructive:
+    "border-status-error-border bg-status-error text-status-error-foreground",
 } as const;
 
 export function StatusBadge({

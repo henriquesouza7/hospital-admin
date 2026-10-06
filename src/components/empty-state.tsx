@@ -12,7 +12,7 @@ export function EmptyState({
   icon: Icon,
 }: EmptyStateProps) {
   return (
-    <div className="flex min-h-48 flex-col items-center justify-center rounded-xl border border-dashed bg-card px-6 py-10 text-center">
+    <div className="flex min-h-40 flex-col items-center justify-center rounded-xl border border-dashed bg-card px-6 py-6 text-center">
       <span className="flex size-11 items-center justify-center rounded-full bg-accent text-accent-foreground">
         <Icon aria-hidden="true" className="size-5" />
       </span>
