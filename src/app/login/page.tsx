@@ -2,13 +2,13 @@ import { Building2 } from "lucide-react";
 import { LoginForm } from "@/components/auth/login-form";
 
 type LoginPageProps = Readonly<{
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ error?: string; next?: string }>;
 }>;
 
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const { next } = await searchParams;
+  const { error, next } = await searchParams;
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-muted/40 p-4 sm:p-6">
@@ -40,6 +40,15 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             do projeto.
           </p>
         </div>
+
+        {error === "forbidden" ? (
+          <p
+            className="mb-5 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+            role="alert"
+          >
+            Sua conta não tem acesso administrativo.
+          </p>
+        ) : null}
 
         <LoginForm next={next} />
       </section>
