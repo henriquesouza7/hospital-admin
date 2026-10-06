@@ -46,8 +46,10 @@ registra fornecedor, data, setor, contagem de itens e total; `actor_id` vem de
 unicidade por competência, valor `numeric(12, 2)` não negativo e observação de
 até 1.000 caracteres. Leitura é protegida por RLS para administradores; criação
 e edição usam RPCs controladas que registram auditoria com o ator de
-`auth.user_id()`. A competência é imutável e não há exclusão nesta etapa. Anexos
-permanecem futuros até existir uma infraestrutura de storage segura.
+`auth.user_id()`. As edições guardam total e observação anteriores e novos, com
+a observação normalizada igual ao valor persistido. A competência é imutável e
+não há exclusão nesta etapa. Anexos permanecem futuros até existir uma
+infraestrutura de storage segura.
 
 ## Internações
 - doctors
