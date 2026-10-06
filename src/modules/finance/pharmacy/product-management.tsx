@@ -12,10 +12,11 @@ import {
   type FinanceActionState,
 } from "./action-state";
 import type { listProducts } from "./repository";
+import type { FinanceSector } from "./validation";
 
 type Product = Awaited<ReturnType<typeof listProducts>>[number];
 
-export function ProductCreateForm() {
+export function ProductCreateForm({ sector }: { sector: FinanceSector }) {
   const [state, action, pending] = useActionState(
     createProductAction,
     initialFinanceActionState,
@@ -25,6 +26,7 @@ export function ProductCreateForm() {
       action={action}
       className="grid gap-4 rounded-xl border bg-card p-5 sm:grid-cols-2"
     >
+      <input type="hidden" name="sector" value={sector} />
       <div className="sm:col-span-2">
         <h2 className="font-semibold">Cadastrar produto</h2>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -147,6 +149,7 @@ function ProductRow({ product }: { product: Product }) {
               className="mt-3 grid min-w-64 gap-3 rounded-lg border bg-background p-3"
             >
               <input type="hidden" name="id" value={product.id} />
+              <input type="hidden" name="sector" value={product.sector} />
               <label className="grid gap-1 text-xs font-medium">
                 Nome
                 <input
@@ -184,6 +187,7 @@ function ProductRow({ product }: { product: Product }) {
           </details>
           <form action={setProductStatusAction}>
             <input type="hidden" name="id" value={product.id} />
+            <input type="hidden" name="sector" value={product.sector} />
             <input
               type="hidden"
               name="is_active"

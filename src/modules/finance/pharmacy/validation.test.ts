@@ -58,6 +58,7 @@ describe("pharmacy input validation", () => {
   it("should_reject_order_when_quantity_is_zero", () => {
     expect(
       purchaseOrderInputSchema.safeParse({
+        sector: "laboratorio",
         supplier_id: "f9a52c88-2973-4c38-8542-d7ce03122cc8",
         order_date: "2026-10-06",
         notes: "",
@@ -75,6 +76,7 @@ describe("pharmacy input validation", () => {
   it("should_reject_order_when_unit_price_is_malformed", () => {
     expect(
       purchaseOrderInputSchema.safeParse({
+        sector: "farmacia",
         supplier_id: "f9a52c88-2973-4c38-8542-d7ce03122cc8",
         order_date: "2026-10-06",
         notes: "",
@@ -83,6 +85,42 @@ describe("pharmacy input validation", () => {
             product_id: "a07dd5df-a160-49f2-a55c-a51274683a02",
             quantity: "1",
             unit_price: "-1.00",
+          },
+        ],
+      }).success,
+    ).toBe(false);
+  });
+
+  it("should_accept_laboratory_sector_when_order_is_valid", () => {
+    expect(
+      purchaseOrderInputSchema.safeParse({
+        sector: "laboratorio",
+        supplier_id: "f9a52c88-2973-4c38-8542-d7ce03122cc8",
+        order_date: "2026-10-06",
+        notes: "",
+        items: [
+          {
+            product_id: "a07dd5df-a160-49f2-a55c-a51274683a02",
+            quantity: "2.5",
+            unit_price: "12.34",
+          },
+        ],
+      }).success,
+    ).toBe(true);
+  });
+
+  it("should_reject_order_when_sector_is_unsupported", () => {
+    expect(
+      purchaseOrderInputSchema.safeParse({
+        sector: "feira",
+        supplier_id: "f9a52c88-2973-4c38-8542-d7ce03122cc8",
+        order_date: "2026-10-06",
+        notes: "",
+        items: [
+          {
+            product_id: "a07dd5df-a160-49f2-a55c-a51274683a02",
+            quantity: "1",
+            unit_price: "1.00",
           },
         ],
       }).success,

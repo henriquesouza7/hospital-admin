@@ -9,19 +9,20 @@ import {
 } from "@/modules/finance/pharmacy/product-management";
 import { listProducts } from "@/modules/finance/pharmacy/repository";
 
-export default async function ProductsPage() {
-  const sector = "farmacia" as const;
+export default async function LaboratoryProductsPage() {
+  const sector = "laboratorio" as const;
   const products = await listProducts(sector);
+
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <PageHeader
-        eyebrow="Financeiro / Farmácia"
+        eyebrow="Financeiro / Laboratório"
         title="Produtos"
-        description="Cadastre medicamentos e insumos pela apresentação padronizada. O preço pertence a cada item de compra."
+        description="Cadastre materiais e insumos do laboratório. O preço pertence a cada item de compra."
         actions={
           <Button
             variant="outline"
-            render={<Link href="/financeiro/farmacia" />}
+            render={<Link href="/financeiro/laboratorio" />}
           >
             <ArrowLeft aria-hidden="true" />
             Voltar aos pedidos

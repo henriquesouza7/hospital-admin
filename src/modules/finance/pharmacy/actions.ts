@@ -20,6 +20,7 @@ import {
   supplierInputSchema,
   supplierStatusSchema,
   supplierUpdateSchema,
+  financeSectorSchema,
 } from "./validation";
 
 function value(formData: FormData, key: string): string {
@@ -44,6 +45,8 @@ export async function createSupplierAction(
   try {
     await createSupplier(parsed.data);
     revalidatePath("/financeiro/farmacia/fornecedores");
+    revalidatePath("/financeiro/farmacia");
+    revalidatePath("/financeiro/laboratorio");
     return { status: "success", message: "Fornecedor cadastrado." };
   } catch {
     return {
@@ -68,6 +71,8 @@ export async function updateSupplierAction(
     const { id, ...input } = parsed.data;
     await updateSupplier(id, input);
     revalidatePath("/financeiro/farmacia/fornecedores");
+    revalidatePath("/financeiro/farmacia");
+    revalidatePath("/financeiro/laboratorio");
     return { status: "success", message: "Fornecedor atualizado." };
   } catch {
     return {
@@ -88,6 +93,7 @@ export async function setSupplierStatusAction(formData: FormData) {
   await setSupplierActive(parsed.data.id, parsed.data.is_active);
   revalidatePath("/financeiro/farmacia/fornecedores");
   revalidatePath("/financeiro/farmacia");
+  revalidatePath("/financeiro/laboratorio");
 }
 
 export async function createProductAction(
@@ -100,10 +106,13 @@ export async function createProductAction(
     presentation: value(formData, "presentation"),
   });
   if (!parsed.success) return invalidForm();
+  const sector = financeSectorSchema.safeParse(value(formData, "sector"));
+  if (!sector.success) return invalidForm();
 
   try {
-    await createProduct(parsed.data);
-    revalidatePath("/financeiro/farmacia/produtos");
+    await createProduct(sector.data, parsed.data);
+    revalidatePath(`/financeiro/${sector.data}/produtos`);
+    revalidatePath(`/financeiro/${sector.data}/pedidos/novo`);
     return { status: "success", message: "Produto cadastrado." };
   } catch {
     return {
@@ -122,14 +131,15 @@ export async function updateProductAction(
     name: value(formData, "name"),
     category: value(formData, "category"),
     presentation: value(formData, "presentation"),
+    sector: value(formData, "sector"),
   });
   if (!parsed.success) return invalidForm();
 
   try {
-    const { id, ...input } = parsed.data;
-    await updateProduct(id, input);
-    revalidatePath("/financeiro/farmacia/produtos");
-    revalidatePath("/financeiro/farmacia/pedidos/novo");
+    const { id, sector, ...input } = parsed.data;
+    await updateProduct(id, sector, input);
+    revalidatePath(`/financeiro/${sector}/produtos`);
+    revalidatePath(`/financeiro/${sector}/pedidos/novo`);
     return { status: "success", message: "Produto atualizado." };
   } catch {
     return {
@@ -142,29 +152,38 @@ export async function updateProductAction(
 export async function setProductStatusAction(formData: FormData) {
   const parsed = productStatusSchema.safeParse({
     id: value(formData, "id"),
+    sector: value(formData, "sector"),
     is_active: value(formData, "is_active"),
   });
   if (!parsed.success)
     throw new Error("Dados inválidos para alterar o produto.");
 
-  await setProductActive(parsed.data.id, parsed.data.is_active);
-  revalidatePath("/financeiro/farmacia/produtos");
-  revalidatePath("/financeiro/farmacia/pedidos/novo");
+  await setProductActive(
+    parsed.data.id,
+    parsed.data.sector,
+    parsed.data.is_active,
+  );
+  revalidatePath(`/financeiro/${parsed.data.sector}/produtos`);
+  revalidatePath(`/financeiro/${parsed.data.sector}/pedidos/novo`);
 }
 
 export async function createPurchaseOrderAction(formData: FormData) {
   const parsed = parsePurchaseOrderForm(formData);
+  const sector = financeSectorSchema.safeParse(value(formData, "sector"));
+  const basePath = sector.success
+    ? `/financeiro/${sector.data}`
+    : "/financeiro/farmacia";
   if (!parsed.success) {
-    redirect("/financeiro/farmacia/pedidos/novo?error=validation");
+    redirect(`${basePath}/pedidos/novo?error=validation`);
   }
 
   let id: string;
   try {
     id = await createPurchaseOrder(parsed.data);
   } catch {
-    redirect("/financeiro/farmacia/pedidos/novo?error=save");
+    redirect(`${basePath}/pedidos/novo?error=save`);
   }
 
-  revalidatePath("/financeiro/farmacia");
-  redirect(`/financeiro/farmacia/pedidos/${id}`);
+  revalidatePath(basePath);
+  redirect(`${basePath}/pedidos/${id}`);
 }

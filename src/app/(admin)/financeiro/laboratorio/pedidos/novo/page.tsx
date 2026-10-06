@@ -15,12 +15,12 @@ const errorMessages: Record<string, string> = {
   save: "Não foi possível salvar. Confira se o fornecedor e todos os produtos estão ativos.",
 };
 
-export default async function NewPurchaseOrderPage({
+export default async function NewLaboratoryPurchaseOrderPage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  const sector = "farmacia" as const;
+  const sector = "laboratorio" as const;
   const [{ error }, suppliers, products] = await Promise.all([
     searchParams,
     listActiveSuppliers(),
@@ -30,13 +30,13 @@ export default async function NewPurchaseOrderPage({
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <PageHeader
-        eyebrow="Financeiro / Farmácia"
+        eyebrow="Financeiro / Laboratório"
         title="Novo pedido de compra"
         description="Registre fornecedor, data, itens e preços praticados nesta compra."
         actions={
           <Button
             variant="outline"
-            render={<Link href="/financeiro/farmacia" />}
+            render={<Link href="/financeiro/laboratorio" />}
           >
             <ArrowLeft aria-hidden="true" />
             Voltar aos pedidos

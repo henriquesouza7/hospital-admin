@@ -6,7 +6,7 @@ import {
   SupplierCreateForm,
   SupplierList,
 } from "@/modules/finance/pharmacy/supplier-management";
-import { PharmacyNavigation } from "@/modules/finance/pharmacy/pharmacy-navigation";
+import { PurchaseNavigation } from "@/modules/finance/purchase-navigation";
 import { listSuppliers } from "@/modules/finance/pharmacy/repository";
 
 export default async function SuppliersPage() {
@@ -27,7 +27,7 @@ export default async function SuppliersPage() {
           </Button>
         }
       />
-      <PharmacyNavigation />
+      <PurchaseNavigation sector="farmacia" />
       <SupplierCreateForm />
       <section className="space-y-3">
         <h2 className="font-semibold">
