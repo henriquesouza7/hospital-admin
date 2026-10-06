@@ -1,10 +1,41 @@
-import { PagePlaceholder } from "@/components/page-placeholder";
+import Link from "next/link";
+import { ArrowRight, Pill } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/page-header";
+import { PharmacyNavigation } from "@/modules/finance/pharmacy/pharmacy-navigation";
 
 export default function FinancePage() {
   return (
-    <PagePlaceholder
-      title="Financeiro"
-      description="Área reservada para os controles financeiros."
-    />
+    <div className="mx-auto max-w-7xl space-y-6">
+      <PageHeader
+        eyebrow="Hospital Admin"
+        title="Financeiro"
+        description="Base compartilhada para compras, despesas e análises administrativas."
+      />
+      <section className="grid gap-4 rounded-xl border bg-card p-6 md:grid-cols-[1fr_auto] md:items-center">
+        <div>
+          <span className="inline-flex size-10 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+            <Pill aria-hidden="true" className="size-5" />
+          </span>
+          <h2 className="mt-4 text-lg font-semibold">Farmácia</h2>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
+            Cadastro de fornecedores e produtos, pedidos de compra e histórico
+            de preços por item.
+          </p>
+        </div>
+        <Button render={<Link href="/financeiro/farmacia" />}>
+          Abrir Farmácia
+          <ArrowRight aria-hidden="true" />
+        </Button>
+      </section>
+      <PharmacyNavigation />
+      <section className="rounded-xl border border-dashed px-5 py-4">
+        <h2 className="font-semibold">Próximas áreas</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Laboratório, Feira, indicadores e importação fiscal permanecem no
+          roadmap da Fase 3.
+        </p>
+      </section>
+    </div>
   );
 }

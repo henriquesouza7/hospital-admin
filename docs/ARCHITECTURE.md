@@ -121,3 +121,8 @@ e o helper `data-api.ts` são server-only; o helper obtém o JWT de RLS com
 `auth.token()` e o injeta sob demanda no Data API. Componentes visuais não fazem
 chamadas de infraestrutura diretamente. A identidade é a fornecida pelo Neon Auth
 (`neon_auth`), sem tabela paralela de usuários nesta fase.
+
+O Financeiro segue server-first. Páginas e Server Actions verificam a sessão e
+a role `admin`, validam entradas com Zod e usam o cliente Data API server-only.
+RLS repete a autorização no banco. Pedidos são gravados por RPC transacional;
+subtotais são colunas geradas em `numeric` e auditoria é produzida no PostgreSQL.

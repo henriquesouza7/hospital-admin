@@ -24,6 +24,9 @@ Um PR deve:
 ## Commits
 Preferir commits pequenos e coerentes.
 
+Usar prefixo Conventional Commits em inglês e descrição da mudança em português.
+Exemplo: `feat: implementa cadastro de fornecedores`.
+
 Exemplos:
 - `chore: bootstrap next app`
 - `feat: add admin navigation shell`
