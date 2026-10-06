@@ -19,8 +19,9 @@ apenas que uma identidade autenticada leia os próprios eventos.
 - `purchase_order_items`: quantidade, valor unitário e subtotal monetário
   calculado no PostgreSQL. Cada compra preserva o preço histórico praticado.
 - `purchase_order_summaries`: view de leitura que agrega itens por pedido.
+- `monthly_fair_expenses`: um total consolidado por competência mensal, sem
+  detalhamento por produto ou item.
 - invoices
-- monthly_fair_expenses
 
 Relacionamentos principais:
 - supplier 1:N purchase_orders
@@ -40,6 +41,15 @@ Triggers atualizam `updated_at` e registram criação/alteração de fornecedore
 produtos, além de alterações de pedidos, em `audit_logs`. A criação do pedido
 registra fornecedor, data, setor, contagem de itens e total; `actor_id` vem de
 `auth.user_id()`, nunca de um parâmetro do cliente.
+
+`monthly_fair_expenses` armazena a competência como o primeiro dia do mês, com
+unicidade por competência, valor `numeric(12, 2)` não negativo e observação de
+até 1.000 caracteres. Leitura é protegida por RLS para administradores; criação
+e edição usam RPCs controladas que registram auditoria com o ator de
+`auth.user_id()`. As edições guardam total e observação anteriores e novos, com
+a observação normalizada igual ao valor persistido. A competência é imutável e
+não há exclusão nesta etapa. Anexos permanecem futuros até existir uma
+infraestrutura de storage segura.
 
 ## Internações
 - doctors
