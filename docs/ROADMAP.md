@@ -32,7 +32,7 @@
 
 ## Fase 3 — Financeiro
 - [x] Farmácia — fornecedores, produtos e pedidos de compra
-- [ ] Laboratório
+- [x] Laboratório
 - [ ] Feira
 - [ ] Indicadores e comparativos
 - [ ] Importação fiscal

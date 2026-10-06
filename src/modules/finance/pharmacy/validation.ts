@@ -4,6 +4,9 @@ const decimalText = /^\d{1,10}(?:[.,]\d{1,2})?$/;
 const quantityText = /^\d{1,9}(?:[.,]\d{1,3})?$/;
 const uuidText = z.string().uuid();
 
+export const financeSectorSchema = z.enum(["farmacia", "laboratorio"]);
+export type FinanceSector = z.infer<typeof financeSectorSchema>;
+
 function scaledValue(value: string, scale: number): bigint {
   const [whole, fraction = ""] = value.replace(",", ".").split(".");
   return (
@@ -46,10 +49,12 @@ export const productInputSchema = z.object({
 
 export const productUpdateSchema = productInputSchema.extend({
   id: uuidText,
+  sector: financeSectorSchema,
 });
 
 export const productStatusSchema = z.object({
   id: uuidText,
+  sector: financeSectorSchema,
   is_active: z.enum(["true", "false"]).transform((value) => value === "true"),
 });
 
@@ -75,6 +80,7 @@ const purchaseOrderItemSchema = z.object({
 });
 
 export const purchaseOrderInputSchema = z.object({
+  sector: financeSectorSchema,
   supplier_id: uuidText,
   order_date: z.iso.date(),
   notes: z
@@ -99,6 +105,7 @@ export function parsePurchaseOrderForm(formData: FormData) {
   }
 
   return purchaseOrderInputSchema.safeParse({
+    sector: formData.get("sector"),
     supplier_id: formData.get("supplier_id"),
     order_date: formData.get("order_date"),
     notes: formData.get("notes") ?? "",

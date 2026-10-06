@@ -11,6 +11,7 @@ import {
 import { createPurchaseOrderAction } from "./actions";
 import type { listActiveSuppliers, listProducts } from "./repository";
 import { formatCurrency, getLocalDateInputValue } from "./format";
+import type { FinanceSector } from "./validation";
 
 type Supplier = Awaited<ReturnType<typeof listActiveSuppliers>>[number];
 type Product = Awaited<ReturnType<typeof listProducts>>[number];
@@ -28,12 +29,16 @@ const getServerOrderDate = () => "";
 export function PurchaseOrderForm({
   suppliers,
   products,
+  sector,
   error,
 }: {
   suppliers: Supplier[];
   products: Product[];
+  sector: FinanceSector;
   error?: string;
 }) {
+  const sectorName = sector === "laboratorio" ? "Laboratório" : "Farmácia";
+  const sectorPath = `/financeiro/${sector}`;
   const [items, setItems] = useState<ItemDraft[]>([
     { key: 1, product_id: "", quantity: "1", unit_price: "" },
   ]);
@@ -84,13 +89,14 @@ export function PurchaseOrderForm({
       <div className="rounded-xl border border-dashed bg-card px-6 py-10">
         <h2 className="font-semibold">Faltam dados para criar o pedido</h2>
         <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
-          Cadastre e ative ao menos um fornecedor e um produto da Farmácia antes
-          de iniciar uma compra.
+          Cadastre e ative ao menos um fornecedor e um produto de {sectorName}{" "}
+          antes de iniciar uma compra.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           {!suppliers.length ? (
             <Button
               variant="outline"
+              nativeButton={false}
               render={<Link href="/financeiro/farmacia/fornecedores" />}
             >
               Cadastrar fornecedor
@@ -99,7 +105,8 @@ export function PurchaseOrderForm({
           {!products.length ? (
             <Button
               variant="outline"
-              render={<Link href="/financeiro/farmacia/produtos" />}
+              nativeButton={false}
+              render={<Link href={`${sectorPath}/produtos`} />}
             >
               Cadastrar produto
             </Button>
@@ -111,6 +118,7 @@ export function PurchaseOrderForm({
 
   return (
     <form action={createPurchaseOrderAction} className="space-y-6">
+      <input type="hidden" name="sector" value={sector} />
       {error ? (
         <p
           role="alert"

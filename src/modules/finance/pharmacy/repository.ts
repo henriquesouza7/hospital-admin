@@ -3,6 +3,7 @@ import "server-only";
 import { z } from "zod";
 import { getNeonDataApiClient } from "@/lib/neon/data-api";
 import type {
+  FinanceSector,
   ProductInput,
   PurchaseOrderInput,
   SupplierInput,
@@ -24,6 +25,7 @@ const supplierRowSchema = z.object({
 
 const productRowSchema = z.object({
   id: z.string().uuid(),
+  sector: z.enum(["farmacia", "laboratorio"]),
   name: z.string(),
   category: z.string().nullable(),
   presentation: z.string(),
@@ -81,12 +83,17 @@ export async function listActiveSuppliers() {
   );
 }
 
-export async function listProducts(includeInactive = true) {
+export async function listProducts(
+  sector: FinanceSector,
+  includeInactive = true,
+) {
   await requireFinanceAdmin();
   let query = getNeonDataApiClient()
     .from("products")
-    .select("id,name,category,presentation,is_active,created_at,updated_at")
-    .eq("sector", "farmacia")
+    .select(
+      "id,sector,name,category,presentation,is_active,created_at,updated_at",
+    )
+    .eq("sector", sector)
     .order("name");
 
   if (!includeInactive) {
@@ -97,19 +104,19 @@ export async function listProducts(includeInactive = true) {
   return requireData(data, error, productsSchema);
 }
 
-export async function listPurchaseOrders() {
+export async function listPurchaseOrders(sector: FinanceSector) {
   await requireFinanceAdmin();
   const { data, error } = await getNeonDataApiClient()
     .from("purchase_order_summaries")
     .select("id,order_date,supplier_name,item_count,total")
-    .eq("sector", "farmacia")
+    .eq("sector", sector)
     .order("order_date", { ascending: false })
     .limit(100);
 
   return requireData(data, error, orderSummariesSchema);
 }
 
-export async function getPurchaseOrder(id: string) {
+export async function getPurchaseOrder(id: string, sector: FinanceSector) {
   await requireFinanceAdmin();
   const { data, error } = await getNeonDataApiClient()
     .from("purchase_orders")
@@ -117,7 +124,7 @@ export async function getPurchaseOrder(id: string) {
       "id,order_date,notes,supplier:suppliers(name),items:purchase_order_items(id,quantity,unit_price,line_total,product_name_snapshot,product_presentation_snapshot,product_category_snapshot)",
     )
     .eq("id", id)
-    .eq("sector", "farmacia")
+    .eq("sector", sector)
     .maybeSingle();
 
   if (error) {
@@ -159,33 +166,44 @@ export async function setSupplierActive(id: string, isActive: boolean) {
     throw new Error("Não foi possível alterar o status do fornecedor.");
 }
 
-export async function createProduct(input: ProductInput) {
+export async function createProduct(
+  sector: FinanceSector,
+  input: ProductInput,
+) {
   await requireFinanceAdmin();
   const { error } = await getNeonDataApiClient()
     .from("products")
-    .insert({ ...input, sector: "farmacia" });
+    .insert({ ...input, sector });
   if (error) throw new Error("Não foi possível cadastrar o produto.");
 }
 
-export async function updateProduct(id: string, input: ProductInput) {
+export async function updateProduct(
+  id: string,
+  sector: FinanceSector,
+  input: ProductInput,
+) {
   await requireFinanceAdmin();
   const { data, error } = await getNeonDataApiClient()
     .from("products")
     .update(input)
     .eq("id", id)
-    .eq("sector", "farmacia")
+    .eq("sector", sector)
     .select("id")
     .maybeSingle();
   if (error || !data) throw new Error("Não foi possível atualizar o produto.");
 }
 
-export async function setProductActive(id: string, isActive: boolean) {
+export async function setProductActive(
+  id: string,
+  sector: FinanceSector,
+  isActive: boolean,
+) {
   await requireFinanceAdmin();
   const { data, error } = await getNeonDataApiClient()
     .from("products")
     .update({ is_active: isActive })
     .eq("id", id)
-    .eq("sector", "farmacia")
+    .eq("sector", sector)
     .select("id")
     .maybeSingle();
   if (error || !data)
@@ -197,7 +215,7 @@ export async function createPurchaseOrder(input: PurchaseOrderInput) {
   const { data, error } = await getNeonDataApiClient().rpc(
     "create_purchase_order",
     {
-      p_sector: "farmacia",
+      p_sector: input.sector,
       p_supplier_id: input.supplier_id,
       p_order_date: input.order_date,
       p_notes: input.notes,

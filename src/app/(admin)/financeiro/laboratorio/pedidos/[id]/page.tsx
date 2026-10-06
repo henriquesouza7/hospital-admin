@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/page-header";
 import { PurchaseOrderDetailView } from "@/modules/finance/purchase-order-views";
 import { getPurchaseOrder } from "@/modules/finance/pharmacy/repository";
 
-export default async function PurchaseOrderDetailPage({
+export default async function LaboratoryPurchaseOrderDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -18,26 +18,27 @@ export default async function PurchaseOrderDetailPage({
     )
   )
     notFound();
-  const order = await getPurchaseOrder(id, "farmacia");
+  const order = await getPurchaseOrder(id, "laboratorio");
   if (!order) notFound();
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <PageHeader
-        eyebrow="Financeiro / Farmácia / Pedidos"
+        eyebrow="Financeiro / Laboratório / Pedidos"
         title="Detalhe do pedido"
-        description={`${order.supplier.name}`}
+        description={order.supplier.name}
         actions={
           <Button
             variant="outline"
-            render={<Link href="/financeiro/farmacia" />}
+            nativeButton={false}
+            render={<Link href="/financeiro/laboratorio" />}
           >
             <ArrowLeft aria-hidden="true" />
             Voltar aos pedidos
           </Button>
         }
       />
-      <PurchaseOrderDetailView order={order} sector="farmacia" />
+      <PurchaseOrderDetailView order={order} sector="laboratorio" />
     </div>
   );
 }
