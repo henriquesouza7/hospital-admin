@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { getLocalDateInputValue } from "./format";
 import {
   calculateLineTotalCents,
   calculateOrderTotalCents,
@@ -9,6 +10,12 @@ import {
 } from "./validation";
 
 describe("pharmacy input validation", () => {
+  it("should_format_purchase_date_from_local_calendar_when_utc_day_differs", () => {
+    const localDate = new Date(2026, 9, 6, 23, 30);
+
+    expect(getLocalDateInputValue(localDate)).toBe("2026-10-06");
+  });
+
   it("should_accept_supplier_when_name_is_present", () => {
     expect(
       supplierInputSchema.safeParse({

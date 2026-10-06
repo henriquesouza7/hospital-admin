@@ -8,6 +8,7 @@ import type {
   SupplierInput,
 } from "./validation";
 import { requireFinanceAdmin } from "./access";
+import { purchaseOrderDetailSchema } from "./purchase-order-detail";
 
 const timestamp = z.string().datetime({ offset: true });
 const numeric = z.union([z.string(), z.number()]).transform(String);
@@ -37,22 +38,6 @@ const orderSummarySchema = z.object({
   supplier_name: z.string(),
   item_count: z.number().int(),
   total: numeric,
-});
-
-const orderDetailSchema = z.object({
-  id: z.string().uuid(),
-  order_date: z.string(),
-  notes: z.string().nullable(),
-  supplier: z.object({ name: z.string() }),
-  items: z.array(
-    z.object({
-      id: z.string().uuid(),
-      quantity: numeric,
-      unit_price: numeric,
-      line_total: numeric,
-      product: z.object({ name: z.string(), presentation: z.string() }),
-    }),
-  ),
 });
 
 const suppliersSchema = z.array(supplierRowSchema);
@@ -129,7 +114,7 @@ export async function getPurchaseOrder(id: string) {
   const { data, error } = await getNeonDataApiClient()
     .from("purchase_orders")
     .select(
-      "id,order_date,notes,supplier:suppliers(name),items:purchase_order_items(id,quantity,unit_price,line_total,product:products(name,presentation))",
+      "id,order_date,notes,supplier:suppliers(name),items:purchase_order_items(id,quantity,unit_price,line_total,product_name_snapshot,product_presentation_snapshot,product_category_snapshot)",
     )
     .eq("id", id)
     .eq("sector", "farmacia")
@@ -139,7 +124,7 @@ export async function getPurchaseOrder(id: string) {
     throw new Error("Não foi possível carregar o pedido.");
   }
 
-  return data ? orderDetailSchema.parse(data) : null;
+  return data ? purchaseOrderDetailSchema.parse(data) : null;
 }
 
 export async function createSupplier(input: SupplierInput) {

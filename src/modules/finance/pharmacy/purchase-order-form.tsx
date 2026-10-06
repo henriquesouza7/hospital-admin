@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import {
 } from "./validation";
 import { createPurchaseOrderAction } from "./actions";
 import type { listActiveSuppliers, listProducts } from "./repository";
-import { formatCurrency } from "./format";
+import { formatCurrency, getLocalDateInputValue } from "./format";
 
 type Supplier = Awaited<ReturnType<typeof listActiveSuppliers>>[number];
 type Product = Awaited<ReturnType<typeof listProducts>>[number];
@@ -20,6 +20,10 @@ type ItemDraft = {
   quantity: string;
   unit_price: string;
 };
+
+const subscribeToLocalCalendar = () => () => {};
+const getLocalOrderDate = () => getLocalDateInputValue(new Date());
+const getServerOrderDate = () => "";
 
 export function PurchaseOrderForm({
   suppliers,
@@ -34,6 +38,11 @@ export function PurchaseOrderForm({
     { key: 1, product_id: "", quantity: "1", unit_price: "" },
   ]);
   const [nextKey, setNextKey] = useState(2);
+  const localOrderDate = useSyncExternalStore(
+    subscribeToLocalCalendar,
+    getLocalOrderDate,
+    getServerOrderDate,
+  );
   const availableProductIds = new Set(
     items.map((item) => item.product_id).filter(Boolean),
   );
@@ -141,7 +150,7 @@ export function PurchaseOrderForm({
             name="order_date"
             type="date"
             required
-            defaultValue={new Date().toISOString().slice(0, 10)}
+            defaultValue={localOrderDate}
             className="h-10 rounded-lg border bg-background px-3 font-normal"
           />
         </label>

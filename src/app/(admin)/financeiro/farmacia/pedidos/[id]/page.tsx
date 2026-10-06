@@ -92,9 +92,9 @@ export default async function PurchaseOrderDetailPage({
                 {order.items.map((item) => (
                   <tr key={item.id}>
                     <td className="px-4 py-4 font-medium">
-                      {item.product.name}
+                      {item.product_name_snapshot}
                       <span className="mt-1 block text-xs font-normal text-muted-foreground">
-                        {item.product.presentation}
+                        {item.product_presentation_snapshot}
                       </span>
                     </td>
                     <td className="px-4 py-4 tabular-nums">{item.quantity}</td>
