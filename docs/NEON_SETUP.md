@@ -52,5 +52,6 @@ screenshots.
 ## Escopo atual
 
 A aplicação oferece login email/senha, recuperação de senha, logout, proteção das
-rotas administrativas e a base de auditoria. Cadastro público, RBAC e os módulos
+rotas administrativas com exigência da role `admin` e a base de auditoria. O
+cadastro público permanece desabilitado; permissões mais específicas e os módulos
 de negócio serão implementados em etapas posteriores.

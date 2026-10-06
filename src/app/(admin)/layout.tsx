@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { AdminShell } from "@/components/admin-shell";
+import { hasAdminRole } from "@/lib/auth/roles";
 import { getNeonAuth } from "@/lib/neon/auth-server";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +18,10 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
 
   if (!session?.user) {
     redirect("/login");
+  }
+
+  if (!hasAdminRole(session.user)) {
+    redirect("/login?error=forbidden");
   }
 
   return <AdminShell>{children}</AdminShell>;

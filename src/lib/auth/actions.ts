@@ -1,9 +1,8 @@
 "use server";
 
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { loginPath } from "@/lib/auth/redirect";
+import { getPasswordResetRedirectUrl, loginPath } from "@/lib/auth/redirect";
 import { getNeonAuth } from "@/lib/neon/auth-server";
 
 export type PasswordResetState = Readonly<{
@@ -21,11 +20,13 @@ const requestPasswordResetSchema = z.object({
 });
 
 export async function signOut() {
-  try {
-    await getNeonAuth().signOut();
-  } finally {
-    redirect(loginPath);
+  const { error } = await getNeonAuth().signOut();
+
+  if (error) {
+    throw new Error("Não foi possível encerrar a sessão.");
   }
+
+  redirect(loginPath);
 }
 
 export async function resetPassword(
@@ -70,15 +71,12 @@ export async function requestPasswordReset(
   }
 
   try {
-    const requestHeaders = await headers();
-    const referer = requestHeaders.get("referer");
-    const origin =
-      requestHeaders.get("origin") ??
-      (referer ? new URL(referer).origin : "http://localhost:3000");
-
     const { error } = await getNeonAuth().requestPasswordReset({
       email: parsed.data.email,
-      redirectTo: `${origin}/login/reset-password`,
+      redirectTo: getPasswordResetRedirectUrl(
+        process.env.APP_BASE_URL,
+        process.env.NODE_ENV,
+      ),
     });
 
     if (error) {
