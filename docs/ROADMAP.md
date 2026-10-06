@@ -33,7 +33,7 @@
 ## Fase 3 — Financeiro
 - [x] Farmácia — fornecedores, produtos e pedidos de compra
 - [x] Laboratório
-- [ ] Feira
+- [x] Feira — total mensal consolidado, histórico e comparativo anual
 - [ ] Indicadores e comparativos
 - [ ] Importação fiscal
 

@@ -32,6 +32,7 @@ test("redirects financial administration routes without a session", async ({
     "/financeiro/laboratorio",
     "/financeiro/laboratorio/produtos",
     "/financeiro/laboratorio/pedidos/novo",
+    "/financeiro/feira",
   ]) {
     await page.goto(route);
     await expect(page).toHaveURL(/\/login/);
