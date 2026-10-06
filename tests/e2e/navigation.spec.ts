@@ -23,6 +23,8 @@ test("redirects financial administration routes without a session", async ({
   page,
 }) => {
   for (const route of [
+    "/financeiro/fornecedores?setor=farmacia",
+    "/financeiro/fornecedores?setor=laboratorio",
     "/financeiro/farmacia",
     "/financeiro/farmacia/fornecedores",
     "/financeiro/farmacia/produtos",

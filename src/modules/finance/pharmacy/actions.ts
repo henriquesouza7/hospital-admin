@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getSupplierRevalidationPaths } from "../supplier-context";
 import type { FinanceActionState } from "./action-state";
 import {
   createProduct,
@@ -44,9 +45,7 @@ export async function createSupplierAction(
 
   try {
     await createSupplier(parsed.data);
-    revalidatePath("/financeiro/farmacia/fornecedores");
-    revalidatePath("/financeiro/farmacia");
-    revalidatePath("/financeiro/laboratorio");
+    getSupplierRevalidationPaths().forEach((path) => revalidatePath(path));
     return { status: "success", message: "Fornecedor cadastrado." };
   } catch {
     return {
@@ -70,9 +69,7 @@ export async function updateSupplierAction(
   try {
     const { id, ...input } = parsed.data;
     await updateSupplier(id, input);
-    revalidatePath("/financeiro/farmacia/fornecedores");
-    revalidatePath("/financeiro/farmacia");
-    revalidatePath("/financeiro/laboratorio");
+    getSupplierRevalidationPaths().forEach((path) => revalidatePath(path));
     return { status: "success", message: "Fornecedor atualizado." };
   } catch {
     return {
@@ -91,9 +88,7 @@ export async function setSupplierStatusAction(formData: FormData) {
     throw new Error("Dados inválidos para alterar o fornecedor.");
 
   await setSupplierActive(parsed.data.id, parsed.data.is_active);
-  revalidatePath("/financeiro/farmacia/fornecedores");
-  revalidatePath("/financeiro/farmacia");
-  revalidatePath("/financeiro/laboratorio");
+  getSupplierRevalidationPaths().forEach((path) => revalidatePath(path));
 }
 
 export async function createProductAction(

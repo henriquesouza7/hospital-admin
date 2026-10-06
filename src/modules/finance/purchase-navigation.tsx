@@ -1,15 +1,11 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { getPurchaseNavigationLinks } from "./supplier-context";
 import type { FinanceSector } from "./pharmacy/validation";
 
 export function PurchaseNavigation({ sector }: { sector: FinanceSector }) {
-  const basePath = `/financeiro/${sector}`;
   const sectorName = sector === "laboratorio" ? "Laboratório" : "Farmácia";
-  const links = [
-    { href: basePath, label: "Pedidos" },
-    { href: "/financeiro/farmacia/fornecedores", label: "Fornecedores" },
-    { href: `${basePath}/produtos`, label: "Produtos" },
-  ];
+  const links = getPurchaseNavigationLinks(sector);
 
   return (
     <nav
