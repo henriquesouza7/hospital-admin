@@ -96,6 +96,7 @@ export function PurchaseOrderForm({
           {!suppliers.length ? (
             <Button
               variant="outline"
+              nativeButton={false}
               render={<Link href="/financeiro/farmacia/fornecedores" />}
             >
               Cadastrar fornecedor
@@ -104,6 +105,7 @@ export function PurchaseOrderForm({
           {!products.length ? (
             <Button
               variant="outline"
+              nativeButton={false}
               render={<Link href={`${sectorPath}/produtos`} />}
             >
               Cadastrar produto

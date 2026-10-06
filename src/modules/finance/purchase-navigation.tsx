@@ -21,6 +21,7 @@ export function PurchaseNavigation({ sector }: { sector: FinanceSector }) {
           key={link.href}
           variant="outline"
           size="sm"
+          nativeButton={false}
           render={<Link href={link.href} />}
         >
           {link.label}

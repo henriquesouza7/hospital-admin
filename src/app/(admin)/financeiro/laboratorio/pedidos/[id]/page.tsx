@@ -30,6 +30,7 @@ export default async function LaboratoryPurchaseOrderDetailPage({
         actions={
           <Button
             variant="outline"
+            nativeButton={false}
             render={<Link href="/financeiro/laboratorio" />}
           >
             <ArrowLeft aria-hidden="true" />

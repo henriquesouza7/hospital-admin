@@ -22,6 +22,7 @@ export default async function LaboratoryProductsPage() {
         actions={
           <Button
             variant="outline"
+            nativeButton={false}
             render={<Link href="/financeiro/laboratorio" />}
           >
             <ArrowLeft aria-hidden="true" />

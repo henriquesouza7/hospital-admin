@@ -17,7 +17,10 @@ export default async function LaboratoryPage() {
         title="Laboratório"
         description="Acompanhe compras de materiais e insumos do laboratório com histórico por fornecedor."
         actions={
-          <Button render={<Link href="/financeiro/laboratorio/pedidos/novo" />}>
+          <Button
+            nativeButton={false}
+            render={<Link href="/financeiro/laboratorio/pedidos/novo" />}
+          >
             <PackagePlus aria-hidden="true" />
             Novo pedido
           </Button>
