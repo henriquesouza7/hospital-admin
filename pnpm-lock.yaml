@@ -11,6 +11,9 @@ importers:
       '@base-ui/react':
         specifier: ^1.8.0
         version: 1.8.0(@types/react@19.3.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@neon/config':
+        specifier: ^1.8.3
+        version: 1.8.3
       '@neondatabase/neon-js':
         specifier: 0.7.0-beta
         version: 0.7.0-beta(5a30dab1914458caf5e4ab413093ed20)
@@ -835,6 +838,14 @@ packages:
     peerDependencies:
       '@emnapi/core': ^1.7.1 || ^2.0.0-alpha.4
       '@emnapi/runtime': ^1.7.1 || ^2.0.0-alpha.4
+
+  '@neon/config@1.8.3':
+    resolution: {integrity: sha512-/UmkgmHrm9tTOoFd7g3DttqlFFA3KG+d6JULLk7JzhvU2CwHrUaKiRmE1OmhOQAqJ3Mm49c/G5nDVbSefyFCrw==}
+    engines: {node: '>=20.19.0'}
+
+  '@neon/sdk@7.0.0':
+    resolution: {integrity: sha512-hF/Om50SmpKK2PQldcwYxi6b3p7S2wlwW8fX+54jx88xHaEu7hB4dojuuuP8nwQz24qq/p/jxVm0P9DztKPoJA==}
+    engines: {node: '>=20.19.0'}
 
   '@neondatabase/auth-ui@0.3.0-beta':
     resolution: {integrity: sha512-//7s2nOR8ej0f8soXAlHSckjkrPPPSaH86pmSeMgRq9zHLvDymKuE/jhaoRVr2tgx1/BTviS7MdYzExaABxkjA==}
@@ -5499,6 +5510,14 @@ snapshots:
       '@emnapi/runtime': 1.10.0
       '@tybys/wasm-util': 0.10.4
     optional: true
+
+  '@neon/config@1.8.3':
+    dependencies:
+      '@neon/sdk': 7.0.0
+      jiti: 2.7.0
+      zod: 4.6.5
+
+  '@neon/sdk@7.0.0': {}
 
   '@neondatabase/auth-ui@0.3.0-beta(8a2db97a634f317cf77425d2dd3b9f47)':
     dependencies:

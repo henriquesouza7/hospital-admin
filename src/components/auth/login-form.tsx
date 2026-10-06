@@ -1,22 +1,49 @@
 "use client";
 
-import { useActionState } from "react";
-import { signInWithPassword, type LoginState } from "@/lib/auth/actions";
+import { type FormEvent, useState, useTransition } from "react";
+import Link from "next/link";
+import { getSafeRedirectPath } from "@/lib/auth/redirect";
 
 type LoginFormProps = Readonly<{ next?: string }>;
 
-const initialState: LoginState = {};
-
 export function LoginForm({ next }: LoginFormProps) {
-  const [state, formAction, isPending] = useActionState(
-    signInWithPassword,
-    initialState,
-  );
+  const [error, setError] = useState<string>();
+  const [isPending, startTransition] = useTransition();
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const email = String(formData.get("email") ?? "");
+    const password = String(formData.get("password") ?? "");
+
+    setError(undefined);
+    startTransition(async () => {
+      try {
+        const response = await fetch("/api/auth/sign-in/email", {
+          method: "POST",
+          credentials: "include",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            email,
+            password,
+            callbackURL: `${window.location.origin}/`,
+          }),
+        });
+
+        if (!response.ok) {
+          setError("Email ou senha inválidos.");
+          return;
+        }
+
+        window.location.assign(getSafeRedirectPath(next));
+      } catch {
+        setError("O login está indisponível no momento.");
+      }
+    });
+  }
 
   return (
-    <form action={formAction} className="space-y-5">
-      <input name="next" type="hidden" value={next ?? ""} />
-
+    <form className="space-y-5" onSubmit={handleSubmit}>
       <div className="space-y-2">
         <label className="text-sm font-medium" htmlFor="email">
           Email
@@ -46,12 +73,12 @@ export function LoginForm({ next }: LoginFormProps) {
         />
       </div>
 
-      {state.error ? (
+      {error ? (
         <p
           className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
           role="alert"
         >
-          {state.error}
+          {error}
         </p>
       ) : null}
 
@@ -62,6 +89,13 @@ export function LoginForm({ next }: LoginFormProps) {
       >
         {isPending ? "Entrando..." : "Entrar"}
       </button>
+
+      <Link
+        className="block text-center text-sm text-link underline-offset-4 hover:underline"
+        href="/login/forgot-password"
+      >
+        Esqueci minha senha
+      </Link>
     </form>
   );
 }

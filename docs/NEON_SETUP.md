@@ -12,7 +12,16 @@ real ou connection string deve ser versionado.
    responsável do projeto ou pelo fluxo administrativo definido posteriormente.
 4. Habilite a Neon Data API para a branch usada pela aplicação.
 5. Aplique `db/migrations/20261001000000_create_audit_logs.sql` na branch alvo.
-6. Crie manualmente o primeiro usuário administrativo no Neon Auth.
+6. Crie o primeiro usuário administrativo usando uma operação oficial do Neon
+   Auth. A senha deve ser digitada em um prompt local seguro e nunca deve ser
+   colocada em `.env.local`, código, logs ou Git.
+7. Se o usuário já existir sem credencial de senha, não edite `neon_auth` por
+   SQL. Remova e recrie somente um usuário de teste sem sessões ou dados
+   associados, usando a CLI/API oficial do Neon Auth.
+
+O fluxo de recuperação da aplicação exige um provedor de email transacional
+configurado no Neon Auth. Sem SMTP/provider, não considere que um email de
+reset foi enviado; o login normal por email e senha não depende desse fluxo.
 
 ## Variáveis locais
 
@@ -33,13 +42,15 @@ copiados de produção.
 
 ## Desenvolvimento e branches
 
-Execute `pnpm dev` depois de configurar as variáveis. Para testes e desenvolvimento
-isolado, prefira branches Neon separadas e, quando dados existirem, branches sem
-dados (schema-only) ou dados sintéticos. Nunca replique dados reais de pacientes
-em branches locais, CI ou screenshots.
+Execute `pnpm dev` depois de configurar as variáveis. O padrão local é
+`http://localhost:3000`; não use outra porta sem atualizar também o callback e o
+ambiente de teste. Para testes e desenvolvimento isolado, prefira branches Neon
+separadas e, quando dados existirem, branches sem dados (schema-only) ou dados
+sintéticos. Nunca replique dados reais de pacientes em branches locais, CI ou
+screenshots.
 
 ## Escopo atual
 
-A aplicação oferece somente login email/senha, logout, proteção das rotas
-administrativas e a base de auditoria. Recuperação de senha, cadastro público,
-RBAC e os módulos de negócio serão implementados em etapas posteriores.
+A aplicação oferece login email/senha, recuperação de senha, logout, proteção das
+rotas administrativas e a base de auditoria. Cadastro público, RBAC e os módulos
+de negócio serão implementados em etapas posteriores.

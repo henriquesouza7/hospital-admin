@@ -35,3 +35,33 @@ Consulte a pasta `docs/` para visão do produto, arquitetura, requisitos, regras
 
 Fase 2 — Fundação de dados com Neon. Consulte `docs/NEON_SETUP.md` para a
 configuração manual do projeto Neon.
+
+## Desenvolvimento local
+
+Requisitos: Node.js 20 ou superior e `pnpm` 11.19.0.
+
+```bash
+pnpm install
+cp .env.example .env.local
+pnpm dev
+```
+
+A aplicação fica disponível em [http://localhost:3000](http://localhost:3000).
+Preencha o `.env.local` com os valores server-side do Neon por um canal seguro;
+esse arquivo é ignorado pelo Git. Consulte `docs/NEON_SETUP.md` antes do
+primeiro login.
+
+Comandos de validação:
+
+```bash
+pnpm format:check
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm test:e2e
+```
+
+As migrations SQL versionadas ficam em `db/migrations/` e devem ser aplicadas
+na branch Neon escolhida pelo responsável do projeto. Não copie connection
+strings, tokens ou dados reais para a documentação ou para o repositório.
