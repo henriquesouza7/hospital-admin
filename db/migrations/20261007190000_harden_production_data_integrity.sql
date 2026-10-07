@@ -98,6 +98,31 @@ begin
 end;
 $$;
 
+create or replace function public.set_procedure_category_active(p_id uuid, p_active boolean)
+returns boolean
+language plpgsql
+security definer
+set search_path = pg_catalog
+as $$
+begin
+  if not public.is_admin() then
+    raise exception 'Administrator access required' using errcode = '42501';
+  end if;
+  if p_id is null or p_active is null then
+    raise exception 'Category status is invalid' using errcode = '22023';
+  end if;
+  perform 1 from public.procedure_categories where id = p_id for update;
+  if not found then raise exception 'Category not found' using errcode = 'P0002'; end if;
+  if not p_active and exists (
+    select 1 from public.procedures where category_id = p_id and active
+  ) then
+    raise exception 'Deactivate active procedures before the category' using errcode = '23514';
+  end if;
+  update public.procedure_categories set active = p_active where id = p_id;
+  return true;
+end;
+$$;
+
 create or replace function public.create_production_procedure(
   p_category_id uuid,
   p_name text,
@@ -124,11 +149,10 @@ begin
     or char_length(normalized_counting_unit) not between 1 and 40 then
     raise exception 'Procedure input is invalid' using errcode = '22023';
   end if;
-  if not exists (
-    select 1 from public.procedure_categories where id = p_category_id and active
-  ) then
-    raise exception 'Category is unavailable' using errcode = '23503';
-  end if;
+  perform 1 from public.procedure_categories
+  where id = p_category_id and active
+  for update;
+  if not found then raise exception 'Category is unavailable' using errcode = '23503'; end if;
   insert into public.procedures (category_id, name, counting_unit)
   values (p_category_id, normalized_name, normalized_counting_unit)
   returning id into new_id;
@@ -149,6 +173,7 @@ set search_path = pg_catalog
 as $$
 declare
   existing_category_id uuid;
+  target_category_active boolean;
   normalized_name text;
   normalized_counting_unit text;
 begin
@@ -168,10 +193,12 @@ begin
   where procedure.id = p_id
   for update;
   if not found then raise exception 'Procedure not found' using errcode = 'P0002'; end if;
-  if p_category_id is distinct from existing_category_id and not exists (
-    select 1 from public.procedure_categories
-    where id = p_category_id and active
-  ) then
+  select category.active into target_category_active
+  from public.procedure_categories as category
+  where category.id = p_category_id
+  for update;
+  if not found then raise exception 'Category is unavailable' using errcode = '23503'; end if;
+  if p_category_id is distinct from existing_category_id and not target_category_active then
     raise exception 'Category is unavailable' using errcode = '23503';
   end if;
   update public.procedures
@@ -179,6 +206,41 @@ begin
       name = normalized_name,
       counting_unit = normalized_counting_unit
   where id = p_id;
+  return true;
+end;
+$$;
+
+create or replace function public.set_production_procedure_active(p_id uuid, p_active boolean)
+returns boolean
+language plpgsql
+security definer
+set search_path = pg_catalog
+as $$
+declare
+  procedure_category_id uuid;
+  category_is_active boolean;
+begin
+  if not public.is_admin() then
+    raise exception 'Administrator access required' using errcode = '42501';
+  end if;
+  if p_id is null or p_active is null then
+    raise exception 'Procedure status is invalid' using errcode = '22023';
+  end if;
+  select category_id into procedure_category_id
+  from public.procedures
+  where id = p_id
+  for update;
+  if not found then raise exception 'Procedure not found' using errcode = 'P0002'; end if;
+  if p_active then
+    select active into category_is_active
+    from public.procedure_categories
+    where id = procedure_category_id
+    for update;
+    if not found or not category_is_active then
+      raise exception 'Procedure category is unavailable' using errcode = '23503';
+    end if;
+  end if;
+  update public.procedures set active = p_active where id = p_id;
   return true;
 end;
 $$;
