@@ -80,7 +80,7 @@ da primeira entrega. `procedure_categories` mantém nome, status e timestamps;
 guarda o procedimento, competência mensal (normalizada para o primeiro dia),
 quantidade inteira não negativa, fonte e timestamps. Não há dados de pacientes
 nem tabela de importação nesta etapa. A migration incremental
-`20261007190000_harden_production_data_integrity.sql` preserva a unidade de
+`20261007185000_harden_production_data_integrity.sql` preserva a unidade de
 contagem de cada lançamento e endurece a normalização das RPCs e constraints;
 ela também permite corrigir um procedimento mantendo sua categoria atual
 inativa e serializa mudanças concorrentes de estado entre categorias e
