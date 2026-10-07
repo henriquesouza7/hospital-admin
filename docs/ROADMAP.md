@@ -35,7 +35,7 @@
 - [x] Laboratório
 - [x] Feira — total mensal consolidado, histórico e comparativo anual
 - [x] Indicadores e comparativos
-- [ ] Importação fiscal
+- [x] Importação fiscal
 
 ## Fase 4 — Internações
 - [ ] Médicos
