@@ -123,7 +123,7 @@ export function IndicatorsPageView({
             name="inicio"
             type="month"
             required
-            value={filters.inicio}
+            defaultValue={filters.inicio}
             className="h-10 rounded-lg border bg-background px-3 font-normal"
           />
         </label>
@@ -134,7 +134,7 @@ export function IndicatorsPageView({
             name="fim"
             type="month"
             required
-            value={filters.fim}
+            defaultValue={filters.fim}
             className="h-10 rounded-lg border bg-background px-3 font-normal"
           />
         </label>
@@ -143,7 +143,7 @@ export function IndicatorsPageView({
           <select
             id="setor"
             name="setor"
-            value={filters.setor}
+            defaultValue={filters.setor}
             className="h-10 rounded-lg border bg-background px-3 font-normal"
           >
             <option value="todos">Todos</option>
@@ -156,7 +156,7 @@ export function IndicatorsPageView({
           <select
             id="produto"
             name="produto"
-            value={selectedProduct?.id ?? ""}
+            defaultValue={selectedProduct?.id ?? ""}
             className="h-10 min-w-0 rounded-lg border bg-background px-3 font-normal"
           >
             <option value="">Selecione um produto</option>
