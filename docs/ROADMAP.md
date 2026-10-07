@@ -30,12 +30,12 @@
 - [x] Preparar base de auditoria
 - [x] Configurar projeto Neon e primeiro usuário manualmente
 
-## Fase 3 — Financeiro
+## Fase 3 — Financeiro (concluída no escopo atual)
 - [x] Farmácia — fornecedores, produtos e pedidos de compra
 - [x] Laboratório
 - [x] Feira — total mensal consolidado, histórico e comparativo anual
 - [x] Indicadores e comparativos
-- [ ] Importação fiscal
+- [x] Importação fiscal
 
 ## Fase 4 — Internações
 - [ ] Médicos
