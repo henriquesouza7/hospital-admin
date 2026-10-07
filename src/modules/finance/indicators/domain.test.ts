@@ -149,6 +149,50 @@ describe("financial indicators domain", () => {
     });
   });
 
+  it("should_skip_price_changes_when_equivalent_purchases_share_the_same_date", () => {
+    const sameDayPurchases = [
+      purchase({
+        id: "33333333-3333-4333-8333-333333333333",
+        orderDate: "2026-02-10",
+        unitPrice: "10.00",
+      }),
+      purchase({
+        id: "44444444-4444-4444-8444-444444444444",
+        orderDate: "2026-02-10",
+        unitPrice: "12.00",
+        lineTotal: "12.00",
+        presentation: " caixa 20 ",
+        supplierId: supplierTwo,
+      }),
+    ];
+
+    expect(compareConsecutivePrices(sameDayPurchases)).toEqual([]);
+    expect(getLargestIncreases(sameDayPurchases)).toEqual([]);
+  });
+
+  it("should_skip_transitions_touching_a_date_with_ambiguous_purchase_order", () => {
+    const changes = compareConsecutivePrices([
+      purchase({ orderDate: "2026-01-10", unitPrice: "10.00" }),
+      purchase({
+        id: "44444444-4444-4444-8444-444444444444",
+        orderDate: "2026-02-10",
+        unitPrice: "11.00",
+      }),
+      purchase({
+        id: "55555555-5555-4555-8555-555555555555",
+        orderDate: "2026-02-10",
+        unitPrice: "12.00",
+      }),
+      purchase({
+        id: "66666666-6666-4666-8666-666666666666",
+        orderDate: "2026-03-10",
+        unitPrice: "13.00",
+      }),
+    ]);
+
+    expect(changes).toEqual([]);
+  });
+
   it("should_leave_percentage_unavailable_when_previous_price_is_zero", () => {
     const changes = compareConsecutivePrices([
       purchase({

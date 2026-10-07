@@ -260,9 +260,24 @@ export function compareConsecutivePrices(
 ): PriceChange[] {
   const changes: PriceChange[] = [];
   for (const group of buildPriceGroups(purchases)) {
-    for (let index = 1; index < group.observations.length; index += 1) {
-      const previous = group.observations[index - 1];
-      const current = group.observations[index];
+    const byOrderDate = new Map<string, IndicatorPurchase[]>();
+    for (const observation of group.observations) {
+      const sameDate = byOrderDate.get(observation.orderDate);
+      if (sameDate) sameDate.push(observation);
+      else byOrderDate.set(observation.orderDate, [observation]);
+    }
+
+    const dates = [...byOrderDate.keys()].sort();
+    for (let index = 1; index < dates.length; index += 1) {
+      const previousOnDate = byOrderDate.get(dates[index - 1])!;
+      const currentOnDate = byOrderDate.get(dates[index])!;
+
+      // order_date has day precision; multiple observations that day have no
+      // known order. Skip transitions touching that date instead of using IDs.
+      if (previousOnDate.length !== 1 || currentOnDate.length !== 1) continue;
+
+      const previous = previousOnDate[0];
+      const current = currentOnDate[0];
       const previousCents = toCents(previous.unitPrice);
       const currentCents = toCents(current.unitPrice);
       const differenceCents = currentCents - previousCents;
