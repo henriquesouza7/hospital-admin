@@ -34,7 +34,7 @@
 - [x] Farmácia — fornecedores, produtos e pedidos de compra
 - [x] Laboratório
 - [x] Feira — total mensal consolidado, histórico e comparativo anual
-- [ ] Indicadores e comparativos
+- [x] Indicadores e comparativos
 - [ ] Importação fiscal
 
 ## Fase 4 — Internações
