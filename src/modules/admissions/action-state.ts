@@ -3,7 +3,21 @@ export type AdmissionsActionState = Readonly<{
   message: string;
 }>;
 
+export type AdmissionsNameInputState = Readonly<{
+  value: string;
+  actionState: AdmissionsActionState;
+}>;
+
 export const initialAdmissionsActionState: AdmissionsActionState = {
   status: "idle",
   message: "",
 };
+
+export function getAdmissionsNameInputValue(
+  input: AdmissionsNameInputState,
+  actionState: AdmissionsActionState,
+): string {
+  return actionState.status === "success" && input.actionState !== actionState
+    ? ""
+    : input.value;
+}

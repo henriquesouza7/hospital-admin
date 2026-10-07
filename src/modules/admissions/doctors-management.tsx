@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import {
   Stethoscope,
   UserRoundCheck,
@@ -16,7 +16,10 @@ import {
   setDoctorActiveAction,
   updateDoctorAction,
 } from "./actions";
-import { initialAdmissionsActionState } from "./action-state";
+import {
+  getAdmissionsNameInputValue,
+  initialAdmissionsActionState,
+} from "./action-state";
 
 type DoctorsManagementProps = Readonly<{
   doctors: readonly Doctor[];
@@ -50,6 +53,11 @@ function CreateDoctorForm() {
     createDoctorAction,
     initialAdmissionsActionState,
   );
+  const [nameInput, setNameInput] = useState({
+    value: "",
+    actionState: initialAdmissionsActionState,
+  });
+  const nameValue = getAdmissionsNameInputValue(nameInput, state);
 
   return (
     <form
@@ -70,6 +78,10 @@ function CreateDoctorForm() {
             required
             maxLength={160}
             autoComplete="off"
+            value={nameValue}
+            onChange={(event) =>
+              setNameInput({ value: event.target.value, actionState: state })
+            }
             className="h-10 rounded-lg border bg-background px-3 font-normal"
           />
         </label>
@@ -92,6 +104,7 @@ function DoctorEditor({ doctor }: { doctor: Doctor }) {
     setDoctorActiveAction,
     initialAdmissionsActionState,
   );
+  const [name, setName] = useState(doctor.name);
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -110,7 +123,8 @@ function DoctorEditor({ doctor }: { doctor: Doctor }) {
               name="name"
               required
               maxLength={160}
-              defaultValue={doctor.name}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
               className="h-9 rounded-md border bg-background px-3 font-normal"
             />
           </label>
