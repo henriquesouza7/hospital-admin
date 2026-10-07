@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import type { ProductionActionState } from "./action-state";
+import { requireProductionAdmin } from "./access";
 import {
   createProductionEntry,
   createProductionProcedure,
@@ -60,6 +61,7 @@ export async function createCategoryAction(
   _previous: ProductionActionState,
   formData: FormData,
 ): Promise<ProductionActionState> {
+  await requireProductionAdmin();
   const parsed = categoryInputSchema.safeParse({
     name: readFormValue(formData, "name"),
   });
@@ -77,6 +79,7 @@ export async function updateCategoryAction(
   _previous: ProductionActionState,
   formData: FormData,
 ): Promise<ProductionActionState> {
+  await requireProductionAdmin();
   const parsed = categoryUpdateSchema.safeParse({
     id: readFormValue(formData, "id"),
     name: readFormValue(formData, "name"),
@@ -95,6 +98,7 @@ export async function setCategoryStatusAction(
   _previous: ProductionActionState,
   formData: FormData,
 ): Promise<ProductionActionState> {
+  await requireProductionAdmin();
   const parsed = categoryStatusSchema.safeParse({
     id: readFormValue(formData, "id"),
     active: readFormValue(formData, "active"),
@@ -113,6 +117,7 @@ export async function createProcedureAction(
   _previous: ProductionActionState,
   formData: FormData,
 ): Promise<ProductionActionState> {
+  await requireProductionAdmin();
   const parsed = procedureInputSchema.safeParse({
     category_id: readFormValue(formData, "category_id"),
     name: readFormValue(formData, "name"),
@@ -132,6 +137,7 @@ export async function updateProcedureAction(
   _previous: ProductionActionState,
   formData: FormData,
 ): Promise<ProductionActionState> {
+  await requireProductionAdmin();
   const parsed = procedureUpdateSchema.safeParse({
     id: readFormValue(formData, "id"),
     category_id: readFormValue(formData, "category_id"),
@@ -152,6 +158,7 @@ export async function setProcedureStatusAction(
   _previous: ProductionActionState,
   formData: FormData,
 ): Promise<ProductionActionState> {
+  await requireProductionAdmin();
   const parsed = procedureStatusSchema.safeParse({
     id: readFormValue(formData, "id"),
     active: readFormValue(formData, "active"),
@@ -170,6 +177,7 @@ export async function createProductionEntryAction(
   _previous: ProductionActionState,
   formData: FormData,
 ): Promise<ProductionActionState> {
+  await requireProductionAdmin();
   const parsed = productionEntryInputSchema.safeParse({
     procedure_id: readFormValue(formData, "procedure_id"),
     reference_period: readFormValue(formData, "reference_period"),
@@ -190,6 +198,7 @@ export async function updateProductionEntryAction(
   _previous: ProductionActionState,
   formData: FormData,
 ): Promise<ProductionActionState> {
+  await requireProductionAdmin();
   const parsed = productionEntryUpdateSchema.safeParse({
     id: readFormValue(formData, "id"),
     procedure_id: readFormValue(formData, "procedure_id"),

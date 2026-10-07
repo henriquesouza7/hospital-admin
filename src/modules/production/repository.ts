@@ -203,12 +203,10 @@ export async function listProductionEntries(
 }
 
 export async function createProcedureCategory(name: string) {
-  await requireProductionAdmin();
   return callUuidRpc("create_procedure_category", { p_name: name });
 }
 
 export async function updateProcedureCategory(id: string, name: string) {
-  await requireProductionAdmin();
   return callBooleanRpc("update_procedure_category", {
     p_id: id,
     p_name: name,
@@ -216,7 +214,6 @@ export async function updateProcedureCategory(id: string, name: string) {
 }
 
 export async function setProcedureCategoryActive(id: string, active: boolean) {
-  await requireProductionAdmin();
   return callBooleanRpc("set_procedure_category_active", {
     p_id: id,
     p_active: active,
@@ -228,7 +225,6 @@ export async function createProductionProcedure(input: {
   name: string;
   counting_unit: string;
 }) {
-  await requireProductionAdmin();
   return callUuidRpc("create_production_procedure", {
     p_category_id: input.category_id,
     p_name: input.name,
@@ -242,7 +238,6 @@ export async function updateProductionProcedure(input: {
   name: string;
   counting_unit: string;
 }) {
-  await requireProductionAdmin();
   return callBooleanRpc("update_production_procedure", {
     p_id: input.id,
     p_category_id: input.category_id,
@@ -255,7 +250,6 @@ export async function setProductionProcedureActive(
   id: string,
   active: boolean,
 ) {
-  await requireProductionAdmin();
   return callBooleanRpc("set_production_procedure_active", {
     p_id: id,
     p_active: active,
@@ -268,7 +262,6 @@ export async function createProductionEntry(input: {
   quantity: string;
   source: string;
 }) {
-  await requireProductionAdmin();
   return callUuidRpc("create_production_entry", {
     p_procedure_id: input.procedure_id,
     p_reference_period: input.reference_period,
@@ -284,7 +277,6 @@ export async function updateProductionEntry(input: {
   quantity: string;
   source: string;
 }) {
-  await requireProductionAdmin();
   return callBooleanRpc("update_production_entry", {
     p_id: input.id,
     p_procedure_id: input.procedure_id,

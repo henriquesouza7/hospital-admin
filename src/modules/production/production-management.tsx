@@ -708,7 +708,10 @@ function ProductionEntryRow({
                 {options.map((procedure) => (
                   <option key={procedure.id} value={procedure.id}>
                     {procedure.category_name} · {procedure.name} (
-                    {procedure.counting_unit})
+                    {procedure.id === entry.procedure_id
+                      ? `${entry.counting_unit} · unidade histórica`
+                      : procedure.counting_unit}
+                    )
                   </option>
                 ))}
               </select>

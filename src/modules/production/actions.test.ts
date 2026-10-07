@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { initialProductionActionState } from "./action-state";
 import { createCategoryAction, createProductionEntryAction } from "./actions";
+import { requireProductionAdmin } from "./access";
 import {
   createProductionEntry,
   createProcedureCategory,
@@ -8,6 +9,9 @@ import {
 } from "./repository";
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("./access", () => ({
+  requireProductionAdmin: vi.fn().mockResolvedValue({ id: "admin" }),
+}));
 vi.mock("./repository", () => ({
   createProductionEntry: vi.fn(),
   createProductionProcedure: vi.fn(),
@@ -47,6 +51,18 @@ describe("production server actions", () => {
 
     expect(mockedCreateCategory).not.toHaveBeenCalled();
     expect(result.status).toBe("error");
+  });
+
+  it("lets authentication redirects escape the action error handler", async () => {
+    const redirectSignal = Object.assign(new Error("redirect"), {
+      digest: "NEXT_REDIRECT;push;/login;307;",
+    });
+    vi.mocked(requireProductionAdmin).mockRejectedValueOnce(redirectSignal);
+
+    await expect(
+      createCategoryAction(initialProductionActionState, new FormData()),
+    ).rejects.toBe(redirectSignal);
+    expect(mockedCreateCategory).not.toHaveBeenCalled();
   });
 
   it("maps duplicate monthly sources to a clear error", async () => {
