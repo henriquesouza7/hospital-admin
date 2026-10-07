@@ -26,6 +26,10 @@
 - Cada internação deve ser atribuída por uma regra administrativa única ao médico responsável.
 - Meses em andamento devem ser visualmente diferenciados de meses encerrados.
 - Quantidade de internações mede volume, não qualidade clínica.
+- O cadastro de médicos nesta etapa contém somente nome, situação ativa/inativa e timestamps; não armazena dados clínicos, de contato, vínculo ou de pacientes.
+- O nome é obrigatório, persistido após `trim` e limitado a 160 caracteres. Médicos novos começam ativos; registros são inativados, não apagados fisicamente.
+- A lista administrativa inclui ativos e inativos e é ordenada por nome. Inativar um médico não removerá lançamentos históricos associados.
+- Criação, alteração de nome e mudanças efetivas de situação geram auditoria com ator da sessão; tentativas sem mudança não geram evento.
 
 ## Produção
 - Cada procedimento precisa de unidade de contagem definida.

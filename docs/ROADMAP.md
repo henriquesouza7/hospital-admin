@@ -38,7 +38,7 @@
 - [x] Importação fiscal
 
 ## Fase 4 — Internações
-- [ ] Médicos
+- [x] Médicos
 - [ ] Lançamentos
 - [ ] Metas
 - [ ] Dashboards

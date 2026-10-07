@@ -52,9 +52,19 @@ não há exclusão nesta etapa. Anexos permanecem futuros até existir uma
 infraestrutura de storage segura.
 
 ## Internações
-- doctors
+- `doctors`: cadastro administrativo de médicos com nome normalizado, estado
+  ativo/inativo e timestamps. O índice pelo nome atende à listagem alfabética.
 - admission_entries
 - admission_targets
+
+`doctors` possui RLS habilitada e permite leitura somente a administradores
+autenticados. A migration `20261007170000_add_admission_doctors.sql` introduz o
+helper genérico `is_admin()` porque a fundação anterior só possuía o helper
+específico `is_finance_admin()`. Criação, edição do nome e ativação/inativação
+ocorrem por RPCs controladas, sem DML direto para `authenticated`. As RPCs
+derivam `actor_id` de `auth.user_id()` e registram em `audit_logs` somente
+criação e mudanças efetivas, preservando valores anterior e novo. O fluxo não
+remove médicos fisicamente.
 
 ## Produção
 - procedure_categories
