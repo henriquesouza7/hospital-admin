@@ -135,12 +135,12 @@ describe("fiscal import actions", () => {
         fiscalItems: expect.arrayContaining([
           expect.objectContaining({
             n_item: "1",
-            c_prod: "FICT-FAR-01",
-            x_prod: "Produto Fictício Farmácia A",
-            u_com: "CX",
-            q_com: "2.0004",
-            v_un_com: "10.001",
-            v_prod: "20.01",
+            supplier_product_code: "FICT-FAR-01",
+            product_description: "Produto Fictício Farmácia A",
+            commercial_unit: "CX",
+            original_quantity: "2.0004",
+            original_unit_price: "10.001",
+            original_product_total: "20.01",
             product_id: productIds[0],
           }),
         ]),

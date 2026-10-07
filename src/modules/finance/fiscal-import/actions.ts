@@ -159,12 +159,12 @@ export async function confirmFiscalImportAction(formData: FormData) {
         throw new Error("Todos os itens originais devem ser mapeados.");
       return {
         n_item: item.itemNumber,
-        c_prod: item.supplierCode,
-        x_prod: item.description,
-        u_com: item.unit,
-        q_com: item.quantity,
-        v_un_com: item.unitPrice,
-        v_prod: item.productTotal,
+        supplier_product_code: item.supplierCode,
+        product_description: item.description,
+        commercial_unit: item.unit,
+        original_quantity: item.quantity,
+        original_unit_price: item.unitPrice,
+        original_product_total: item.productTotal,
         product_id: mapping.productId,
       };
     });

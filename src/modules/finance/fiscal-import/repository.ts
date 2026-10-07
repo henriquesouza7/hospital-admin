@@ -5,7 +5,7 @@ import { z } from "zod";
 import { getNeonDataApiClient } from "@/lib/neon/data-api";
 import { requireFinanceAdmin } from "../pharmacy/access";
 import type { FinanceSector } from "../pharmacy/validation";
-import type { NfeDocument } from "./domain";
+import type { FiscalImportItemPayload, NfeDocument } from "./domain";
 
 export async function getFiscalImportPreviewStatus(accessKey: string) {
   await requireFinanceAdmin();
@@ -24,16 +24,7 @@ export async function createFiscalPurchaseOrder(input: {
   orderDate: string;
   notes: string;
   items: { product_id: string; quantity: string; unit_price: string }[];
-  fiscalItems: {
-    n_item: string;
-    c_prod: string;
-    x_prod: string;
-    u_com: string;
-    q_com: string;
-    v_un_com: string;
-    v_prod: string;
-    product_id: string;
-  }[];
+  fiscalItems: FiscalImportItemPayload[];
   document: NfeDocument;
   xmlSha256: string;
 }) {

@@ -32,6 +32,17 @@ export const nfeDocumentSchema = z.object({
 export type NfeDocument = z.infer<typeof nfeDocumentSchema>;
 export type NfeItem = NfeDocument["items"][number];
 
+export type FiscalImportItemPayload = {
+  n_item: string;
+  supplier_product_code: string;
+  product_description: string;
+  commercial_unit: string;
+  original_quantity: string;
+  original_unit_price: string;
+  original_product_total: string;
+  product_id: string;
+};
+
 type XmlRecord = Record<string, unknown>;
 
 function record(value: unknown): XmlRecord | null {
