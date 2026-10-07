@@ -62,12 +62,32 @@ infraestrutura de storage segura.
 - production_entries
 - production_imports
 
-Campos importantes em production_entries:
-- procedure_id
-- reference_period
-- quantity
-- source
-- source_status quando aplicável
+`db/migrations/20261007170000_create_production_module.sql` cria as três tabelas
+da primeira entrega. `procedure_categories` mantém nome, status e timestamps;
+`procedures` referencia a categoria e exige unidade de contagem; `production_entries`
+guarda o procedimento, competência mensal (normalizada para o primeiro dia),
+quantidade inteira não negativa, fonte e timestamps. Não há dados de pacientes
+nem tabela de importação nesta etapa.
+
+Nomes de categorias são únicos após normalização de espaços externos e caixa;
+nomes de procedimentos têm a mesma regra dentro da categoria. Lançamentos têm
+unicidade por procedimento, competência e fonte normalizada. As três tabelas
+usam foreign keys restritivas, índices para catálogo e histórico, RLS com leitura
+somente para administradores autenticados e sem escrita direta pelo papel
+`authenticated`. RPCs `SECURITY DEFINER` validam a role admin e os dados antes
+de cada mutação. O helper `public.is_admin()` consulta o papel da identidade
+Neon Auth autenticada. Triggers atualizam timestamps e escrevem criação, edição,
+ativação e inativação em `audit_logs`, incluindo os estados anterior e novo;
+`actor_id` é obtido por `auth.user_id()`.
+
+As RPCs administrativas são `create_procedure_category`,
+`update_procedure_category`, `set_procedure_category_active`,
+`create_production_procedure`, `update_production_procedure`,
+`set_production_procedure_active`, `create_production_entry` e
+`update_production_entry`. Não há exclusão física nesta entrega. Uma categoria
+com procedimento ativo não pode ser inativada, e novos lançamentos exigem
+procedimento e categoria ativos. Registros históricos podem continuar ligados
+a procedimentos inativados.
 
 ## Pequenas Cirurgias
 - patients
