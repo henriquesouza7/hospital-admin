@@ -1,5 +1,11 @@
 import Link from "next/link";
-import { ArrowRight, FlaskConical, Pill, ShoppingBasket } from "lucide-react";
+import {
+  ArrowRight,
+  ChartNoAxesCombined,
+  FlaskConical,
+  Pill,
+  ShoppingBasket,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
 
@@ -22,7 +28,10 @@ export default function FinancePage() {
             de preços por item.
           </p>
         </div>
-        <Button render={<Link href="/financeiro/farmacia" />}>
+        <Button
+          nativeButton={false}
+          render={<Link href="/financeiro/farmacia" />}
+        >
           Abrir Farmácia
           <ArrowRight aria-hidden="true" />
         </Button>
@@ -38,7 +47,10 @@ export default function FinancePage() {
             item.
           </p>
         </div>
-        <Button render={<Link href="/financeiro/laboratorio" />}>
+        <Button
+          nativeButton={false}
+          render={<Link href="/financeiro/laboratorio" />}
+        >
           Abrir Laboratório
           <ArrowRight aria-hidden="true" />
         </Button>
@@ -59,11 +71,26 @@ export default function FinancePage() {
           <ArrowRight aria-hidden="true" />
         </Button>
       </section>
-      <section className="rounded-xl border border-dashed px-5 py-4">
-        <h2 className="font-semibold">Próximas áreas</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Indicadores e importação fiscal permanecem no roadmap da Fase 3.
-        </p>
+      <section className="grid gap-4 rounded-xl border bg-card p-6 md:grid-cols-[1fr_auto] md:items-center">
+        <div>
+          <span className="inline-flex size-10 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+            <ChartNoAxesCombined aria-hidden="true" className="size-5" />
+          </span>
+          <h2 className="mt-4 text-lg font-semibold">
+            Indicadores e comparativos
+          </h2>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
+            Consulte gastos consolidados, evolução mensal e comparações
+            históricas de preços.
+          </p>
+        </div>
+        <Button
+          nativeButton={false}
+          render={<Link href="/financeiro/indicadores" />}
+        >
+          Abrir indicadores
+          <ArrowRight aria-hidden="true" />
+        </Button>
       </section>
     </div>
   );
