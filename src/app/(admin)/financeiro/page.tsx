@@ -3,6 +3,7 @@ import {
   ArrowRight,
   ChartNoAxesCombined,
   FlaskConical,
+  FileSpreadsheet,
   Pill,
   ShoppingBasket,
 } from "lucide-react";
@@ -33,6 +34,25 @@ export default function FinancePage() {
           render={<Link href="/financeiro/farmacia" />}
         >
           Abrir Farmácia
+          <ArrowRight aria-hidden="true" />
+        </Button>
+      </section>
+      <section className="grid gap-4 rounded-xl border bg-card p-6 md:grid-cols-[1fr_auto] md:items-center">
+        <div>
+          <span className="inline-flex size-10 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+            <FileSpreadsheet aria-hidden="true" className="size-5" />
+          </span>
+          <h2 className="mt-4 text-lg font-semibold">Importação fiscal</h2>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
+            Revise XMLs de NF-e e crie pedidos para Farmácia ou Laboratório com
+            vínculo fiscal.
+          </p>
+        </div>
+        <Button
+          nativeButton={false}
+          render={<Link href="/financeiro/importacao-fiscal" />}
+        >
+          Importar NF-e
           <ArrowRight aria-hidden="true" />
         </Button>
       </section>

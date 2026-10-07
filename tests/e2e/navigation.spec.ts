@@ -26,6 +26,7 @@ test("redirects financial administration routes without a session", async ({
     "/financeiro/fornecedores?setor=farmacia",
     "/financeiro/fornecedores?setor=laboratorio",
     "/financeiro/indicadores",
+    "/financeiro/importacao-fiscal",
     "/financeiro/farmacia",
     "/financeiro/farmacia/fornecedores",
     "/financeiro/farmacia/produtos",

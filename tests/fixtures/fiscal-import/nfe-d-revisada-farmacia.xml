@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
+  <NFe>
+    <infNFe Id="NFe35261000000000000000550010000000033000000030" versao="4.00">
+      <ide><nNF>9003</nNF><serie>1</serie><dhEmi>2026-10-07T09:30:00-03:00</dhEmi></ide>
+      <emit><CNPJ>00000000000000</CNPJ><xNome>Fornecedor Fictício para Teste Fiscal</xNome></emit>
+      <det nItem="1"><prod><cProd>FICT-FAR-01</cProd><xProd>Produto Fictício Farmácia A</xProd><uCom>CX</uCom><qCom>2.0004</qCom><vUnCom>10.001</vUnCom><vProd>20.01</vProd></prod></det>
+      <det nItem="2"><prod><cProd>FICT-FAR-02</cProd><xProd>Produto Fictício Farmácia B</xProd><uCom>UN</uCom><qCom>3.000</qCom><vUnCom>10.00</vUnCom><vProd>30.00</vProd></prod></det>
+      <total><ICMSTot><vNF>50.01</vNF></ICMSTot></total>
+    </infNFe>
+  </NFe>
+  <protNFe><infProt><chNFe>35261000000000000000550010000000033000000030</chNFe></infProt></protNFe>
+</nfeProc>

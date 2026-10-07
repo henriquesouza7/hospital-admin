@@ -131,7 +131,18 @@ export async function getPurchaseOrder(id: string, sector: FinanceSector) {
     throw new Error("Não foi possível carregar o pedido.");
   }
 
-  return data ? purchaseOrderDetailSchema.parse(data) : null;
+  if (!data) return null;
+  const { data: fiscalImport, error: fiscalError } =
+    await getNeonDataApiClient()
+      .from("fiscal_imports")
+      .select(
+        "access_key,issuer_tax_id,issuer_name,invoice_number,invoice_series,issued_at,invoice_total,xml_sha256",
+      )
+      .eq("purchase_order_id", id)
+      .maybeSingle();
+  if (fiscalError)
+    throw new Error("Não foi possível carregar a origem fiscal do pedido.");
+  return purchaseOrderDetailSchema.parse({ ...data, fiscalImport });
 }
 
 export async function createSupplier(input: SupplierInput) {

@@ -89,3 +89,13 @@ As tabelas públicas criadas devem permanecer com RLS habilitada. Policies devem
 usar `auth.user_id()` quando compararem a identidade da sessão. Branches Neon
 devem ser usadas para desenvolvimento e testes isolados; dados reais de pacientes
 não devem ser copiados para branches locais ou de CI.
+
+## Importação fiscal de NF-e
+
+A migration `20261007100000_add_fiscal_nfe_imports.sql` adiciona `public.fiscal_imports`, ligada a `purchase_orders` por `purchase_order_id` (único e com `ON DELETE RESTRICT`). `access_key` também é única e limitada a 44 dígitos. O registro guarda metadados fiscais e o SHA-256 do XML; o conteúdo bruto do arquivo não é armazenado.
+
+A migration incremental `20261007143000_preserve_fiscal_import_items.sql` cria `public.fiscal_import_items`. Cada linha preserva `n_item`, `supplier_product_code` (`cProd`), `product_description` (`xProd`), `commercial_unit` (`uCom`), `original_quantity` (`qCom`), `original_unit_price` (`vUnCom`) e `original_product_total` (`vProd`). Os valores fiscais são texto para manter a representação original e ficam ligados por chaves compostas ao mesmo `fiscal_import` e `purchase_order` e por `purchase_order_item_id` ao item administrativo correspondente. Quantidade, preço e subtotal revisados permanecem em `purchase_order_items`; indicadores continuam lendo essa tabela. XML bruto não é armazenado.
+
+RLS permite `SELECT` somente para administradores financeiros. Usuários autenticados não recebem permissões diretas de `INSERT`, `UPDATE` ou `DELETE`. A RPC `create_fiscal_import_purchase_order` valida o administrador, chama `create_purchase_order`, registra metadados e itens fiscais originais, cria auditoria com `auth.user_id()` e retorna o pedido. A RPC usa `SECURITY DEFINER` e `search_path=pg_catalog`; o `EXECUTE` é revogado de `PUBLIC` e concedido a `authenticated`. Como tudo ocorre na mesma transação, falha em qualquer etapa reverte pedido, itens administrativos, importação, itens fiscais e auditoria.
+
+A prévia do XML é comprovada server-side por um token HMAC assinado com `NEON_AUTH_COOKIE_SECRET`, vinculado ao SHA-256 do XML e ao ID do administrador autenticado, com validade de cinco minutos. A confirmação reinterpreta o arquivo e rejeita ausência, adulteração, troca do XML, usuário diferente ou evidência expirada. O token não contém nem expõe o segredo de assinatura. Importações feitas antes da migration incremental não recebem linhas fiscais retroativas porque o XML original não foi retido.
