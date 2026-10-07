@@ -21,7 +21,10 @@ grant execute on function public.is_admin() to authenticated;
 
 create table public.patients (
   id uuid primary key default gen_random_uuid(),
-  name text not null check (length(btrim(name)) between 1 and 160),
+  name text not null check (
+    name = regexp_replace(name, '^[[:space:]]+|[[:space:]]+$', '', 'g')
+    and char_length(name) between 1 and 160
+  ),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -164,7 +167,7 @@ set search_path = pg_catalog
 as $$
 declare
   new_id uuid;
-  normalized_name text := nullif(btrim(p_name), '');
+  normalized_name text := regexp_replace(p_name, '^[[:space:]]+|[[:space:]]+$', '', 'g');
 begin
   if not public.is_admin() then
     raise exception 'Administrator access required' using errcode = '42501';
@@ -187,7 +190,7 @@ security definer
 set search_path = pg_catalog
 as $$
 declare
-  normalized_name text := nullif(btrim(p_name), '');
+  normalized_name text := regexp_replace(p_name, '^[[:space:]]+|[[:space:]]+$', '', 'g');
 begin
   if not public.is_admin() then
     raise exception 'Administrator access required' using errcode = '42501';
@@ -221,7 +224,7 @@ declare
   active_count integer;
   new_id uuid;
   selected_patient_id uuid := p_patient_id;
-  normalized_name text := nullif(btrim(p_patient_name), '');
+  normalized_name text := regexp_replace(p_patient_name, '^[[:space:]]+|[[:space:]]+$', '', 'g');
 begin
   if not public.is_admin() then
     raise exception 'Administrator access required' using errcode = '42501';
@@ -325,7 +328,7 @@ as $$
 declare
   new_id uuid;
   selected_patient_id uuid := p_patient_id;
-  normalized_name text := nullif(btrim(p_patient_name), '');
+  normalized_name text := regexp_replace(p_patient_name, '^[[:space:]]+|[[:space:]]+$', '', 'g');
 begin
   if not public.is_admin() then
     raise exception 'Administrator access required' using errcode = '42501';
