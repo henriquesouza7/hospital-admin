@@ -77,6 +77,7 @@ Campos importantes em production_entries:
 - `surgery_waitlist`: vínculo com a pessoa, status `waiting` ou `transferred` e timestamp de transferência. A fila não referencia um dia enquanto aguarda.
 - Chaves estrangeiras usam `ON DELETE RESTRICT`; índices parciais impedem duplicar agendamento ativo da mesma pessoa/data e entrada ativa repetida na fila. Não há exclusão física no fluxo normal.
 - As quatro tabelas têm RLS. `authenticated` recebe somente `SELECT`, condicionado a `public.is_admin()`; escrita ocorre nas RPCs `SECURITY DEFINER`, com `search_path=pg_catalog`, execução revogada de `PUBLIC` e concedida a `authenticated`.
+- Alterações reais de nome do paciente preservam os valores anterior e novo em `audit_logs`; atualizar para o mesmo nome não gera evento. Agendamentos e fila continuam referenciando `patient_id`, sem snapshot duplicado do nome nesta etapa.
 - As RPCs criam/atualizam data, capacidade e nome administrativo, criam agendamento, alteram status, inserem na fila e transferem da fila. Todas verificam admin no banco, validam entradas e escrevem em `audit_logs` com `actor_id = auth.user_id()`.
 - Criação de agendamento, mudança para status que ocupa vaga, ajuste de capacidade e transferência bloqueiam a linha de `surgery_days` antes de contar ocupações, serializando operações concorrentes para impedir overbooking.
 - A fila é listada por `created_at, id` em ordem crescente. A origem da transferência fica no agendamento e na auditoria; a entrada da fila muda para `transferred` sem perder seu histórico.
