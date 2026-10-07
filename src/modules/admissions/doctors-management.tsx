@@ -78,6 +78,7 @@ function CreateDoctorForm() {
             required
             maxLength={160}
             autoComplete="off"
+            disabled={pending}
             value={nameValue}
             onChange={(event) =>
               setNameInput({ value: event.target.value, actionState: state })
@@ -123,6 +124,7 @@ function DoctorEditor({ doctor }: { doctor: Doctor }) {
               name="name"
               required
               maxLength={160}
+              disabled={editPending}
               value={name}
               onChange={(event) => setName(event.target.value)}
               className="h-9 rounded-md border bg-background px-3 font-normal"
