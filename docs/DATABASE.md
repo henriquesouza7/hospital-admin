@@ -62,7 +62,7 @@ infraestrutura de storage segura.
 - production_entries
 - production_imports
 
-`db/migrations/20261007170000_create_production_module.sql` cria as três tabelas
+`db/migrations/20261007184500_create_production_module.sql` cria as três tabelas
 da primeira entrega. `procedure_categories` mantém nome, status e timestamps;
 `procedures` referencia a categoria e exige unidade de contagem; `production_entries`
 guarda o procedimento, competência mensal (normalizada para o primeiro dia),
