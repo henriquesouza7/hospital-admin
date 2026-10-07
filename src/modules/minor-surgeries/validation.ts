@@ -3,6 +3,8 @@ import { surgeryAppointmentStatuses } from "./domain";
 
 const uuidSchema = z.string().uuid();
 
+export const surgeryDayIdSchema = uuidSchema;
+
 export const patientNameSchema = z
   .string()
   .trim()

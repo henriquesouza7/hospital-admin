@@ -9,6 +9,7 @@ import {
   summarizeSurgeryDay,
   statusLabel,
 } from "@/modules/minor-surgeries/domain";
+import { surgeryDayIdSchema } from "@/modules/minor-surgeries/validation";
 import {
   CreateAppointmentForm,
   UpdateAppointmentStatusForm,
@@ -34,6 +35,8 @@ export default async function SurgeryDayPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  if (!surgeryDayIdSchema.safeParse(id).success) notFound();
+
   const [day, appointments, patients] = await Promise.all([
     getSurgeryDay(id),
     listDayAppointments(id),

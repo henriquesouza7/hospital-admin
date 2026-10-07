@@ -41,6 +41,7 @@ function successState(message: string): MinorSurgeryActionState {
 function revalidateAll() {
   revalidatePath("/pequenas-cirurgias");
   revalidatePath("/pequenas-cirurgias/dias");
+  revalidatePath("/pequenas-cirurgias/dias/[id]", "page");
   revalidatePath("/pequenas-cirurgias/fila");
 }
 

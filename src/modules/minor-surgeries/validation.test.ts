@@ -4,12 +4,22 @@ import {
   parseSurgeryDayForm,
   parseSurgeryWaitlistForm,
   surgeryAppointmentStatusSchema,
+  surgeryDayIdSchema,
 } from "./validation";
 
 const dayId = "f9a52c88-2973-4c38-8542-d7ce03122cc8";
 const patientId = "a07dd5df-a160-49f2-a55c-a51274683a02";
 
 describe("minor surgeries validation", () => {
+  it("should_validate_surgery_day_id_before_loading_details", () => {
+    expect(surgeryDayIdSchema.safeParse(dayId).success).toBe(true);
+    expect(surgeryDayIdSchema.safeParse("foo").success).toBe(false);
+    expect(surgeryDayIdSchema.safeParse("").success).toBe(false);
+    expect(surgeryDayIdSchema.safeParse(dayId.slice(0, -1)).success).toBe(
+      false,
+    );
+  });
+
   it("should_use_default_capacity_when_creating_surgery_day_without_capacity", () => {
     const form = new FormData();
     form.set("procedure_date", "2026-10-30");
