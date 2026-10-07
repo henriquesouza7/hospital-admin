@@ -1,0 +1,353 @@
+import "server-only";
+
+import { z } from "zod";
+import { getNeonDataApiClient } from "@/lib/neon/data-api";
+import { requireMinorSurgeriesAdmin } from "./access";
+import {
+  type SurgeryAppointment,
+  type SurgeryDaySummary,
+  type SurgeryPatient,
+  type SurgeryWaitlistEntry,
+  summarizeSurgeryDay,
+} from "./domain";
+
+const patientSchema = z.object({ id: z.string().uuid(), name: z.string() });
+const daySchema = z.object({
+  id: z.string().uuid(),
+  procedure_date: z.iso.date(),
+  capacity: z.number().int().positive(),
+});
+const appointmentSchema = z.object({
+  id: z.string().uuid(),
+  surgery_day_id: z.string().uuid(),
+  patient_id: z.string().uuid(),
+  source_waitlist_id: z.string().uuid().nullable(),
+  status: z.enum(["awaiting_confirmation", "confirmed", "cancelled"]),
+  created_at: z.iso.datetime({ offset: true }),
+  updated_at: z.iso.datetime({ offset: true }),
+});
+const waitlistSchema = z.object({
+  id: z.string().uuid(),
+  patient_id: z.string().uuid(),
+  status: z.enum(["waiting", "transferred"]),
+  transferred_at: z.iso.datetime({ offset: true }).nullable(),
+  created_at: z.iso.datetime({ offset: true }),
+});
+const auditSchema = z.object({
+  id: z.number(),
+  entity_type: z.string(),
+  entity_id: z.string().nullable(),
+  action: z.string(),
+  payload: z.record(z.string(), z.unknown()),
+  created_at: z.iso.datetime({ offset: true }),
+});
+
+function ensureResult<T>(
+  data: unknown,
+  error: unknown,
+  schema: z.ZodType<T>,
+): T {
+  if (error || data === null || data === undefined) {
+    throw new Error(
+      "Não foi possível carregar os dados de pequenas cirurgias.",
+    );
+  }
+  return schema.parse(data);
+}
+
+function todayInSaoPaulo() {
+  return new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+async function listPatientsByIds(ids: readonly string[]) {
+  if (ids.length === 0) return new Map<string, SurgeryPatient>();
+  const { data, error } = await getNeonDataApiClient()
+    .from("patients")
+    .select("id,name")
+    .in("id", [...new Set(ids)]);
+  const patients = ensureResult(data, error, z.array(patientSchema));
+  return new Map(patients.map((patient) => [patient.id, patient]));
+}
+
+export async function listSurgeryPatients(): Promise<SurgeryPatient[]> {
+  await requireMinorSurgeriesAdmin();
+  const { data, error } = await getNeonDataApiClient()
+    .from("patients")
+    .select("id,name")
+    .order("name", { ascending: true });
+  return ensureResult(data, error, z.array(patientSchema));
+}
+
+export async function listUpcomingSurgeryDays(): Promise<SurgeryDaySummary[]> {
+  await requireMinorSurgeriesAdmin();
+  const { data, error } = await getNeonDataApiClient()
+    .from("surgery_days")
+    .select("id,procedure_date,capacity")
+    .gte("procedure_date", todayInSaoPaulo())
+    .order("procedure_date", { ascending: true });
+  const days = ensureResult(data, error, z.array(daySchema));
+  if (days.length === 0) return [];
+
+  const { data: appointmentData, error: appointmentError } =
+    await getNeonDataApiClient()
+      .from("surgery_appointments")
+      .select("surgery_day_id,status")
+      .in(
+        "surgery_day_id",
+        days.map((day) => day.id),
+      )
+      .in("status", ["awaiting_confirmation", "confirmed"]);
+  const appointments = ensureResult(
+    appointmentData,
+    appointmentError,
+    z.array(
+      z.object({
+        surgery_day_id: z.string().uuid(),
+        status: z.enum(["awaiting_confirmation", "confirmed"]),
+      }),
+    ),
+  );
+
+  return days.map((day) =>
+    summarizeSurgeryDay(
+      day,
+      appointments.filter(
+        (appointment) => appointment.surgery_day_id === day.id,
+      ),
+    ),
+  );
+}
+
+export async function listAllSurgeryDays(): Promise<SurgeryDaySummary[]> {
+  await requireMinorSurgeriesAdmin();
+  const { data, error } = await getNeonDataApiClient()
+    .from("surgery_days")
+    .select("id,procedure_date,capacity")
+    .order("procedure_date", { ascending: false });
+  const days = ensureResult(data, error, z.array(daySchema));
+  if (days.length === 0) return [];
+
+  const { data: appointmentData, error: appointmentError } =
+    await getNeonDataApiClient()
+      .from("surgery_appointments")
+      .select("surgery_day_id,status")
+      .in(
+        "surgery_day_id",
+        days.map((day) => day.id),
+      )
+      .in("status", ["awaiting_confirmation", "confirmed"]);
+  const appointments = ensureResult(
+    appointmentData,
+    appointmentError,
+    z.array(
+      z.object({
+        surgery_day_id: z.string().uuid(),
+        status: z.enum(["awaiting_confirmation", "confirmed"]),
+      }),
+    ),
+  );
+
+  return days.map((day) =>
+    summarizeSurgeryDay(
+      day,
+      appointments.filter(
+        (appointment) => appointment.surgery_day_id === day.id,
+      ),
+    ),
+  );
+}
+
+export async function getSurgeryDay(id: string) {
+  await requireMinorSurgeriesAdmin();
+  const { data, error } = await getNeonDataApiClient()
+    .from("surgery_days")
+    .select("id,procedure_date,capacity")
+    .eq("id", id)
+    .maybeSingle();
+  if (error || data === null || data === undefined) return null;
+  return daySchema.parse(data);
+}
+
+export async function listDayAppointments(
+  dayId: string,
+): Promise<SurgeryAppointment[]> {
+  await requireMinorSurgeriesAdmin();
+  const { data, error } = await getNeonDataApiClient()
+    .from("surgery_appointments")
+    .select(
+      "id,surgery_day_id,patient_id,source_waitlist_id,status,created_at,updated_at",
+    )
+    .eq("surgery_day_id", dayId)
+    .order("created_at", { ascending: true });
+  const appointments = ensureResult(data, error, z.array(appointmentSchema));
+  const patients = await listPatientsByIds(
+    appointments.map((item) => item.patient_id),
+  );
+  return appointments.map((appointment) => ({
+    ...appointment,
+    patient: patients.get(appointment.patient_id) ?? {
+      id: appointment.patient_id,
+      name: "Cadastro indisponível",
+    },
+  }));
+}
+
+export async function listSurgeryWaitlist(): Promise<SurgeryWaitlistEntry[]> {
+  await requireMinorSurgeriesAdmin();
+  const { data, error } = await getNeonDataApiClient()
+    .from("surgery_waitlist")
+    .select("id,patient_id,status,transferred_at,created_at")
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
+  const entries = ensureResult(data, error, z.array(waitlistSchema));
+  const patients = await listPatientsByIds(
+    entries.map((entry) => entry.patient_id),
+  );
+  return entries.map((entry) => ({
+    ...entry,
+    patient: patients.get(entry.patient_id) ?? {
+      id: entry.patient_id,
+      name: "Cadastro indisponível",
+    },
+  }));
+}
+
+export async function listAvailableSurgeryDays() {
+  const days = await listUpcomingSurgeryDays();
+  return days.filter((day) => day.occupied < day.capacity);
+}
+
+export async function listMinorSurgeryAudit() {
+  await requireMinorSurgeriesAdmin();
+  const { data, error } = await getNeonDataApiClient()
+    .from("audit_logs")
+    .select("id,entity_type,entity_id,action,payload,created_at")
+    .in("entity_type", [
+      "surgery_day",
+      "surgery_patient",
+      "surgery_appointment",
+      "surgery_waitlist",
+    ])
+    .order("created_at", { ascending: false })
+    .limit(50);
+  return ensureResult(data, error, z.array(auditSchema));
+}
+
+function throwRpcError(error: unknown, fallback: string): never {
+  if (typeof error === "object" && error !== null && "code" in error) {
+    if (error.code === "23514")
+      throw new Error("A capacidade está cheia ou abaixo da ocupação atual.");
+    if (error.code === "23505")
+      throw new Error(
+        "Já existe um registro equivalente para essa pessoa ou data.",
+      );
+    if (error.code === "42501")
+      throw new Error("A operação exige perfil administrador.");
+    if (error.code === "P0002")
+      throw new Error("O registro solicitado não está disponível.");
+    if (error.code === "22023")
+      throw new Error("Os dados enviados são inválidos.");
+  }
+  throw new Error(fallback);
+}
+
+async function callMutation(
+  name: string,
+  params: Record<string, string | number | null>,
+) {
+  await requireMinorSurgeriesAdmin();
+  const { data, error } = await getNeonDataApiClient().rpc(name, params);
+  if (error) throwRpcError(error, "Não foi possível salvar a alteração.");
+  return data;
+}
+
+export async function createSurgeryDay(input: {
+  procedure_date: string;
+  capacity: number;
+}) {
+  const data = await callMutation("create_surgery_day", {
+    p_procedure_date: input.procedure_date,
+    p_capacity: input.capacity,
+  });
+  if (!z.string().uuid().safeParse(data).success)
+    throw new Error("Não foi possível confirmar o dia.");
+}
+
+export async function updateSurgeryDayCapacity(input: {
+  surgery_day_id: string;
+  capacity: number;
+}) {
+  const data = await callMutation("update_surgery_day_capacity", {
+    p_surgery_day_id: input.surgery_day_id,
+    p_capacity: input.capacity,
+  });
+  if (data !== true)
+    throw new Error("Não foi possível confirmar a capacidade.");
+}
+
+export async function createSurgeryAppointment(input: {
+  surgery_day_id: string;
+  patient_id: string | null;
+  patient_name: string | null;
+  status: "awaiting_confirmation" | "confirmed";
+}) {
+  const data = await callMutation("create_surgery_appointment", {
+    p_surgery_day_id: input.surgery_day_id,
+    p_patient_id: input.patient_id,
+    p_patient_name: input.patient_name,
+    p_status: input.status,
+  });
+  if (!z.string().uuid().safeParse(data).success)
+    throw new Error("Não foi possível confirmar o agendamento.");
+}
+
+export async function updateSurgeryAppointmentStatus(input: {
+  appointment_id: string;
+  status: string;
+}) {
+  const data = await callMutation("update_surgery_appointment_status", {
+    p_appointment_id: input.appointment_id,
+    p_status: input.status,
+  });
+  if (data !== true) throw new Error("Não foi possível atualizar o status.");
+}
+
+export async function createSurgeryWaitlistEntry(input: {
+  patient_id: string | null;
+  patient_name: string | null;
+}) {
+  const data = await callMutation("create_surgery_waitlist_entry", {
+    p_patient_id: input.patient_id,
+    p_patient_name: input.patient_name,
+  });
+  if (!z.string().uuid().safeParse(data).success)
+    throw new Error("Não foi possível confirmar a inclusão na fila.");
+}
+
+export async function transferSurgeryWaitlistEntry(input: {
+  waitlist_id: string;
+  surgery_day_id: string;
+}) {
+  const data = await callMutation("transfer_surgery_waitlist_entry", {
+    p_waitlist_id: input.waitlist_id,
+    p_surgery_day_id: input.surgery_day_id,
+  });
+  if (!z.string().uuid().safeParse(data).success)
+    throw new Error("Não foi possível confirmar a transferência.");
+}
+
+export async function updateSurgeryPatient(input: {
+  patient_id: string;
+  name: string;
+}) {
+  const data = await callMutation("update_surgery_patient", {
+    p_patient_id: input.patient_id,
+    p_name: input.name,
+  });
+  if (data !== true) throw new Error("Não foi possível atualizar o cadastro.");
+}

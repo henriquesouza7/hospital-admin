@@ -40,3 +40,14 @@ test("redirects financial administration routes without a session", async ({
     await expect(page).toHaveURL(/\/login/);
   }
 });
+
+test("redirects minor surgeries routes without a session", async ({ page }) => {
+  for (const route of [
+    "/pequenas-cirurgias",
+    "/pequenas-cirurgias/dias",
+    "/pequenas-cirurgias/fila",
+  ]) {
+    await page.goto(route);
+    await expect(page).toHaveURL(/\/login/);
+  }
+});
