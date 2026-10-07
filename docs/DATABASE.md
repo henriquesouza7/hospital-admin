@@ -89,3 +89,9 @@ As tabelas públicas criadas devem permanecer com RLS habilitada. Policies devem
 usar `auth.user_id()` quando compararem a identidade da sessão. Branches Neon
 devem ser usadas para desenvolvimento e testes isolados; dados reais de pacientes
 não devem ser copiados para branches locais ou de CI.
+
+## Importação fiscal de NF-e
+
+A migration `20261007100000_add_fiscal_nfe_imports.sql` adiciona `public.fiscal_imports`, ligada a `purchase_orders` por `purchase_order_id` (único e com `ON DELETE RESTRICT`). `access_key` também é única e limitada a 44 dígitos. O registro guarda somente metadados fiscais e o SHA-256 do XML; o conteúdo bruto do arquivo não é armazenado.
+
+RLS permite `SELECT` somente para administradores financeiros. Usuários autenticados não recebem permissões diretas de `INSERT`, `UPDATE` ou `DELETE`. A RPC `create_fiscal_import_purchase_order` valida o administrador, chama `create_purchase_order`, registra os metadados, cria auditoria com `auth.user_id()` e retorna o pedido. Como tudo ocorre na mesma transação da RPC, uma chave duplicada ou falha no registro/auditoria reverte o pedido e seus itens.

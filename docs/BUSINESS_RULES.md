@@ -42,3 +42,16 @@
 - Não reduzir capacidade abaixo dos agendamentos ativos.
 - Cancelamento libera vaga, mas preserva histórico.
 - Prioridade clínica não será inferida pelo sistema.
+
+## Importação fiscal por XML da NF-e
+
+- A leitura do XML gera somente uma prévia. O pedido e o vínculo fiscal são persistidos apenas após confirmação administrativa.
+- A confirmação reinterpreta o XML enviado, compara o SHA-256 da prévia e exige que cada `nItem` da nota seja mapeado exatamente uma vez.
+- O fornecedor e os produtos são selecionados manualmente no catálogo existente. A importação não cria cadastros nem decide vínculos por similaridade; `cProd` é um código do emitente e não identifica o `product_id` interno.
+- Quantidade e valor unitário podem ser revisados antes da criação do pedido, respeitando até três casas decimais e duas casas decimais, respectivamente. Nenhum valor com precisão excedente é truncado silenciosamente.
+- A chave de acesso possui unicidade no banco. O pedido e o registro fiscal são criados na mesma transação; conflito de chave reverte também o pedido.
+- Os metadados fiscais originais permanecem separados dos valores administrativos revisados. O XML bruto não é persistido nesta etapa.
+- O total da NF-e (`vNF`) pode divergir da soma dos itens do pedido por descontos, frete, tributos, despesas e arredondamentos; a diferença é informativa e não bloqueia automaticamente.
+- Os subtotais administrativos seguem a regra de `purchase_order_items`: `round(quantity * unit_price, 2)`.
+- O parser interpreta o conteúdo recebido, mas não consulta a SEFAZ nem valida situação fiscal em tempo real.
+- PDF, imagem, OCR, armazenamento do XML e consultas fiscais online permanecem fora do escopo atual.

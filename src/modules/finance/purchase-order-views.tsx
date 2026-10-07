@@ -151,6 +151,48 @@ export function PurchaseOrderDetailView({
           </div>
         ) : null}
       </section>
+      {order.fiscalImport ? (
+        <section className="grid gap-3 rounded-xl border bg-accent/30 p-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="sm:col-span-2 lg:col-span-4">
+            <h2 className="font-semibold">Origem fiscal — NF-e XML</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Metadados do XML vinculado ao pedido. O arquivo original não é
+              armazenado.
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Chave de acesso</p>
+            <p className="mt-1 break-all font-medium">
+              {order.fiscalImport.access_key}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Emitente</p>
+            <p className="mt-1 font-medium">{order.fiscalImport.issuer_name}</p>
+            {order.fiscalImport.issuer_tax_id ? (
+              <p className="mt-1 text-xs text-muted-foreground">
+                CNPJ/CPF: {order.fiscalImport.issuer_tax_id}
+              </p>
+            ) : null}
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Número / série</p>
+            <p className="mt-1 font-medium">
+              {order.fiscalImport.invoice_number} /{" "}
+              {order.fiscalImport.invoice_series}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">
+              Emissão / total na NF-e
+            </p>
+            <p className="mt-1 font-medium">
+              {order.fiscalImport.issued_at} ·{" "}
+              {formatCurrency(order.fiscalImport.invoice_total)}
+            </p>
+          </div>
+        </section>
+      ) : null}
       {order.items.length ? (
         <div className="overflow-hidden rounded-xl border bg-card">
           <div className="overflow-x-auto">

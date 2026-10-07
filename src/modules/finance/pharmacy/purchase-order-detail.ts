@@ -7,6 +7,19 @@ export const purchaseOrderDetailSchema = z.object({
   order_date: z.string(),
   notes: z.string().nullable(),
   supplier: z.object({ name: z.string() }),
+  fiscalImport: z
+    .object({
+      access_key: z.string(),
+      issuer_tax_id: z.string().nullable(),
+      issuer_name: z.string(),
+      invoice_number: z.string(),
+      invoice_series: z.string(),
+      issued_at: z.string(),
+      invoice_total: numeric,
+      xml_sha256: z.string(),
+    })
+    .nullable()
+    .optional(),
   items: z.array(
     z.object({
       id: z.string().uuid(),
