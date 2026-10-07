@@ -22,9 +22,15 @@ vi.mock("@/lib/neon/data-api", () => ({
 }));
 
 import {
+  createAdmissionEntry,
+  createAdmissionTarget,
   createDoctor,
+  importAdmissionEntries,
+  listAdmissionEntries,
   listDoctors,
   setDoctorActive,
+  updateAdmissionEntry,
+  updateAdmissionTarget,
   updateDoctor,
 } from "./repository";
 
@@ -100,5 +106,112 @@ describe("doctors repository", () => {
     await expect(createDoctor("Dr. Médico Teste A")).rejects.toThrow(
       "Não foi possível cadastrar o médico.",
     );
+  });
+
+  it("should_create_daily_entry_through_session_actor_rpc", async () => {
+    await createAdmissionEntry({
+      doctorId: doctor.id,
+      entryDate: "2026-10-07",
+      quantity: 3,
+    });
+    expect(mocks.rpc).toHaveBeenCalledWith("create_admission_entry", {
+      p_doctor_id: doctor.id,
+      p_entry_date: "2026-10-07",
+      p_quantity: 3,
+    });
+    expect(mocks.rpc.mock.calls[0]?.[1]).not.toHaveProperty("actor_id");
+  });
+
+  it("should_update_entry_quantity_without_sending_actor", async () => {
+    mocks.rpc.mockResolvedValue({ data: true, error: null });
+    await updateAdmissionEntry({
+      id: "20000000-0000-4000-8000-000000000002",
+      quantity: 6,
+    });
+    expect(mocks.rpc).toHaveBeenCalledWith("update_admission_entry", {
+      p_id: "20000000-0000-4000-8000-000000000002",
+      p_quantity: 6,
+    });
+  });
+
+  it("should_create_month_target_using_hospital_period_rpc", async () => {
+    await createAdmissionTarget({
+      periodType: "month",
+      referencePeriod: "2026-10-01",
+      quantity: 28,
+    });
+    expect(mocks.rpc).toHaveBeenCalledWith("create_admission_target", {
+      p_period_type: "month",
+      p_reference_period: "2026-10-01",
+      p_target_quantity: 28,
+    });
+  });
+
+  it("should_update_target_quantity_without_changing_period", async () => {
+    mocks.rpc.mockResolvedValue({ data: true, error: null });
+    await updateAdmissionTarget({
+      id: "20000000-0000-4000-8000-000000000003",
+      quantity: 80,
+    });
+    expect(mocks.rpc).toHaveBeenCalledWith("update_admission_target", {
+      p_id: "20000000-0000-4000-8000-000000000003",
+      p_target_quantity: 80,
+    });
+  });
+
+  it("should_import_validated_rows_in_one_database_rpc_without_actor_input", async () => {
+    mocks.rpc.mockResolvedValue({ data: 2, error: null });
+    await expect(
+      importAdmissionEntries([
+        { entry_date: "2026-10-06", doctor_name: "Dr. Teste A", quantity: 2 },
+        { entry_date: "2026-10-07", doctor_name: "Dra. Teste B", quantity: 4 },
+      ]),
+    ).resolves.toBe(2);
+    expect(mocks.rpc).toHaveBeenCalledWith("import_admission_entries", {
+      p_rows: [
+        { entry_date: "2026-10-06", doctor_name: "Dr. Teste A", quantity: 2 },
+        { entry_date: "2026-10-07", doctor_name: "Dra. Teste B", quantity: 4 },
+      ],
+    });
+  });
+
+  it("should_paginate_all_daily_entries_before_dashboard_aggregation", async () => {
+    const makeEntry = (index: number) => ({
+      id: `20000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+      doctor_id: doctor.id,
+      entry_date: "2026-10-07",
+      quantity: 1,
+      created_at: "2026-10-07T12:00:00Z",
+      updated_at: "2026-10-07T12:00:00Z",
+    });
+    const range = vi
+      .fn()
+      .mockResolvedValueOnce({
+        data: Array.from({ length: 1000 }, (_, index) => makeEntry(index)),
+        error: null,
+      })
+      .mockResolvedValueOnce({ data: [makeEntry(1000)], error: null });
+    const doctorOrder = vi.fn().mockResolvedValue({
+      data: [{ id: doctor.id, name: doctor.name, active: true }],
+      error: null,
+    });
+    mocks.from.mockImplementation((table: string) =>
+      table === "doctors"
+        ? { select: vi.fn().mockReturnValue({ order: doctorOrder }) }
+        : {
+            select: vi.fn().mockReturnValue({
+              gte: vi.fn().mockReturnValue({
+                lt: vi.fn().mockReturnValue({
+                  order: vi.fn().mockReturnValue({ range }),
+                }),
+              }),
+            }),
+          },
+    );
+
+    const entries = await listAdmissionEntries("2026-01-01", "2027-01-01");
+    expect(entries).toHaveLength(1001);
+    expect(range).toHaveBeenNthCalledWith(1, 0, 999);
+    expect(range).toHaveBeenNthCalledWith(2, 1000, 1999);
   });
 });

@@ -3,6 +3,10 @@ import {
   doctorNameSchema,
   doctorStatusSchema,
   doctorUpdateSchema,
+  entryCreateSchema,
+  entryUpdateSchema,
+  targetCreateSchema,
+  targetUpdateSchema,
 } from "./validation";
 
 describe("doctor validation", () => {
@@ -45,6 +49,117 @@ describe("doctor validation", () => {
         id: "20000000-0000-4000-8000-000000000001",
         active: "false",
       }).active,
+    ).toBe(false);
+  });
+});
+
+describe("admission entry and target validation", () => {
+  const doctorId = "20000000-0000-4000-8000-000000000001";
+  const entryId = "20000000-0000-4000-8000-000000000002";
+  const targetId = "20000000-0000-4000-8000-000000000003";
+
+  it("should_accept_nonnegative_integer_entry_quantity_when_fields_are_valid", () => {
+    expect(
+      entryCreateSchema.parse({
+        doctor_id: doctorId,
+        entry_date: "2026-10-07",
+        quantity: "0",
+      }).quantity,
+    ).toBe(0);
+  });
+
+  it("should_reject_negative_entry_quantity_when_value_is_below_zero", () => {
+    expect(
+      entryCreateSchema.safeParse({
+        doctor_id: doctorId,
+        entry_date: "2026-10-07",
+        quantity: "-1",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("should_reject_invalid_doctor_uuid_when_creating_entry", () => {
+    expect(
+      entryCreateSchema.safeParse({
+        doctor_id: "invalid",
+        entry_date: "2026-10-07",
+        quantity: "1",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("should_reject_impossible_calendar_date_when_creating_entry", () => {
+    expect(
+      entryCreateSchema.safeParse({
+        doctor_id: doctorId,
+        entry_date: "2026-02-30",
+        quantity: "1",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("should_validate_entry_update_identifier_and_quantity", () => {
+    expect(
+      entryUpdateSchema.safeParse({ id: entryId, quantity: "5" }).success,
+    ).toBe(true);
+    expect(
+      entryUpdateSchema.safeParse({ id: "invalid", quantity: "5" }).success,
+    ).toBe(false);
+  });
+
+  it("should_derive_month_start_from_monthly_target_period", () => {
+    expect(
+      targetCreateSchema.parse({
+        period_type: "month",
+        period: "2026-10",
+        target_quantity: "30",
+      }),
+    ).toEqual({
+      period_type: "month",
+      reference_period: "2026-10-01",
+      target_quantity: 30,
+    });
+  });
+
+  it("should_derive_year_start_from_annual_target_period", () => {
+    expect(
+      targetCreateSchema.parse({
+        period_type: "year",
+        period: "2026",
+        target_quantity: "365",
+      }),
+    ).toEqual({
+      period_type: "year",
+      reference_period: "2026-01-01",
+      target_quantity: 365,
+    });
+  });
+
+  it("should_reject_invalid_target_competence_and_negative_amount", () => {
+    expect(
+      targetCreateSchema.safeParse({
+        period_type: "month",
+        period: "2026-13",
+        target_quantity: "1",
+      }).success,
+    ).toBe(false);
+    expect(
+      targetCreateSchema.safeParse({
+        period_type: "year",
+        period: "2026",
+        target_quantity: "-2",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("should_validate_target_update_identifier_and_quantity", () => {
+    expect(
+      targetUpdateSchema.safeParse({ id: targetId, target_quantity: "15" })
+        .success,
+    ).toBe(true);
+    expect(
+      targetUpdateSchema.safeParse({ id: targetId, target_quantity: "-1" })
+        .success,
     ).toBe(false);
   });
 });

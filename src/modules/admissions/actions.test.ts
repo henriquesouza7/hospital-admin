@@ -10,6 +10,10 @@ const mocks = vi.hoisted(() => ({
   createDoctor: vi.fn(),
   updateDoctor: vi.fn(),
   setDoctorActive: vi.fn(),
+  createAdmissionEntry: vi.fn(),
+  updateAdmissionEntry: vi.fn(),
+  createAdmissionTarget: vi.fn(),
+  updateAdmissionTarget: vi.fn(),
   revalidatePath: vi.fn(),
 }));
 
@@ -21,6 +25,10 @@ vi.mock("./repository", () => ({
   createDoctor: mocks.createDoctor,
   updateDoctor: mocks.updateDoctor,
   setDoctorActive: mocks.setDoctorActive,
+  createAdmissionEntry: mocks.createAdmissionEntry,
+  updateAdmissionEntry: mocks.updateAdmissionEntry,
+  createAdmissionTarget: mocks.createAdmissionTarget,
+  updateAdmissionTarget: mocks.updateAdmissionTarget,
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
@@ -38,6 +46,10 @@ describe("doctor server actions", () => {
     mocks.createDoctor.mockResolvedValue(undefined);
     mocks.updateDoctor.mockResolvedValue(undefined);
     mocks.setDoctorActive.mockResolvedValue(undefined);
+    mocks.createAdmissionEntry.mockResolvedValue(undefined);
+    mocks.updateAdmissionEntry.mockResolvedValue(undefined);
+    mocks.createAdmissionTarget.mockResolvedValue(undefined);
+    mocks.updateAdmissionTarget.mockResolvedValue(undefined);
   });
 
   it("should_create_trimmed_active_doctor_when_form_is_valid", async () => {
@@ -110,6 +122,81 @@ describe("doctor server actions", () => {
     expect(state).toEqual({
       status: "error",
       message: "Não foi possível cadastrar o médico. Tente novamente.",
+    });
+  });
+
+  it("should_create_admission_entry_when_date_doctor_and_quantity_are_valid", async () => {
+    const { createAdmissionEntryAction } = await import("./actions");
+    const state = await createAdmissionEntryAction(
+      { status: "idle", message: "" },
+      form({
+        doctor_id: "20000000-0000-4000-8000-000000000001",
+        entry_date: "2026-10-07",
+        quantity: "4",
+      }),
+    );
+    expect(mocks.requireAdmin).toHaveBeenCalledOnce();
+    expect(mocks.createAdmissionEntry).toHaveBeenCalledWith({
+      doctorId: "20000000-0000-4000-8000-000000000001",
+      entryDate: "2026-10-07",
+      quantity: 4,
+    });
+    expect(state.status).toBe("success");
+  });
+
+  it("should_reject_negative_entry_quantity_without_repository_mutation", async () => {
+    const { createAdmissionEntryAction } = await import("./actions");
+    const state = await createAdmissionEntryAction(
+      { status: "idle", message: "" },
+      form({
+        doctor_id: "20000000-0000-4000-8000-000000000001",
+        entry_date: "2026-10-07",
+        quantity: "-1",
+      }),
+    );
+    expect(state.status).toBe("error");
+    expect(mocks.createAdmissionEntry).not.toHaveBeenCalled();
+  });
+
+  it("should_update_admission_entry_quantity_through_repository", async () => {
+    const { updateAdmissionEntryAction } = await import("./actions");
+    const state = await updateAdmissionEntryAction(
+      { status: "idle", message: "" },
+      form({ id: "20000000-0000-4000-8000-000000000002", quantity: "0" }),
+    );
+    expect(mocks.updateAdmissionEntry).toHaveBeenCalledWith({
+      id: "20000000-0000-4000-8000-000000000002",
+      quantity: 0,
+    });
+    expect(state.status).toBe("success");
+  });
+
+  it("should_create_hospital_month_target_from_valid_competence", async () => {
+    const { createAdmissionTargetAction } = await import("./actions");
+    const state = await createAdmissionTargetAction(
+      { status: "idle", message: "" },
+      form({ period_type: "month", period: "2026-10", target_quantity: "32" }),
+    );
+    expect(mocks.createAdmissionTarget).toHaveBeenCalledWith({
+      periodType: "month",
+      referencePeriod: "2026-10-01",
+      quantity: 32,
+    });
+    expect(state.status).toBe("success");
+  });
+
+  it("should_update_hospital_target_without_changing_its_period", async () => {
+    const { updateAdmissionTargetAction } = await import("./actions");
+    await updateAdmissionTargetAction(
+      { status: "idle", message: "" },
+      form({
+        id: "20000000-0000-4000-8000-000000000003",
+        target_quantity: "90",
+      }),
+    );
+    expect(mocks.updateAdmissionTarget).toHaveBeenCalledWith({
+      id: "20000000-0000-4000-8000-000000000003",
+      quantity: 90,
     });
   });
 });
