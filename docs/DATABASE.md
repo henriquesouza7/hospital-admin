@@ -84,7 +84,10 @@ nem tabela de importação nesta etapa. A migration incremental
 contagem de cada lançamento e endurece a normalização das RPCs e constraints;
 ela também permite corrigir um procedimento mantendo sua categoria atual
 inativa e serializa mudanças concorrentes de estado entre categorias e
-procedimentos.
+procedimentos. A migration incremental
+`20261007185500_skip_production_noop_updates.sql` evita executar updates sem
+mudança administrativa real, preservando timestamps e evitando eventos de
+auditoria duplicados.
 
 Nomes de categorias são únicos após normalização de espaços externos e caixa;
 nomes de procedimentos têm a mesma regra dentro da categoria. Lançamentos têm

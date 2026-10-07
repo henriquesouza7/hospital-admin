@@ -106,14 +106,152 @@ describe("production repository", () => {
         },
       ],
     };
-    from.mockImplementation((table: string) => ({
-      select: () => ({
-        order: async () => ({ data: rowsByTable[table], error: null }),
-      }),
-    }));
+    from.mockImplementation((table: string) => {
+      const query = {
+        select: () => query,
+        eq: () => query,
+        gte: () => query,
+        lte: () => query,
+        order: () => query,
+        range: () => query,
+        then: (resolve: (value: unknown) => unknown) =>
+          Promise.resolve({ data: rowsByTable[table], error: null }).then(
+            resolve,
+          ),
+      };
+      return query;
+    });
 
     const entries = await listProductionEntries();
 
     expect(entries[0]?.counting_unit).toBe("unidade historica");
+  });
+
+  it("should_paginate_entries_with_filters_and_deterministic_order", async () => {
+    const procedureId = "d6bcb317-a52e-4b88-a97b-ad993e8f4010";
+    const categoryId = "fe90a7f4-45c9-4a52-9b4f-fb7ce6f50a9f";
+    const timestamp = "2026-03-01T00:00:00.000Z";
+    const makeEntry = (index: number) => ({
+      id: `00000000-0000-4000-8000-${index.toString().padStart(12, "0")}`,
+      procedure_id: procedureId,
+      counting_unit: "unidade",
+      reference_period: "2026-03-01",
+      quantity: "1",
+      source: "manual",
+      created_at: timestamp,
+      updated_at: timestamp,
+    });
+    const firstPage = Array.from({ length: 1000 }, (_, index) =>
+      makeEntry(index + 1),
+    );
+    const secondPage = [makeEntry(1001)];
+    const rowsByTable: Record<string, unknown[]> = {
+      procedures: [
+        {
+          id: procedureId,
+          category_id: categoryId,
+          name: "Procedimento",
+          counting_unit: "unidade",
+          active: true,
+          created_at: timestamp,
+          updated_at: timestamp,
+        },
+      ],
+      procedure_categories: [
+        {
+          id: categoryId,
+          name: "Categoria",
+          active: true,
+          created_at: timestamp,
+          updated_at: timestamp,
+        },
+      ],
+    };
+    const calls: Array<{
+      filters: Array<[string, unknown]>;
+      orders: Array<[string, { ascending: boolean }]>;
+      range?: [number, number];
+    }> = [];
+    from.mockImplementation((table: string) => {
+      const call = {
+        filters: [],
+        orders: [],
+        range: undefined,
+      } as (typeof calls)[number];
+      calls.push(call);
+      const query = {
+        select: () => query,
+        eq: (column: string, value: unknown) => {
+          call.filters.push([column, value]);
+          return query;
+        },
+        gte: (column: string, value: unknown) => {
+          call.filters.push([column, value]);
+          return query;
+        },
+        lte: (column: string, value: unknown) => {
+          call.filters.push([column, value]);
+          return query;
+        },
+        order: (column: string, options: { ascending: boolean }) => {
+          call.orders.push([column, options]);
+          return query;
+        },
+        range: (start: number, end: number) => {
+          call.range = [start, end];
+          return query;
+        },
+        then: (resolve: (value: unknown) => unknown) =>
+          Promise.resolve({
+            data:
+              table !== "production_entries"
+                ? rowsByTable[table]
+                : call.range?.[0] === 0
+                  ? firstPage
+                  : secondPage,
+            error: null,
+          }).then(resolve),
+      };
+      return query;
+    });
+
+    const entries = await listProductionEntries({
+      procedure_id: procedureId,
+      from: "2026-01",
+      to: "2026-03",
+    });
+
+    const entryCalls = calls.filter(({ range }) => range !== undefined);
+    expect(entryCalls.map(({ range }) => range)).toEqual([
+      [0, 999],
+      [1000, 1999],
+    ]);
+    expect(entryCalls.map(({ filters }) => filters)).toEqual([
+      [
+        ["procedure_id", procedureId],
+        ["reference_period", "2026-01-01"],
+        ["reference_period", "2026-03-01"],
+      ],
+      [
+        ["procedure_id", procedureId],
+        ["reference_period", "2026-01-01"],
+        ["reference_period", "2026-03-01"],
+      ],
+    ]);
+    expect(entryCalls.map(({ orders }) => orders)).toEqual([
+      [
+        ["reference_period", { ascending: false }],
+        ["id", { ascending: true }],
+      ],
+      [
+        ["reference_period", { ascending: false }],
+        ["id", { ascending: true }],
+      ],
+    ]);
+    expect(entries).toHaveLength(1001);
+    expect(entries.at(-1)?.id).toBe(makeEntry(1001).id);
+    expect(entries.map(({ id }) => id)).toEqual(
+      [...firstPage, ...secondPage].map(({ id }) => id),
+    );
   });
 });

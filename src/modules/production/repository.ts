@@ -37,6 +37,7 @@ const entryRowSchema = z.object({
 });
 
 const uuidResultSchema = z.string().uuid();
+const PAGE_SIZE = 1000;
 
 export class DuplicateProductionRecordError extends Error {
   constructor(
@@ -161,28 +162,11 @@ export async function listProductionEntries(
   } = {},
 ): Promise<ProductionEntry[]> {
   await requireProductionAdmin();
-  let query = getNeonDataApiClient()
-    .from("production_entries")
-    .select(
-      "id,procedure_id,counting_unit,reference_period,quantity,source,created_at,updated_at",
-    )
-    .order("reference_period", { ascending: false });
-  if (filters.procedure_id)
-    query = query.eq("procedure_id", filters.procedure_id);
-  if (filters.from) query = query.gte("reference_period", `${filters.from}-01`);
-  if (filters.to) query = query.lte("reference_period", `${filters.to}-01`);
-
-  const [{ data, error }, procedures, categories] = await Promise.all([
-    query,
+  const [rows, procedures, categories] = await Promise.all([
+    listProductionEntryRows(filters),
     listProductionProcedures(),
     listProcedureCategories(),
   ]);
-  const rows = requireData(
-    data,
-    error,
-    "Não foi possível carregar os lançamentos.",
-    z.array(entryRowSchema),
-  );
   const procedureById = new Map(
     procedures.map((procedure) => [procedure.id, procedure]),
   );
@@ -200,6 +184,38 @@ export async function listProductionEntries(
         : "Categoria indisponível",
     };
   });
+}
+
+async function listProductionEntryRows(filters: {
+  procedure_id?: string;
+  from?: string;
+  to?: string;
+}) {
+  const rows: z.infer<typeof entryRowSchema>[] = [];
+  for (let offset = 0; ; offset += PAGE_SIZE) {
+    let query = getNeonDataApiClient()
+      .from("production_entries")
+      .select(
+        "id,procedure_id,counting_unit,reference_period,quantity,source,created_at,updated_at",
+      );
+    if (filters.procedure_id)
+      query = query.eq("procedure_id", filters.procedure_id);
+    if (filters.from)
+      query = query.gte("reference_period", `${filters.from}-01`);
+    if (filters.to) query = query.lte("reference_period", `${filters.to}-01`);
+    const { data, error } = await query
+      .order("reference_period", { ascending: false })
+      .order("id", { ascending: true })
+      .range(offset, offset + PAGE_SIZE - 1);
+    const page = requireData(
+      data,
+      error,
+      "Não foi possível carregar os lançamentos.",
+      z.array(entryRowSchema),
+    );
+    rows.push(...page);
+    if (page.length < PAGE_SIZE) return rows;
+  }
 }
 
 export async function createProcedureCategory(name: string) {
