@@ -340,7 +340,9 @@ function ProcedureRow({
     setProcedureStatusAction,
     initialProductionActionState,
   );
-  const activeCategories = categories.filter((category) => category.active);
+  const editableCategories = categories.filter(
+    (category) => category.active || category.id === procedure.category_id,
+  );
   return (
     <tr className="align-top">
       <th scope="row" className="px-4 py-4 font-medium">
@@ -375,9 +377,10 @@ function ProcedureRow({
                   defaultValue={procedure.category_id}
                   className="h-9 rounded-md border bg-background px-2 text-sm font-normal"
                 >
-                  {activeCategories.map((category) => (
+                  {editableCategories.map((category) => (
                     <option key={category.id} value={category.id}>
                       {category.name}
+                      {category.active ? "" : " (inativa)"}
                     </option>
                   ))}
                 </select>

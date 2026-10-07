@@ -2,15 +2,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createProductionEntry,
   DuplicateProductionRecordError,
+  listProductionEntries,
 } from "./repository";
 
-const { rpc, requireProductionAdmin } = vi.hoisted(() => ({
+const { from, rpc, requireProductionAdmin } = vi.hoisted(() => ({
+  from: vi.fn(),
   rpc: vi.fn(),
   requireProductionAdmin: vi.fn(),
 }));
 
 vi.mock("@/lib/neon/data-api", () => ({
-  getNeonDataApiClient: () => ({ rpc }),
+  getNeonDataApiClient: () => ({ from, rpc }),
 }));
 vi.mock("server-only", () => ({}));
 vi.mock("./access", () => ({ requireProductionAdmin }));
@@ -67,5 +69,51 @@ describe("production repository", () => {
         source: "manual",
       }),
     ).rejects.toThrow("Não foi possível confirmar o cadastro de Produção.");
+  });
+
+  it("should_preserve_entry_unit_when_procedure_unit_changes", async () => {
+    const rowsByTable: Record<string, unknown[]> = {
+      production_entries: [
+        {
+          id: "f10a7281-2a42-4fd4-b7f5-d5b7d46d54bd",
+          procedure_id: "d6bcb317-a52e-4b88-a97b-ad993e8f4010",
+          counting_unit: "unidade historica",
+          reference_period: "2026-03-01",
+          quantity: "12",
+          source: "manual",
+          created_at: "2026-03-01T00:00:00.000Z",
+          updated_at: "2026-03-01T00:00:00.000Z",
+        },
+      ],
+      procedures: [
+        {
+          id: "d6bcb317-a52e-4b88-a97b-ad993e8f4010",
+          category_id: "fe90a7f4-45c9-4a52-9b4f-fb7ce6f50a9f",
+          name: "Procedimento",
+          counting_unit: "unidade atual",
+          active: true,
+          created_at: "2026-03-01T00:00:00.000Z",
+          updated_at: "2026-03-01T00:00:00.000Z",
+        },
+      ],
+      procedure_categories: [
+        {
+          id: "fe90a7f4-45c9-4a52-9b4f-fb7ce6f50a9f",
+          name: "Categoria",
+          active: true,
+          created_at: "2026-03-01T00:00:00.000Z",
+          updated_at: "2026-03-01T00:00:00.000Z",
+        },
+      ],
+    };
+    from.mockImplementation((table: string) => ({
+      select: () => ({
+        order: async () => ({ data: rowsByTable[table], error: null }),
+      }),
+    }));
+
+    const entries = await listProductionEntries();
+
+    expect(entries[0]?.counting_unit).toBe("unidade historica");
   });
 });

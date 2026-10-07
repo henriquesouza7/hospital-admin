@@ -28,6 +28,7 @@ const procedureRowSchema = z.object({
 const entryRowSchema = z.object({
   id: z.string().uuid(),
   procedure_id: z.string().uuid(),
+  counting_unit: z.string(),
   reference_period: z.iso.date(),
   quantity: z.union([z.string(), z.number()]).transform(String),
   source: z.string(),
@@ -163,7 +164,7 @@ export async function listProductionEntries(
   let query = getNeonDataApiClient()
     .from("production_entries")
     .select(
-      "id,procedure_id,reference_period,quantity,source,created_at,updated_at",
+      "id,procedure_id,counting_unit,reference_period,quantity,source,created_at,updated_at",
     )
     .order("reference_period", { ascending: false });
   if (filters.procedure_id)
@@ -193,7 +194,7 @@ export async function listProductionEntries(
     return {
       ...entry,
       procedure_name: procedure?.name ?? "Procedimento inativo",
-      counting_unit: procedure?.counting_unit ?? "—",
+      counting_unit: entry.counting_unit,
       category_name: procedure
         ? (categoryById.get(procedure.category_id) ?? "Categoria indisponível")
         : "Categoria indisponível",
