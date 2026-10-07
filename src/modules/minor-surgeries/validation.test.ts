@@ -58,10 +58,16 @@ describe("minor surgeries validation", () => {
 
   it("should_reject_whitespace_only_names_and_invalid_uuids_or_statuses", () => {
     const form = new FormData();
-    for (const name of ["  ", "\t", "\n", "\r\n\f"]) {
+    for (const name of [" ", "\t", "\n", "\r\n\f", " \t \n "]) {
       form.set("patient_name", name);
       expect(parseSurgeryWaitlistForm(form).success).toBe(false);
     }
+
+    form.set("patient_name", "\t Paciente  Teste \n");
+    expect(parseSurgeryWaitlistForm(form)).toMatchObject({
+      success: true,
+      data: { patient_name: "Paciente  Teste" },
+    });
     expect(
       surgeryAppointmentStatusSchema.safeParse({
         appointment_id: dayId,
