@@ -16,6 +16,16 @@ describe("doctor validation", () => {
     expect(doctorNameSchema.safeParse("   ").success).toBe(false);
   });
 
+  it("should_reject_names_containing_only_whitespace", () => {
+    for (const name of ["\t", " \t ", "\n", "\r\n\f"]) {
+      expect(doctorNameSchema.safeParse(name).success).toBe(false);
+    }
+  });
+
+  it("should_trim_mixed_outer_whitespace_without_collapsing_internal_spaces", () => {
+    expect(doctorNameSchema.parse("\t Dr.  Teste\r\n")).toBe("Dr.  Teste");
+  });
+
   it("should_reject_name_longer_than_160_characters", () => {
     expect(doctorNameSchema.safeParse("a".repeat(161)).success).toBe(false);
   });
