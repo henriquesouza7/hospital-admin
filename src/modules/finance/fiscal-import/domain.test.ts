@@ -31,12 +31,25 @@ describe("parseNfeXml", () => {
       ),
       "utf8",
     );
+    const revisedXml = readFileSync(
+      new URL(
+        "../../../../tests/fixtures/fiscal-import/nfe-d-revisada-farmacia.xml",
+        import.meta.url,
+      ),
+      "utf8",
+    );
 
     expect(parseNfeXml(pharmacyXml).items).toHaveLength(2);
     expect(parseNfeXml(laboratoryXml).items).toHaveLength(2);
     expect(parseNfeXml(duplicateXml).accessKey).toBe(
       parseNfeXml(pharmacyXml).accessKey,
     );
+    expect(parseNfeXml(revisedXml).items[0]).toMatchObject({
+      itemNumber: "1",
+      quantity: "2.0004",
+      unitPrice: "10.001",
+      productTotal: "20.01",
+    });
   });
 
   it("should_extract_invoice_fields_when_xml_uses_default_namespace", () => {
@@ -59,6 +72,12 @@ describe("parseNfeXml", () => {
         },
       ],
     });
+  });
+
+  it("should_preserve_numeric_item_number_with_leading_zeroes", () => {
+    expect(
+      parseNfeXml(xml().replace('nItem="1"', 'nItem="001"')).items[0],
+    ).toMatchObject({ itemNumber: "001" });
   });
 
   it("should_parse_standalone_nfe_when_protocol_wrapper_is_absent", () => {

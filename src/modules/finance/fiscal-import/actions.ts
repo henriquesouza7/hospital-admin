@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getNeonServerEnv } from "@/lib/neon/env";
 import { MAX_XML_BYTES, parseNfeXml } from "./domain";
 import { requireFinanceAdmin } from "../pharmacy/access";
 import {
@@ -9,6 +10,10 @@ import {
   getFiscalImportPreviewStatus,
   hashFiscalXml,
 } from "./repository";
+import {
+  issueFiscalPreviewEvidence,
+  verifyFiscalPreviewEvidence,
+} from "./preview-evidence";
 import {
   fiscalConfirmationSchema,
   hasUniqueProductMappings,
@@ -25,6 +30,7 @@ export type FiscalPreviewState =
       status: "success";
       document: ReturnType<typeof parseNfeXml>;
       hash: string;
+      previewToken: string;
       duplicate: boolean;
     };
 
@@ -62,7 +68,7 @@ export async function previewFiscalXmlAction(
   _previous: FiscalPreviewState,
   formData: FormData,
 ): Promise<FiscalPreviewState> {
-  await requireFinanceAdmin();
+  const admin = await requireFinanceAdmin();
   try {
     const { xml, sha256 } = await readXmlFile(formData);
     const document = parseNfeXml(xml);
@@ -71,6 +77,11 @@ export async function previewFiscalXmlAction(
       status: "success",
       document,
       hash: sha256,
+      previewToken: issueFiscalPreviewEvidence(
+        sha256,
+        admin.id,
+        getNeonServerEnv().authCookieSecret,
+      ),
       duplicate,
     };
   } catch (error) {
@@ -85,12 +96,15 @@ export async function previewFiscalXmlAction(
 }
 
 export async function confirmFiscalImportAction(formData: FormData) {
-  await requireFinanceAdmin();
+  const admin = await requireFinanceAdmin();
   let orderId: string;
   let sector = "farmacia";
   try {
     const { xml, sha256: xmlSha256 } = await readXmlFile(formData);
     const document = parseNfeXml(xml);
+    const previewToken = formValue(formData, "preview_token");
+    if (!previewToken)
+      throw new Error("Gere uma prévia válida antes de confirmar a NF-e.");
     const rawItems = formValue(formData, "items");
     let items: unknown;
     try {
@@ -103,14 +117,21 @@ export async function confirmFiscalImportAction(formData: FormData) {
       supplierId: formValue(formData, "supplier_id"),
       orderDate: formValue(formData, "order_date"),
       notes: formValue(formData, "notes"),
-      previewHash: formValue(formData, "preview_hash"),
+      previewToken,
       items,
     });
     if (!parsed.success)
       throw new Error("Revise os campos e os itens da NF-e.");
     sector = parsed.data.sector;
-    if (parsed.data.previewHash !== xmlSha256)
-      throw new Error("O arquivo mudou após a prévia. Gere uma nova prévia.");
+    if (
+      !verifyFiscalPreviewEvidence(
+        parsed.data.previewToken,
+        xmlSha256,
+        admin.id,
+        getNeonServerEnv().authCookieSecret,
+      )
+    )
+      throw new Error("A prévia é inválida ou expirou. Gere uma nova prévia.");
     if (
       !validateNfeItemMapping(
         document.items.map((item) => item.itemNumber),
@@ -129,6 +150,24 @@ export async function confirmFiscalImportAction(formData: FormData) {
     const notes =
       parsed.data.notes ||
       `Importado da NF-e nº ${document.invoiceNumber}, série ${document.invoiceSeries}.`;
+    const mappedItems = new Map(
+      parsed.data.items.map((item) => [item.itemNumber, item]),
+    );
+    const fiscalItems = document.items.map((item) => {
+      const mapping = mappedItems.get(item.itemNumber);
+      if (!mapping)
+        throw new Error("Todos os itens originais devem ser mapeados.");
+      return {
+        n_item: item.itemNumber,
+        c_prod: item.supplierCode,
+        x_prod: item.description,
+        u_com: item.unit,
+        q_com: item.quantity,
+        v_un_com: item.unitPrice,
+        v_prod: item.productTotal,
+        product_id: mapping.productId,
+      };
+    });
     orderId = await createFiscalPurchaseOrder({
       sector: parsed.data.sector,
       supplierId: parsed.data.supplierId,
@@ -139,6 +178,7 @@ export async function confirmFiscalImportAction(formData: FormData) {
         quantity: item.quantity.replace(",", "."),
         unit_price: item.unitPrice.replace(",", "."),
       })),
+      fiscalItems,
       document,
       xmlSha256,
     });

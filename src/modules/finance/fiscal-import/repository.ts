@@ -24,6 +24,16 @@ export async function createFiscalPurchaseOrder(input: {
   orderDate: string;
   notes: string;
   items: { product_id: string; quantity: string; unit_price: string }[];
+  fiscalItems: {
+    n_item: string;
+    c_prod: string;
+    x_prod: string;
+    u_com: string;
+    q_com: string;
+    v_un_com: string;
+    v_prod: string;
+    product_id: string;
+  }[];
   document: NfeDocument;
   xmlSha256: string;
 }) {
@@ -44,6 +54,7 @@ export async function createFiscalPurchaseOrder(input: {
       p_issued_at: input.document.issuedAt,
       p_invoice_total: input.document.invoiceTotal,
       p_xml_sha256: input.xmlSha256,
+      p_fiscal_items: input.fiscalItems,
     },
   );
   if (error || !z.string().uuid().safeParse(data).success) {

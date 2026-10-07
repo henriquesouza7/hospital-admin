@@ -14,6 +14,11 @@ import type { listActiveSuppliers, listProducts } from "../pharmacy/repository";
 import type { FinanceSector } from "../pharmacy/validation";
 import { confirmFiscalImportAction, previewFiscalXmlAction } from "./actions";
 import type { FiscalPreviewState } from "./actions";
+import {
+  canConfirmFiscalImport,
+  isValidPurchaseQuantity,
+  isValidPurchaseUnitPrice,
+} from "./validation";
 
 type Supplier = Awaited<ReturnType<typeof listActiveSuppliers>>[number];
 type Product = Awaited<ReturnType<typeof listProducts>>[number];
@@ -103,6 +108,23 @@ export function FiscalImportForm({
   const usedProductIds = new Set(
     (sameDraft ? Object.values(mappedProducts) : []).filter(Boolean),
   );
+  const effectiveItems = document
+    ? document.items.map((item) => ({
+        productId: sameDraft ? (mappedProducts[item.itemNumber] ?? "") : "",
+        quantity: sameDraft
+          ? (quantities[item.itemNumber] ?? item.quantity)
+          : item.quantity,
+        unitPrice: sameDraft
+          ? (unitPrices[item.itemNumber] ?? item.unitPrice)
+          : item.unitPrice,
+      }))
+    : [];
+  const confirmationValid = canConfirmFiscalImport({
+    sector,
+    supplierId: sameDraft ? supplierId : "",
+    allowedProductIds: sectorProducts.map((product) => product.id),
+    items: effectiveItems,
+  });
 
   return (
     <form
@@ -354,7 +376,11 @@ export function FiscalImportForm({
                 ) : null}
               </div>
             ) : null}
-            <input type="hidden" name="preview_hash" value={state.hash} />
+            <input
+              type="hidden"
+              name="preview_token"
+              value={state.previewToken}
+            />
             <input type="hidden" name="items" value={itemsJson} />
             <div className="overflow-x-auto rounded-xl border bg-card">
               <table className="w-full min-w-[1100px] text-left text-sm">
@@ -385,6 +411,12 @@ export function FiscalImportForm({
                 </thead>
                 <tbody className="divide-y">
                   {document.items.map((item) => {
+                    const effectiveQuantity = sameDraft
+                      ? (quantities[item.itemNumber] ?? item.quantity)
+                      : item.quantity;
+                    const effectiveUnitPrice = sameDraft
+                      ? (unitPrices[item.itemNumber] ?? item.unitPrice)
+                      : item.unitPrice;
                     const computed = lineTotal(item.quantity, item.unitPrice);
                     const reportedCents = amountToCents(item.productTotal);
                     const productDiverges =
@@ -457,6 +489,7 @@ export function FiscalImportForm({
                             id={`quantity-${item.itemNumber}`}
                             inputMode="decimal"
                             required
+                            pattern="[0-9]{1,9}([.,][0-9]{1,3})?"
                             value={
                               sameDraft
                                 ? (quantities[item.itemNumber] ?? item.quantity)
@@ -483,6 +516,7 @@ export function FiscalImportForm({
                             id={`price-${item.itemNumber}`}
                             inputMode="decimal"
                             required
+                            pattern="[0-9]{1,10}([.,][0-9]{1,2})?"
                             value={
                               sameDraft
                                 ? (unitPrices[item.itemNumber] ??
@@ -501,18 +535,16 @@ export function FiscalImportForm({
                         </td>
                         <td className="px-3 py-3 tabular-nums">
                           {money(item.productTotal)}
-                          {!/^\d{1,9}(?:[.,]\d{1,3})?$/.test(item.quantity) ? (
+                          {!isValidPurchaseQuantity(effectiveQuantity) ? (
                             <span className="mt-1 block text-xs text-amber-800">
-                              Quantidade excede a precisão permitida; revise
-                              antes de confirmar.
+                              Quantidade inválida ou com precisão excedida;
+                              revise antes de confirmar.
                             </span>
                           ) : null}
-                          {!/^\d{1,10}(?:[.,]\d{1,2})?$/.test(
-                            item.unitPrice,
-                          ) ? (
+                          {!isValidPurchaseUnitPrice(effectiveUnitPrice) ? (
                             <span className="mt-1 block text-xs text-amber-800">
-                              Preço excede a precisão permitida; revise antes de
-                              confirmar.
+                              Preço inválido ou com precisão excedida; revise
+                              antes de confirmar.
                             </span>
                           ) : null}
                           {productDiverges ? (
@@ -562,13 +594,14 @@ export function FiscalImportForm({
               !selectedFile ||
               selectedFile.size > MAX_XML_SIZE ||
               selectedFileHash !== state.hash ||
-              !supplierId ||
-              !sector ||
+              !state.previewToken ||
+              !confirmationValid ||
               !sectorProducts.length ||
               confirmPending
             }
             onClick={() => {
               if (!formRef.current || !selectedFile) return;
+              if (!formRef.current.reportValidity()) return;
               const formData = new FormData(formRef.current);
               formData.set("xml", selectedFile, selectedFile.name);
               startTransition(() => {

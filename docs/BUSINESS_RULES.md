@@ -50,7 +50,10 @@
 - O fornecedor e os produtos são selecionados manualmente no catálogo existente. A importação não cria cadastros nem decide vínculos por similaridade; `cProd` é um código do emitente e não identifica o `product_id` interno.
 - Quantidade e valor unitário podem ser revisados antes da criação do pedido, respeitando até três casas decimais e duas casas decimais, respectivamente. Nenhum valor com precisão excedente é truncado silenciosamente.
 - A chave de acesso possui unicidade no banco. O pedido e o registro fiscal são criados na mesma transação; conflito de chave reverte também o pedido.
-- Os metadados fiscais originais permanecem separados dos valores administrativos revisados. O XML bruto não é persistido nesta etapa.
+- Os valores fiscais originais de cada item (`nItem`, `cProd`, `xProd`, `uCom`, `qCom`, `vUnCom` e `vProd`) são preservados separadamente em `fiscal_import_items`, ligados ao registro fiscal e ao item do pedido.
+- Quantidade, preço e subtotal administrativos revisados continuam em `purchase_order_items` e não são substituídos pelos valores fiscais originais.
+- O XML bruto não é persistido. Importações criadas antes da migration dos itens originais não podem ser preenchidas retroativamente, pois seus XMLs não foram armazenados.
+- A confirmação exige evidência HMAC emitida no servidor após a prévia, vinculada ao hash do XML e ao administrador autenticado, com validade de cinco minutos. Um hash enviado pelo cliente não comprova a execução da prévia.
 - O total da NF-e (`vNF`) pode divergir da soma dos itens do pedido por descontos, frete, tributos, despesas e arredondamentos; a diferença é informativa e não bloqueia automaticamente.
 - Os subtotais administrativos seguem a regra de `purchase_order_items`: `round(quantity * unit_price, 2)`.
 - O parser interpreta o conteúdo recebido, mas não consulta a SEFAZ nem valida situação fiscal em tempo real.
