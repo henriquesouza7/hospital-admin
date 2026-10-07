@@ -66,6 +66,8 @@ derivam `actor_id` de `auth.user_id()` e registram em `audit_logs` somente
 criação e mudanças efetivas, preservando valores anterior e novo. O fluxo não
 remove médicos fisicamente.
 
+A migration incremental `20261007183000_validate_doctor_whitespace.sql` alinha a constraint e as RPCs de criação/edição para remover espaços POSIX nas extremidades do nome, mantendo a validação de comprimento entre 1 e 160 caracteres.
+
 ## Produção
 - procedure_categories
 - procedures
