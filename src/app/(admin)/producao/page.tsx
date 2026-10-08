@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, ClipboardList, Stethoscope } from "lucide-react";
+import { ArrowRight, ClipboardList, FileUp, Stethoscope } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 
 const sections = [
@@ -17,6 +17,13 @@ const sections = [
       "Registre e corrija quantidades agregadas por competência e fonte.",
     icon: ClipboardList,
   },
+  {
+    href: "/producao/importacoes",
+    title: "Importação SUS e reconciliação",
+    description:
+      "Valide arquivos CSV, associe procedimentos manualmente e reconcilie colisões sem duplicar volumes.",
+    icon: FileUp,
+  },
 ] as const;
 
 export default function ProductionPage() {
@@ -28,7 +35,7 @@ export default function ProductionPage() {
         description="Gerencie o catálogo e os volumes mensais por procedimento, sem dados individualizados de pacientes."
       />
       <section
-        className="grid gap-4 md:grid-cols-2"
+        className="grid gap-4 md:grid-cols-2 xl:grid-cols-3"
         aria-label="Áreas de Produção"
       >
         {sections.map(({ href, title, description, icon: Icon }) => (

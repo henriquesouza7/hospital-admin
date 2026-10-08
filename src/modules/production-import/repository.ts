@@ -1,0 +1,160 @@
+import "server-only";
+
+import { z } from "zod";
+import { getNeonDataApiClient } from "@/lib/neon/data-api";
+import { requireProductionAdmin } from "@/modules/production/access";
+import type { ProductionImportRow } from "./domain";
+
+const PAGE_SIZE = 1000;
+
+const importSchema = z.object({
+  id: z.string().uuid(),
+  file_sha256: z.string().regex(/^[0-9a-f]{64}$/),
+  reference_period: z.iso.date(),
+  row_count: z.number().int().nonnegative(),
+  imported_group_count: z.number().int().nonnegative(),
+  pending_group_count: z.number().int().nonnegative(),
+  status: z.enum(["confirmed", "pending_reconciliation", "reconciled"]),
+  actor_id: z.string(),
+  created_at: z.iso.datetime({ offset: true }),
+});
+
+const importRowSchema = z.object({
+  id: z.string().uuid(),
+  import_id: z.string().uuid(),
+  source_row_number: z.number().int(),
+  external_code: z.string().nullable(),
+  procedure_name_snapshot: z.string(),
+  source_type: z.enum(["apresentado", "aprovado", "realizado"]),
+  quantity: z.union([z.string(), z.number()]).transform(String),
+  procedure_id: z.string().uuid(),
+  production_entry_id: z.string().uuid().nullable(),
+  existing_quantity_snapshot: z
+    .union([z.string(), z.number()])
+    .nullable()
+    .transform((value) => (value === null ? null : String(value))),
+  status: z.enum([
+    "pending",
+    "imported",
+    "pending_reconciliation",
+    "kept_existing",
+    "replaced_existing",
+  ]),
+});
+
+function requireData<T>(
+  data: unknown,
+  error: unknown,
+  message: string,
+  schema: z.ZodType<T>,
+): T {
+  if (error || data === null || data === undefined) throw new Error(message);
+  const parsed = schema.safeParse(data);
+  if (!parsed.success) throw new Error(message);
+  return parsed.data;
+}
+
+export async function listProductionImports() {
+  await requireProductionAdmin();
+  const rows: z.infer<typeof importSchema>[] = [];
+  for (let offset = 0; ; offset += PAGE_SIZE) {
+    const { data, error } = await getNeonDataApiClient()
+      .from("production_imports")
+      .select(
+        "id,file_sha256,reference_period,row_count,imported_group_count,pending_group_count,status,actor_id,created_at",
+      )
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .range(offset, offset + PAGE_SIZE - 1);
+    const page = requireData(
+      data,
+      error,
+      "Não foi possível carregar as importações.",
+      z.array(importSchema),
+    );
+    rows.push(...page);
+    if (page.length < PAGE_SIZE) return rows;
+  }
+}
+
+export async function listPendingProductionImportRows() {
+  await requireProductionAdmin();
+  const rows: z.infer<typeof importRowSchema>[] = [];
+  for (let offset = 0; ; offset += PAGE_SIZE) {
+    const { data, error } = await getNeonDataApiClient()
+      .from("production_import_rows")
+      .select(
+        "id,import_id,source_row_number,external_code,procedure_name_snapshot,source_type,quantity,procedure_id,production_entry_id,existing_quantity_snapshot,status",
+      )
+      .eq("status", "pending_reconciliation")
+      .order("import_id", { ascending: true })
+      .order("procedure_id", { ascending: true })
+      .order("source_type", { ascending: true })
+      .order("source_row_number", { ascending: true })
+      .range(offset, offset + PAGE_SIZE - 1);
+    const page = requireData(
+      data,
+      error,
+      "Não foi possível carregar as pendências de reconciliação.",
+      z.array(importRowSchema),
+    );
+    rows.push(...page);
+    if (page.length < PAGE_SIZE) return rows;
+  }
+}
+
+export async function confirmProductionSusImport(input: {
+  fileSha256: string;
+  referencePeriod: string;
+  rows: readonly ProductionImportRow[];
+}) {
+  await requireProductionAdmin();
+  const { data, error } = await getNeonDataApiClient().rpc(
+    "confirm_production_sus_import",
+    {
+      p_file_sha256: input.fileSha256,
+      p_reference_period: input.referencePeriod,
+      p_rows: input.rows,
+    },
+  );
+  if (error) {
+    if (error.code === "23505")
+      throw new Error("Este arquivo já foi importado.");
+    throw new Error("Não foi possível confirmar a importação.");
+  }
+  const result = z
+    .object({
+      import_id: z.string().uuid(),
+      row_count: z.number().int().positive(),
+      imported_group_count: z.number().int().nonnegative(),
+      pending_group_count: z.number().int().nonnegative(),
+    })
+    .safeParse(data);
+  if (!result.success)
+    throw new Error("A confirmação não retornou um resultado válido.");
+  return result.data;
+}
+
+export async function reconcileProductionSusImport(input: {
+  import_id: string;
+  procedure_id: string;
+  source_type: "apresentado" | "aprovado" | "realizado";
+  resolution: "keep_existing" | "replace_with_import";
+}) {
+  await requireProductionAdmin();
+  const { data, error } = await getNeonDataApiClient().rpc(
+    "reconcile_production_sus_import",
+    {
+      p_import_id: input.import_id,
+      p_procedure_id: input.procedure_id,
+      p_source_type: input.source_type,
+      p_resolution: input.resolution,
+    },
+  );
+  if (error || data !== true)
+    throw new Error("Não foi possível concluir a reconciliação.");
+}
+
+export type PendingProductionImportRow = Awaited<
+  ReturnType<typeof listPendingProductionImportRows>
+>[number];
