@@ -37,6 +37,7 @@ describe("minor surgeries repository", () => {
     mocks.requireMinorSurgeriesAdmin.mockResolvedValue(undefined);
     mocks.from.mockImplementation((table: string) => {
       const orders: Array<{ column: string; ascending: boolean }> = [];
+      const filters: Array<[string, unknown]> = [];
       let surgeryDayIds: string[] = [];
       const query = {
         select: vi.fn(() => query),
@@ -45,12 +46,15 @@ describe("minor surgeries repository", () => {
           return query;
         }),
         gte: vi.fn(() => query),
-        eq: vi.fn(() => query),
+        eq: vi.fn((column: string, value: unknown) => {
+          filters.push([column, value]);
+          return query;
+        }),
         maybeSingle: vi.fn(() => mocks.singleResult()),
         range: vi.fn((start: number, end: number) =>
           table === "surgery_appointments"
             ? mocks.appointmentPage(surgeryDayIds, start, end, [...orders])
-            : mocks.rangePage(table, start, end, [...orders]),
+            : mocks.rangePage(table, start, end, [...orders], [...filters]),
         ),
         in: vi.fn((column: string, ids: string[]) => {
           if (table === "patients") return mocks.patientBatch(ids);
@@ -93,14 +97,22 @@ describe("minor surgeries repository", () => {
     await expect(getSurgeryDay(day.id)).resolves.toEqual(day);
   });
 
-  it("should_include_second_page_waiting_entry_when_first_page_has_1000_transferred_rows", async () => {
-    const entries = Array.from({ length: PAGE_SIZE + 1 }, (_, index) => ({
-      id: makeId(index + 1),
-      patient_id: makeId(index + 10_001),
-      status: index === PAGE_SIZE ? "waiting" : "transferred",
-      transferred_at: index === PAGE_SIZE ? null : "2026-10-01T12:00:00Z",
+  it("should_fetch_waiting_entries_completely_and_bound_transferred_history", async () => {
+    const waitingEntry = {
+      id: makeId(1),
+      patient_id: makeId(10_001),
+      status: "waiting",
+      transferred_at: null,
+      created_at: "2026-10-01T12:00:00Z",
+    };
+    const transferredEntries = Array.from({ length: 51 }, (_, index) => ({
+      id: makeId(index + 2),
+      patient_id: makeId(index + 10_002),
+      status: "transferred",
+      transferred_at: "2026-10-01T12:00:00Z",
       created_at: new Date(Date.UTC(2020, 0, index + 1)).toISOString(),
     }));
+    const entries = [waitingEntry, ...transferredEntries];
     const patients = new Map(
       entries.map((entry, index) => [
         entry.patient_id,
@@ -109,8 +121,19 @@ describe("minor surgeries repository", () => {
     );
 
     mocks.rangePage.mockImplementation(
-      async (table: string, start: number, end: number) => ({
-        data: table === "surgery_waitlist" ? entries.slice(start, end + 1) : [],
+      async (
+        table: string,
+        start: number,
+        end: number,
+        _orders: unknown,
+        filters: Array<[string, unknown]>,
+      ) => ({
+        data:
+          table !== "surgery_waitlist"
+            ? []
+            : filters.some(([, value]) => value === "waiting")
+              ? [waitingEntry].slice(start, end + 1)
+              : transferredEntries.slice(start, end + 1),
         error: null,
       }),
     );
@@ -127,34 +150,76 @@ describe("minor surgeries repository", () => {
     expect(mocks.rangePage).toHaveBeenCalledTimes(2);
     expect(mocks.rangePage.mock.calls.map((call) => call.slice(1, 3))).toEqual([
       [0, 999],
-      [1000, 1999],
+      [0, 50],
     ]);
-    expect(mocks.rangePage.mock.calls.map((call) => call[3])).toEqual([
-      [
-        { column: "created_at", ascending: true },
-        { column: "id", ascending: true },
-      ],
-      [
-        { column: "created_at", ascending: true },
-        { column: "id", ascending: true },
-      ],
+    expect(mocks.rangePage.mock.calls.map((call) => call[4])).toEqual([
+      [["status", "waiting"]],
+      [["status", "transferred"]],
     ]);
     expect(mocks.patientBatch.mock.calls.map(([ids]) => ids.length)).toEqual([
-      500, 500, 1,
+      51,
     ]);
     expect(mocks.patientBatch.mock.calls.flatMap(([ids]) => ids)).toHaveLength(
-      new Set(entries.map((entry) => entry.patient_id)).size,
+      new Set(
+        [waitingEntry, ...transferredEntries.slice(0, 50)].map(
+          (entry) => entry.patient_id,
+        ),
+      ).size,
     );
-    expect(result).toHaveLength(PAGE_SIZE + 1);
-    expect(result.map((entry) => entry.id)).toEqual(
-      entries.map((entry) => entry.id),
+    expect(result.waiting).toHaveLength(1);
+    expect(result.waiting[0].id).toBe(waitingEntry.id);
+    expect(result.transferred).toHaveLength(50);
+    expect(result.hasMoreTransferred).toBe(true);
+    expect(result.transferPage).toBe(1);
+    expect(result.transferred.map((entry) => entry.id)).toEqual(
+      transferredEntries.slice(0, 50).map((entry) => entry.id),
     );
-    expect(result[0].status).toBe("transferred");
-    expect(result[PAGE_SIZE].status).toBe("waiting");
-    expect(result[PAGE_SIZE].patient.name).toBe("Pessoa sintética 1001");
+    expect(result.waiting[0].patient.name).toBe("Pessoa sintética 1");
     expect(
-      result.some((entry) => entry.patient.name === "Cadastro indisponível"),
+      [...result.waiting, ...result.transferred].some(
+        (entry) => entry.patient.name === "Cadastro indisponível",
+      ),
     ).toBe(false);
+  });
+
+  it("should_load_requested_transferred_history_page_with_a_bounded_range", async () => {
+    const transferredEntries = Array.from({ length: 121 }, (_, index) => ({
+      id: makeId(index + 1),
+      patient_id: makeId(index + 1_001),
+      status: "transferred",
+      transferred_at: "2026-10-01T12:00:00Z",
+      created_at: new Date(Date.UTC(2020, 0, index + 1)).toISOString(),
+    }));
+    mocks.rangePage.mockImplementation(
+      async (
+        table: string,
+        start: number,
+        end: number,
+        _orders: unknown,
+        filters: Array<[string, unknown]>,
+      ) => ({
+        data:
+          table === "surgery_waitlist" &&
+          filters.some(([, value]) => value === "transferred")
+            ? transferredEntries.slice(start, end + 1)
+            : [],
+        error: null,
+      }),
+    );
+    mocks.patientBatch.mockResolvedValue({ data: [], error: null });
+
+    const result = await listSurgeryWaitlist(2);
+
+    expect(mocks.rangePage).toHaveBeenCalledTimes(2);
+    expect(mocks.rangePage.mock.calls.map((call) => call.slice(1, 3))).toEqual([
+      [0, 999],
+      [50, 100],
+    ]);
+    expect(result.transferred.map((entry) => entry.id)).toEqual(
+      transferredEntries.slice(50, 100).map((entry) => entry.id),
+    );
+    expect(result.hasMoreTransferred).toBe(true);
+    expect(result.transferPage).toBe(2);
   });
 
   it("should_list_1001_patients_when_catalog_exceeds_page_size", async () => {
@@ -195,25 +260,39 @@ describe("minor surgeries repository", () => {
 
   it("should_query_unique_patient_ids_when_waitlist_repeats_a_patient", async () => {
     const patientId = makeId(30_001);
-    mocks.rangePage.mockResolvedValue({
-      data: [
-        {
-          id: makeId(30_101),
-          patient_id: patientId,
-          status: "transferred",
-          transferred_at: "2026-10-01T12:00:00Z",
-          created_at: "2026-10-01T12:00:00Z",
-        },
-        {
-          id: makeId(30_102),
-          patient_id: patientId,
-          status: "waiting",
-          transferred_at: null,
-          created_at: "2026-10-02T12:00:00Z",
-        },
-      ],
-      error: null,
-    });
+    mocks.rangePage.mockImplementation(
+      async (
+        table: string,
+        _start: number,
+        _end: number,
+        _orders: unknown,
+        filters: Array<[string, unknown]>,
+      ) => ({
+        data:
+          table !== "surgery_waitlist"
+            ? []
+            : filters.some(([, value]) => value === "waiting")
+              ? [
+                  {
+                    id: makeId(30_102),
+                    patient_id: patientId,
+                    status: "waiting",
+                    transferred_at: null,
+                    created_at: "2026-10-02T12:00:00Z",
+                  },
+                ]
+              : [
+                  {
+                    id: makeId(30_101),
+                    patient_id: patientId,
+                    status: "transferred",
+                    transferred_at: "2026-10-01T12:00:00Z",
+                    created_at: "2026-10-01T12:00:00Z",
+                  },
+                ],
+        error: null,
+      }),
+    );
     mocks.patientBatch.mockResolvedValue({
       data: [{ id: patientId, name: "Pessoa sintética repetida" }],
       error: null,
@@ -223,10 +302,11 @@ describe("minor surgeries repository", () => {
 
     expect(mocks.patientBatch).toHaveBeenCalledOnce();
     expect(mocks.patientBatch).toHaveBeenCalledWith([patientId]);
-    expect(result.map((entry) => entry.patient.name)).toEqual([
-      "Pessoa sintética repetida",
-      "Pessoa sintética repetida",
-    ]);
+    expect(
+      [...result.transferred, ...result.waiting].map(
+        (entry) => entry.patient.name,
+      ),
+    ).toEqual(["Pessoa sintética repetida", "Pessoa sintética repetida"]);
   });
 
   it("should_return_all_upcoming_days_when_catalog_exceeds_page_size", async () => {

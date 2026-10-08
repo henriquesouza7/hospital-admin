@@ -42,6 +42,7 @@ const auditSchema = z.object({
   created_at: z.iso.datetime({ offset: true }),
 });
 const PAGE_SIZE = 1000;
+const WAITLIST_HISTORY_PAGE_SIZE = 50;
 const PATIENT_ID_BATCH_SIZE = 500;
 const SURGERY_DAY_ID_BATCH_SIZE = 500;
 const activeDayAppointmentSchema = z.object({
@@ -249,28 +250,62 @@ export async function listDayAppointments(
   }));
 }
 
-export async function listSurgeryWaitlist(): Promise<SurgeryWaitlistEntry[]> {
+export async function listSurgeryWaitlist(transferPage = 1): Promise<{
+  waiting: SurgeryWaitlistEntry[];
+  transferred: SurgeryWaitlistEntry[];
+  transferPage: number;
+  hasMoreTransferred: boolean;
+}> {
   await requireMinorSurgeriesAdmin();
-  const entries = await fetchAllPages(
-    async (offset) =>
-      await getNeonDataApiClient()
+  const safeTransferPage =
+    Number.isSafeInteger(transferPage) && transferPage > 0 ? transferPage : 1;
+  const [waiting, transferredPage] = await Promise.all([
+    fetchAllPages(
+      async (offset) =>
+        await getNeonDataApiClient()
+          .from("surgery_waitlist")
+          .select("id,patient_id,status,transferred_at,created_at")
+          .eq("status", "waiting")
+          .order("created_at", { ascending: true })
+          .order("id", { ascending: true })
+          .range(offset, offset + PAGE_SIZE - 1),
+      z.array(waitlistSchema),
+    ),
+    (async () => {
+      const start = (safeTransferPage - 1) * WAITLIST_HISTORY_PAGE_SIZE;
+      const end = start + WAITLIST_HISTORY_PAGE_SIZE;
+      if (!Number.isSafeInteger(end)) return [];
+      const { data, error } = await getNeonDataApiClient()
         .from("surgery_waitlist")
         .select("id,patient_id,status,transferred_at,created_at")
-        .order("created_at", { ascending: true })
-        .order("id", { ascending: true })
-        .range(offset, offset + PAGE_SIZE - 1),
-    z.array(waitlistSchema),
-  );
+        .eq("status", "transferred")
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
+        .range(start, end);
+      return ensureResult(data, error, z.array(waitlistSchema));
+    })(),
+  ]);
+  const hasMoreTransferred =
+    transferredPage.length > WAITLIST_HISTORY_PAGE_SIZE;
+  const transferred = transferredPage.slice(0, WAITLIST_HISTORY_PAGE_SIZE);
+  const entries = [...waiting, ...transferred];
   const patients = await listPatientsByIds(
     entries.map((entry) => entry.patient_id),
   );
-  return entries.map((entry) => ({
-    ...entry,
-    patient: patients.get(entry.patient_id) ?? {
-      id: entry.patient_id,
-      name: "Cadastro indisponível",
-    },
-  }));
+  const withPatients = (rows: typeof entries) =>
+    rows.map((entry) => ({
+      ...entry,
+      patient: patients.get(entry.patient_id) ?? {
+        id: entry.patient_id,
+        name: "Cadastro indisponível",
+      },
+    }));
+  return {
+    waiting: withPatients(waiting),
+    transferred: withPatients(transferred),
+    transferPage: safeTransferPage,
+    hasMoreTransferred,
+  };
 }
 
 export async function listAvailableSurgeryDays() {

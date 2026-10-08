@@ -15,14 +15,25 @@ import {
 } from "@/modules/minor-surgeries/repository";
 import { formatOperationalTimestamp } from "@/modules/minor-surgeries/date-time";
 
-export default async function SurgeryWaitlistPage() {
+function parseTransferPage(value: string | string[] | undefined) {
+  if (typeof value !== "string" || !/^\d+$/.test(value)) return 1;
+  const page = Number(value);
+  return Number.isSafeInteger(page) && page > 0 ? page : 1;
+}
+
+export default async function SurgeryWaitlistPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ transferPage?: string | string[] }>;
+}) {
+  const { transferPage: rawTransferPage } = await searchParams;
+  const transferPage = parseTransferPage(rawTransferPage);
   const [entries, patients, days] = await Promise.all([
-    listSurgeryWaitlist(),
+    listSurgeryWaitlist(transferPage),
     listSurgeryPatients(),
     listAvailableSurgeryDays(),
   ]);
-  const waiting = entries.filter((entry) => entry.status === "waiting");
-  const transferred = entries.filter((entry) => entry.status === "transferred");
+  const { waiting, transferred, hasMoreTransferred } = entries;
 
   return (
     <div className="space-y-8">
@@ -106,7 +117,7 @@ export default async function SurgeryWaitlistPage() {
       <section className="space-y-4">
         <SectionHeader
           title="Transferências realizadas"
-          description="O histórico conserva a entrada da fila e o vínculo com o agendamento criado."
+          description="O histórico conserva a entrada da fila e o vínculo com o agendamento criado. Exibindo transferências mais recentes primeiro."
         />
         {transferred.length === 0 ? (
           <div className="rounded-xl border border-dashed bg-card p-8 text-center text-sm text-muted-foreground">
@@ -136,6 +147,34 @@ export default async function SurgeryWaitlistPage() {
               </li>
             ))}
           </ul>
+        )}
+        {(transferPage > 1 || hasMoreTransferred) && (
+          <nav
+            aria-label="Paginação do histórico de transferências"
+            className="flex items-center justify-between gap-3"
+          >
+            {transferPage > 1 ? (
+              <Link
+                href={`/pequenas-cirurgias/fila?transferPage=${transferPage - 1}`}
+                className="inline-flex h-10 items-center rounded-md border px-4 text-sm font-medium hover:bg-muted"
+              >
+                Transferências mais recentes
+              </Link>
+            ) : (
+              <span />
+            )}
+            <span className="text-sm text-muted-foreground">
+              Página {transferPage}
+            </span>
+            {hasMoreTransferred ? (
+              <Link
+                href={`/pequenas-cirurgias/fila?transferPage=${transferPage + 1}`}
+                className="inline-flex h-10 items-center rounded-md border px-4 text-sm font-medium hover:bg-muted"
+              >
+                Transferências anteriores
+              </Link>
+            ) : null}
+          </nav>
         )}
       </section>
     </div>
