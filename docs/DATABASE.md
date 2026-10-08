@@ -54,8 +54,10 @@ infraestrutura de storage segura.
 ## Internações
 - `doctors`: cadastro administrativo de médicos com nome normalizado, estado
   ativo/inativo e timestamps. O índice pelo nome atende à listagem alfabética.
-- admission_entries
-- admission_targets
+- `admission_entries`: quantidade agregada por `entry_date` e `doctor_id`, com
+  unicidade diária por médico. Competências mensal e anual são derivadas da data.
+- `admission_targets`: quantidade-alvo por hospital, com granularidade mensal ou
+  anual e unicidade por tipo e período; o período é armazenado no primeiro dia.
 
 `doctors` possui RLS habilitada e permite leitura somente a administradores
 autenticados. A migration `20261007170000_add_admission_doctors.sql` introduz o
@@ -66,7 +68,32 @@ derivam `actor_id` de `auth.user_id()` e registram em `audit_logs` somente
 criação e mudanças efetivas, preservando valores anterior e novo. O fluxo não
 remove médicos fisicamente.
 
-A migration incremental `20261007183000_validate_doctor_whitespace.sql` alinha a constraint e as RPCs de criação/edição para remover espaços POSIX nas extremidades do nome, mantendo a validação de comprimento entre 1 e 160 caracteres.
+A migration incremental `20261007183000_validate_doctor_whitespace.sql`
+alinha a constraint e as RPCs de criação/edição para remover espaços POSIX nas
+extremidades do nome, mantendo a validação de comprimento entre 1 e 160
+caracteres.
+
+A migration `20261007200000_create_admission_entries_and_targets.sql` cria as
+tabelas de lançamentos e metas com RLS. Leitura é permitida somente a
+administradores autenticados; clientes autenticados não recebem DML direto.
+Criação e alteração usam RPCs transacionais que validam médico ativo na criação,
+unicidade por médico/data, quantidade inteira não negativa e competências das
+metas. Edições alteram somente a quantidade, preservam valores anterior e novo
+na auditoria e não registram no-op. As foreign keys impedem apagar médicos com
+histórico.
+
+Importação histórica recebe linhas CSV validadas após prévia assinada no servidor.
+A RPC resolve o nome do médico por correspondência normalizada exata e única,
+exige cadastro ativo, insere todas as linhas e audita cada lançamento e o lote
+na mesma transação. Colisões com lançamentos existentes fazem rollback do lote.
+Nenhum dado individual de paciente é armazenado.
+
+A migration `20261008150000_read_admission_entries_in_one_snapshot.sql` cria a
+RPC `list_admission_entries`, que retorna em uma única instrução o recorte de
+lançamentos do período e do médico solicitados. O agregador evita totais
+parciais quando uma importação concorrente grava mais de uma página de dados.
+A RPC exige administrador, usa `SECURITY DEFINER` com `search_path=pg_catalog`,
+revoga execução de `PUBLIC` e concede somente a `authenticated`.
 
 ## Produção
 - procedure_categories
@@ -110,10 +137,19 @@ procedimento e categoria ativos. Registros históricos podem continuar ligados
 a procedimentos inativados.
 
 ## Pequenas Cirurgias
-- patients
-- surgery_days
-- surgery_appointments
-- surgery_waitlist
+- Migration incremental: `20261007190000_create_minor_surgeries.sql`.
+- Correções incrementais: `20261008034000_secure_minor_surgery_audit_and_lock_status.sql`, `20261008034200_paginate_minor_surgery_audit.sql`, `20261008041000_attribute_minor_surgery_audit_and_index_transfers.sql` e `20261008043000_describe_minor_surgery_audit_events.sql`.
+- `patients`: UUID e nome (único dado de identificação administrativa coletado), mais timestamps. Não inclui CPF, contato, diagnóstico ou campos clínicos.
+- `surgery_days`: data única por dia e capacidade positiva, com padrão 10.
+- `surgery_appointments`: vínculo com dia e pessoa, status `awaiting_confirmation`, `confirmed` ou `cancelled`, e vínculo opcional `source_waitlist_id` único para preservar a origem da transferência.
+- `surgery_waitlist`: vínculo com a pessoa, status `waiting` ou `transferred` e timestamp de transferência. A fila não referencia um dia enquanto aguarda.
+- Chaves estrangeiras usam `ON DELETE RESTRICT`; índices parciais impedem duplicar agendamento ativo da mesma pessoa/data e entrada ativa repetida na fila. Não há exclusão física no fluxo normal.
+- As quatro tabelas têm RLS. `authenticated` recebe somente `SELECT`, condicionado a `public.is_admin()`; escrita ocorre nas RPCs `SECURITY DEFINER`, com `search_path=pg_catalog`, execução revogada de `PUBLIC` e concedida a `authenticated`.
+- A policy geral de `audit_logs` continua limitada ao próprio ator. A RPC `list_minor_surgery_audit(p_offset)` verifica admin no banco e expõe somente eventos de pequenas cirurgias, ordenados por `created_at, id` decrescentes, paginados e identificados com ator e assunto. O histórico resolve nomes de atores e registros relacionados sob a verificação de admin, com IDs como fallback; um índice parcial atende filtro e ordenação da auditoria.
+- Alterações reais de nome do paciente preservam os valores anterior e novo em `audit_logs`; atualizar para o mesmo nome não gera evento. Agendamentos e fila continuam referenciando `patient_id`, sem snapshot duplicado do nome nesta etapa.
+- As RPCs criam/atualizam data, capacidade e nome administrativo, criam agendamento, alteram status, inserem na fila e transferem da fila. Todas verificam admin no banco, validam entradas e escrevem em `audit_logs` com `actor_id = auth.user_id()`.
+- Criação de agendamento, mudança de status, ajuste de capacidade e transferência bloqueiam `surgery_days` antes de bloquear agendamentos ou contar ocupações, mantendo ordem de lock consistente e serializando operações concorrentes.
+- A fila ativa é listada por `created_at, id` em ordem crescente. O histórico de transferências é ordenado por `transferred_at, id` decrescentes, com índice parcial para a consulta paginada. A origem da transferência fica no agendamento e na auditoria; a entrada da fila muda para `transferred` sem perder seu histórico.
 
 ## Regras estruturais
 - IDs estáveis.
