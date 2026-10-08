@@ -57,12 +57,12 @@
 - [ ] Fila de espera
 - [ ] Histórico
 
-O módulo de Produção foi implementado e validado por gates automatizados e smoke de banco na branch Neon temporária. A validação autenticada pela interface permanece pendente; nenhuma sessão administrativa real estava disponível.
+O núcleo de Pequenas Cirurgias foi integrado. Os itens desta fase permanecem abertos até que dias, capacidade, pacientes/agendamentos, fila e histórico sejam concluídos e homologados por interface autenticada. Nenhum dado sintético de negócio foi criado.
 
 ## Fase 7 — Consolidação
 - [ ] Dashboard geral
 - [ ] Auditoria
-- [ ] Backup/restauração
+- [x] Backup/restauração — snapshot manual e restauração validados em branch isolada em 08/10/2026; procedimento registrado em `DEMO_2026-10-08.md`.
 - [ ] Exportações
 - [ ] Testes de segurança
 - [ ] Homologação
