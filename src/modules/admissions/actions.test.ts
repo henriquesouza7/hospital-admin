@@ -198,6 +198,16 @@ describe("doctor server actions", () => {
       id: "20000000-0000-4000-8000-000000000002",
       quantity: 0,
     });
+    expect(mocks.revalidatePath).toHaveBeenNthCalledWith(1, "/internacoes");
+    expect(mocks.revalidatePath).toHaveBeenNthCalledWith(
+      2,
+      "/internacoes/lancamentos",
+    );
+    expect(mocks.revalidatePath).toHaveBeenNthCalledWith(
+      3,
+      "/internacoes/medicos/[id]",
+      "page",
+    );
     expect(state.status).toBe("success");
   });
 

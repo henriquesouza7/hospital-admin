@@ -144,6 +144,7 @@ export async function updateAdmissionEntryAction(
     });
     revalidatePath("/internacoes");
     revalidatePath("/internacoes/lancamentos");
+    revalidatePath("/internacoes/medicos/[id]", "page");
     return { status: "success", message: "Lançamento atualizado." };
   } catch (error) {
     return errorState(

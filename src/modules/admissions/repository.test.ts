@@ -175,7 +175,7 @@ describe("doctors repository", () => {
     });
   });
 
-  it("should_paginate_all_daily_entries_before_dashboard_aggregation", async () => {
+  it("should_use_cursor_pagination_for_all_dashboard_entries", async () => {
     const makeEntry = (index: number) => ({
       id: `20000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
       doctor_id: doctor.id,
@@ -184,15 +184,29 @@ describe("doctors repository", () => {
       created_at: "2026-10-07T12:00:00Z",
       updated_at: "2026-10-07T12:00:00Z",
     });
-    const range = vi
+    const limit = vi
       .fn()
       .mockResolvedValueOnce({
         data: Array.from({ length: 1000 }, (_, index) => makeEntry(index)),
         error: null,
       })
       .mockResolvedValueOnce({ data: [makeEntry(1000)], error: null });
-    const idOrder = vi.fn().mockReturnValue({ range });
-    const dateOrder = vi.fn().mockReturnValue({ order: idOrder });
+    type Query = {
+      gte: ReturnType<typeof vi.fn>;
+      lt: ReturnType<typeof vi.fn>;
+      gt: ReturnType<typeof vi.fn>;
+      eq: ReturnType<typeof vi.fn>;
+      order: ReturnType<typeof vi.fn>;
+      limit: ReturnType<typeof vi.fn>;
+    };
+    const query = {} as Query;
+    query.gte = vi.fn().mockReturnValue(query);
+    query.lt = vi.fn().mockReturnValue(query);
+    query.gt = vi.fn().mockReturnValue(query);
+    query.eq = vi.fn().mockReturnValue(query);
+    query.order = vi.fn().mockReturnValue(query);
+    query.limit = limit;
+    const select = vi.fn().mockReturnValue(query);
     const doctorOrder = vi.fn().mockResolvedValue({
       data: [{ id: doctor.id, name: doctor.name, active: true }],
       error: null,
@@ -200,22 +214,18 @@ describe("doctors repository", () => {
     mocks.from.mockImplementation((table: string) =>
       table === "doctors"
         ? { select: vi.fn().mockReturnValue({ order: doctorOrder }) }
-        : {
-            select: vi.fn().mockReturnValue({
-              gte: vi.fn().mockReturnValue({
-                lt: vi.fn().mockReturnValue({
-                  order: dateOrder,
-                }),
-              }),
-            }),
-          },
+        : { select },
     );
 
     const entries = await listAdmissionEntries("2026-01-01", "2027-01-01");
     expect(entries).toHaveLength(1001);
-    expect(dateOrder).toHaveBeenCalledWith("entry_date", { ascending: false });
-    expect(idOrder).toHaveBeenCalledWith("id", { ascending: true });
-    expect(range).toHaveBeenNthCalledWith(1, 0, 999);
-    expect(range).toHaveBeenNthCalledWith(2, 1000, 1999);
+    expect(query.order).toHaveBeenCalledWith("id", { ascending: true });
+    expect(limit).toHaveBeenNthCalledWith(1, 1000);
+    expect(query.gt).toHaveBeenNthCalledWith(
+      1,
+      "id",
+      "20000000-0000-4000-8000-000000001000",
+    );
+    expect(limit).toHaveBeenNthCalledWith(2, 1000);
   });
 });

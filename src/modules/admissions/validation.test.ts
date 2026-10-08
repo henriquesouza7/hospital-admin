@@ -200,6 +200,20 @@ describe("admission entry and target validation", () => {
     }
   });
 
+  it("should_reject_periods_that_do_not_match_the_selected_type", () => {
+    for (const input of [
+      { period_type: "year", period: "2026-12" },
+      { period_type: "month", period: "2026-10-extra" },
+    ]) {
+      expect(
+        targetCreateSchema.safeParse({
+          ...input,
+          target_quantity: "1",
+        }).success,
+      ).toBe(false);
+    }
+  });
+
   it("should_validate_target_update_identifier_and_quantity", () => {
     expect(
       targetUpdateSchema.safeParse({ id: targetId, target_quantity: "15" })

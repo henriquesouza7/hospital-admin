@@ -113,17 +113,18 @@ export async function listAdmissionEntries(
   await requireAdmin();
   const client = getNeonDataApiClient();
   const rawEntries: unknown[] = [];
-  for (let offset = 0; ; offset += ADMISSION_ENTRIES_PAGE_SIZE) {
+  let cursor: string | undefined;
+  for (;;) {
     let query = client
       .from("admission_entries")
       .select("id,doctor_id,entry_date,quantity,created_at,updated_at")
       .gte("entry_date", startDate)
-      .lt("entry_date", endDate)
-      .order("entry_date", { ascending: false })
-      .order("id", { ascending: true })
-      .range(offset, offset + ADMISSION_ENTRIES_PAGE_SIZE - 1);
+      .lt("entry_date", endDate);
     if (doctorId) query = query.eq("doctor_id", doctorId);
-    const { data, error } = await query;
+    if (cursor) query = query.gt("id", cursor);
+    const { data, error } = await query
+      .order("id", { ascending: true })
+      .limit(ADMISSION_ENTRIES_PAGE_SIZE);
     if (error || data === null || data === undefined) {
       throw new Error(
         "Não foi possível carregar os lançamentos de internações.",
@@ -131,6 +132,13 @@ export async function listAdmissionEntries(
     }
     rawEntries.push(...data);
     if (data.length < ADMISSION_ENTRIES_PAGE_SIZE) break;
+    const lastEntry = data.at(-1);
+    if (!lastEntry || typeof lastEntry.id !== "string") {
+      throw new Error(
+        "Não foi possível continuar a paginação dos lançamentos.",
+      );
+    }
+    cursor = lastEntry.id;
   }
   const { data: doctorData, error: doctorError } = await client
     .from("doctors")
@@ -142,12 +150,21 @@ export async function listAdmissionEntries(
   const entries = entryRowsSchema.parse(rawEntries);
   const doctors = doctorRowsSchema.parse(doctorData);
   const doctorsById = new Map(doctors.map((doctor) => [doctor.id, doctor]));
-  return entries.map((entry) => {
-    const doctor = doctorsById.get(entry.doctor_id);
-    if (!doctor)
-      throw new Error("O histórico referencia um médico inexistente.");
-    return { ...entry, doctor_name: doctor.name, doctor_active: doctor.active };
-  });
+  return entries
+    .map((entry) => {
+      const doctor = doctorsById.get(entry.doctor_id);
+      if (!doctor)
+        throw new Error("O histórico referencia um médico inexistente.");
+      return {
+        ...entry,
+        doctor_name: doctor.name,
+        doctor_active: doctor.active,
+      };
+    })
+    .sort(
+      (a, b) =>
+        b.entry_date.localeCompare(a.entry_date) || a.id.localeCompare(b.id),
+    );
 }
 
 export async function listAdmissionTargets(
