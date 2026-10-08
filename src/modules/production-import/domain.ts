@@ -54,7 +54,7 @@ const patientIdentifierHeaderPatterns = [
   /(?:^|\s)(?:prontuario|medical record)(?:\s|$)/,
   /(?:^|\s)(?:nascimento|nasc|birth date|birthdate|date of birth|dob)(?:\s|$)/,
   /(?:^|\s)(?:dt|data)(?:\s+de)?\s+nasc(?:imento)?(?:\s|$)/,
-  /(?:^|\s)(?:telefone|celular|fone|phone|whatsapp|wpp)(?:\s|$)/,
+  /(?:^|\s)(?:telefone|tel|celular|cel|fone|phone|telephone|mobile|cell|cellular|whatsapp|wpp)(?:\s|$)/,
   /(?:^|\s)(?:endereco|address)(?:\s|$)/,
 ];
 const aggregatePatientCountHeaderPatterns = [

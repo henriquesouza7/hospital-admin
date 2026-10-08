@@ -72,6 +72,12 @@ describe("production SUS CSV import", () => {
       ).toThrow(/identificação de pacientes/);
     }
     expect(containsPatientColumns(["telefone do paciente"])).toBe(true);
+    for (const header of ["tel", "cel", "telephone", "mobile"]) {
+      expect(containsPatientColumns([header])).toBe(true);
+      expect(() =>
+        parseSusCsv(`procedimento;${header}\nExame;valor`, ";"),
+      ).toThrow(/identificação de pacientes/);
+    }
     expect(containsPatientColumns(["dt_nasc"])).toBe(true);
     expect(containsPatientColumns(["data_nasc"])).toBe(true);
     expect(containsPatientColumns(["data_de_nascimento"])).toBe(true);
