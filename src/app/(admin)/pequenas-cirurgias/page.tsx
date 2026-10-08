@@ -213,6 +213,10 @@ export default async function MinorSurgeriesPage({
                   <p className="text-xs text-muted-foreground">
                     {event.entity_type.replaceAll("_", " ")}
                   </p>
+                  <p className="text-xs text-muted-foreground">
+                    Responsável:{" "}
+                    {event.actor_name ?? event.actor_id ?? "Sistema"}
+                  </p>
                   {auditDetail(event) ? (
                     <p className="text-xs text-muted-foreground">
                       {auditDetail(event)}

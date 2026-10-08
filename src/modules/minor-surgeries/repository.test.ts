@@ -338,6 +338,8 @@ describe("minor surgeries repository", () => {
   it("should_load_minor_surgery_audit_through_the_admin_rpc", async () => {
     const audit = {
       id: 1,
+      actor_id: makeId(31_002),
+      actor_name: "Administradora sintética",
       entity_type: "surgery_patient",
       entity_id: makeId(31_001),
       action: "updated",
@@ -361,6 +363,8 @@ describe("minor surgeries repository", () => {
   it("should_paginate_minor_surgery_audit_with_one_row_to_detect_more", async () => {
     const events = Array.from({ length: 51 }, (_, index) => ({
       id: index + 1,
+      actor_id: makeId(index + 32_100),
+      actor_name: `Administradora sintética ${index + 1}`,
       entity_type: "surgery_appointment",
       entity_id: makeId(index + 32_000),
       action: "created",
