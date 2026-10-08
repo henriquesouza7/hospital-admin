@@ -117,6 +117,7 @@ export async function createAdmissionEntryAction(
     });
     revalidatePath("/internacoes");
     revalidatePath("/internacoes/lancamentos");
+    revalidatePath("/internacoes/medicos/[id]", "page");
     return { status: "success", message: "Lançamento registrado." };
   } catch (error) {
     return errorState(

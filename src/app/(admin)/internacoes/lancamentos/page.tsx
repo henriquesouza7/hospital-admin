@@ -41,7 +41,7 @@ export default async function AdmissionEntriesPage({
         actions={
           <Link
             className={buttonVariants({ variant: "outline" })}
-            href="/internacoes"
+            href={`/internacoes?year=${year}&month=${month}`}
           >
             Dashboard
           </Link>

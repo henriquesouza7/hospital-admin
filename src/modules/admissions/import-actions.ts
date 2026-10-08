@@ -111,6 +111,7 @@ export async function confirmAdmissionCsvAction(
     );
     revalidatePath("/internacoes");
     revalidatePath("/internacoes/lancamentos");
+    revalidatePath("/internacoes/medicos/[id]", "page");
     return {
       status: "success",
       message: `${imported} lançamento(s) importado(s).`,

@@ -52,7 +52,7 @@ export default async function AdmissionDoctorPage({
         actions={
           <Link
             className={buttonVariants({ variant: "outline" })}
-            href="/internacoes"
+            href={`/internacoes?year=${period.year}&month=${period.month}`}
           >
             Voltar ao dashboard
           </Link>

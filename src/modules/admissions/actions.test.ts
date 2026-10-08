@@ -171,6 +171,16 @@ describe("doctor server actions", () => {
       entryDate: "2026-10-07",
       quantity: 4,
     });
+    expect(mocks.revalidatePath).toHaveBeenNthCalledWith(1, "/internacoes");
+    expect(mocks.revalidatePath).toHaveBeenNthCalledWith(
+      2,
+      "/internacoes/lancamentos",
+    );
+    expect(mocks.revalidatePath).toHaveBeenNthCalledWith(
+      3,
+      "/internacoes/medicos/[id]",
+      "page",
+    );
     expect(state.status).toBe("success");
   });
 
