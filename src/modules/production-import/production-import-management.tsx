@@ -614,6 +614,7 @@ export function ProductionImportHistory({
                     {new Intl.DateTimeFormat("pt-BR", {
                       dateStyle: "short",
                       timeStyle: "short",
+                      timeZone: "America/Sao_Paulo",
                     }).format(new Date(item.created_at))}
                   </td>
                 </tr>
