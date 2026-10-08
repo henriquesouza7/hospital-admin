@@ -30,6 +30,12 @@
 - O nome é obrigatório, persistido após `trim` e limitado a 160 caracteres. Médicos novos começam ativos; registros são inativados, não apagados fisicamente.
 - A lista administrativa inclui ativos e inativos e é ordenada por nome. Inativar um médico não removerá lançamentos históricos associados.
 - Criação, alteração de nome e mudanças efetivas de situação geram auditoria com ator da sessão; tentativas sem mudança não geram evento.
+- Lançamentos são agregados por data, médico e quantidade inteira não negativa. Há no máximo um lançamento diário por médico; mês e ano são derivados da data.
+- Novos lançamentos manuais e importados exigem médico ativo. Médico inativo permanece associado ao histórico e a edição da quantidade desse registro não exige reativação.
+- A edição do lançamento altera somente a quantidade; data e médico permanecem fixos. Edições sem mudança não geram evento de auditoria. Lançamentos não são apagados fisicamente.
+- Metas configuráveis são hospitalares e independentes da produção: uma por mês ou por ano, com competência no primeiro dia do período. Os requisitos atuais não definem metas individuais por médico.
+- A importação histórica aceita CSV UTF-8 com `data,medico,quantidade`, valida cada linha antes da confirmação e resolve médicos por nome normalizado exato e único. Não associa por similaridade; duplicidades no arquivo ou no banco rejeitam a transação inteira.
+- A confirmação da importação exige o mesmo arquivo e administrador usados na prévia válida por cinco minutos. A persistência e a auditoria do lote são transacionais; nenhum dado de paciente é importado.
 
 ## Produção
 - Cada procedimento precisa de unidade de contagem definida.

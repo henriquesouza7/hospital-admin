@@ -54,8 +54,10 @@ infraestrutura de storage segura.
 ## Internações
 - `doctors`: cadastro administrativo de médicos com nome normalizado, estado
   ativo/inativo e timestamps. O índice pelo nome atende à listagem alfabética.
-- admission_entries
-- admission_targets
+- `admission_entries`: quantidade agregada por `entry_date` e `doctor_id`, com
+  unicidade diária por médico. Competências mensal e anual são derivadas da data.
+- `admission_targets`: quantidade-alvo por hospital, com granularidade mensal ou
+  anual e unicidade por tipo e período; o período é armazenado no primeiro dia.
 
 `doctors` possui RLS habilitada e permite leitura somente a administradores
 autenticados. A migration `20261007170000_add_admission_doctors.sql` introduz o
@@ -66,7 +68,32 @@ derivam `actor_id` de `auth.user_id()` e registram em `audit_logs` somente
 criação e mudanças efetivas, preservando valores anterior e novo. O fluxo não
 remove médicos fisicamente.
 
-A migration incremental `20261007183000_validate_doctor_whitespace.sql` alinha a constraint e as RPCs de criação/edição para remover espaços POSIX nas extremidades do nome, mantendo a validação de comprimento entre 1 e 160 caracteres.
+A migration incremental `20261007183000_validate_doctor_whitespace.sql`
+alinha a constraint e as RPCs de criação/edição para remover espaços POSIX nas
+extremidades do nome, mantendo a validação de comprimento entre 1 e 160
+caracteres.
+
+A migration `20261007200000_create_admission_entries_and_targets.sql` cria as
+tabelas de lançamentos e metas com RLS. Leitura é permitida somente a
+administradores autenticados; clientes autenticados não recebem DML direto.
+Criação e alteração usam RPCs transacionais que validam médico ativo na criação,
+unicidade por médico/data, quantidade inteira não negativa e competências das
+metas. Edições alteram somente a quantidade, preservam valores anterior e novo
+na auditoria e não registram no-op. As foreign keys impedem apagar médicos com
+histórico.
+
+Importação histórica recebe linhas CSV validadas após prévia assinada no servidor.
+A RPC resolve o nome do médico por correspondência normalizada exata e única,
+exige cadastro ativo, insere todas as linhas e audita cada lançamento e o lote
+na mesma transação. Colisões com lançamentos existentes fazem rollback do lote.
+Nenhum dado individual de paciente é armazenado.
+
+A migration `20261008150000_read_admission_entries_in_one_snapshot.sql` cria a
+RPC `list_admission_entries`, que retorna em uma única instrução o recorte de
+lançamentos do período e do médico solicitados. O agregador evita totais
+parciais quando uma importação concorrente grava mais de uma página de dados.
+A RPC exige administrador, usa `SECURITY DEFINER` com `search_path=pg_catalog`,
+revoga execução de `PUBLIC` e concede somente a `authenticated`.
 
 ## Produção
 - procedure_categories
