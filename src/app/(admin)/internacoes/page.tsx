@@ -1,37 +1,49 @@
 import { PageHeader } from "@/components/page-header";
-import { DoctorsManagement } from "@/modules/admissions/doctors-management";
-import type { Doctor } from "@/modules/admissions/domain";
-import { listDoctors } from "@/modules/admissions/repository";
+import { summarizeAdmissions } from "@/modules/admissions/domain";
+import { AdmissionsDashboardView } from "@/modules/admissions/dashboard-view";
+import {
+  listAdmissionEntries,
+  listAdmissionTargets,
+} from "@/modules/admissions/repository";
+import { parseYearMonth } from "@/modules/admissions/period";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdmissionsPage() {
-  let doctors: Doctor[] = [];
-  let loadError = false;
+type AdmissionsPageProps = Readonly<{
+  searchParams: Promise<{
+    year?: string | string[];
+    month?: string | string[];
+  }>;
+}>;
 
-  try {
-    doctors = await listDoctors();
-  } catch {
-    loadError = true;
-  }
-
+export default async function AdmissionsPage({
+  searchParams,
+}: AdmissionsPageProps) {
+  const period = parseYearMonth(await searchParams);
+  const startDate = `${period.year}-01-01`;
+  const endDate = `${period.year + 1}-01-01`;
+  const [entries, targets] = await Promise.all([
+    listAdmissionEntries(startDate, endDate),
+    listAdmissionTargets(startDate, endDate),
+  ]);
+  const dashboard = summarizeAdmissions(
+    entries,
+    targets,
+    period.year,
+    period.month,
+    period.today,
+  );
   return (
     <div className="grid gap-6">
       <PageHeader
         eyebrow="Internações"
-        title="Médicos"
-        description="Cadastre os médicos responsáveis pelos lançamentos administrativos de internações. A quantidade de registros representa volume administrativo, não qualidade clínica."
+        title="Dashboard"
+        description="Acompanhe lançamentos administrativos agregados, totais hospitalares e evolução por período. Os valores representam volume, não qualidade clínica."
       />
-      {loadError ? (
-        <p
-          role="alert"
-          className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive"
-        >
-          Não foi possível carregar os médicos. Atualize a página ou tente
-          novamente mais tarde.
-        </p>
-      ) : null}
-      <DoctorsManagement doctors={doctors} loadError={loadError} />
+      <AdmissionsDashboardView
+        dashboard={dashboard}
+        selectedMonth={period.month}
+      />
     </div>
   );
 }

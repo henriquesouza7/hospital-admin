@@ -30,6 +30,12 @@
 - O nome é obrigatório, persistido após `trim` e limitado a 160 caracteres. Médicos novos começam ativos; registros são inativados, não apagados fisicamente.
 - A lista administrativa inclui ativos e inativos e é ordenada por nome. Inativar um médico não removerá lançamentos históricos associados.
 - Criação, alteração de nome e mudanças efetivas de situação geram auditoria com ator da sessão; tentativas sem mudança não geram evento.
+- Lançamentos são agregados por data, médico e quantidade inteira não negativa. Há no máximo um lançamento diário por médico; mês e ano são derivados da data.
+- Novos lançamentos manuais e importados exigem médico ativo. Médico inativo permanece associado ao histórico e a edição da quantidade desse registro não exige reativação.
+- A edição do lançamento altera somente a quantidade; data e médico permanecem fixos. Edições sem mudança não geram evento de auditoria. Lançamentos não são apagados fisicamente.
+- Metas configuráveis são hospitalares e independentes da produção: uma por mês ou por ano, com competência no primeiro dia do período. Os requisitos atuais não definem metas individuais por médico.
+- A importação histórica aceita CSV UTF-8 com `data,medico,quantidade`, valida cada linha antes da confirmação e resolve médicos por nome normalizado exato e único. Não associa por similaridade; duplicidades no arquivo ou no banco rejeitam a transação inteira.
+- A confirmação da importação exige o mesmo arquivo e administrador usados na prévia válida por cinco minutos. A persistência e a auditoria do lote são transacionais; nenhum dado de paciente é importado.
 
 ## Produção
 - Cada procedimento precisa de unidade de contagem definida.
@@ -57,6 +63,11 @@
 - Não reduzir capacidade abaixo dos agendamentos ativos.
 - Cancelamento libera vaga, mas preserva histórico.
 - Prioridade clínica não será inferida pelo sistema.
+- A identificação administrativa coleta somente o nome. CPF, data de nascimento, contato e dados clínicos não são obrigatórios nem armazenados neste módulo.
+- A ordem da fila é oldest-first para organização administrativa e não representa prioridade clínica.
+- Transferir da fila somente para datas iguais ou posteriores à data operacional atual em `America/Sao_Paulo`; a operação valida a capacidade, cria um agendamento `confirmed` vinculado à entrada original e reutiliza o mesmo `patient_id`, preservando a entrada com status `transferred`.
+- Criação de agendamento, mudança de status, ajuste de capacidade e transferência validam a capacidade no banco sob bloqueio transacional da data.
+- Uma pessoa pode ter somente um agendamento ativo por data e uma entrada ativa na fila; cancelamentos e transferências permanecem registrados.
 
 ## Importação fiscal por XML da NF-e
 
