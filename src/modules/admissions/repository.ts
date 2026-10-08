@@ -3,7 +3,12 @@ import "server-only";
 import { z } from "zod";
 import { getNeonDataApiClient } from "@/lib/neon/data-api";
 import { requireAdmin } from "@/lib/auth/require-admin";
-import type { AdmissionEntry, AdmissionTarget, Doctor } from "./domain";
+import type {
+  AdmissionDashboardTotals,
+  AdmissionEntry,
+  AdmissionTarget,
+  Doctor,
+} from "./domain";
 
 const doctorSchema = z.object({
   id: z.string().uuid(),
@@ -72,6 +77,23 @@ const entryRowsSchema = z.array(
     updated_at: z.iso.datetime({ offset: true }),
   }),
 );
+const admissionDashboardTotalsSchema = z.object({
+  monthly_totals: z.array(
+    z.object({
+      month: z.number().int().min(1).max(12),
+      quantity: quantitySchema,
+    }),
+  ),
+  annual_total: quantitySchema,
+  by_doctor: z.array(
+    z.object({
+      doctor_id: z.string().uuid(),
+      doctor_name: z.string().min(1),
+      doctor_active: z.boolean(),
+      quantity: quantitySchema,
+    }),
+  ),
+});
 const admissionExportRowsSchema = z.array(
   z.object({
     entry_date: z.iso.date(),
@@ -167,6 +189,34 @@ export async function listAdmissionEntries(
       (a, b) =>
         b.entry_date.localeCompare(a.entry_date) || a.id.localeCompare(b.id),
     );
+}
+
+export async function getAdmissionDashboardTotals(
+  startDate: string,
+  throughExclusive: string,
+): Promise<AdmissionDashboardTotals> {
+  await requireAdmin();
+  const { data, error } = await getNeonDataApiClient().rpc(
+    "get_admission_dashboard_totals",
+    {
+      p_start: startDate,
+      p_through_exclusive: throughExclusive,
+    },
+  );
+  if (error || data === null || data === undefined) {
+    throw new Error("Não foi possível carregar o resumo de internações.");
+  }
+  const totals = admissionDashboardTotalsSchema.parse(data);
+  return {
+    monthlyTotals: totals.monthly_totals,
+    annualTotal: totals.annual_total,
+    byDoctor: totals.by_doctor.map((doctor) => ({
+      doctorId: doctor.doctor_id,
+      doctorName: doctor.doctor_name,
+      active: doctor.doctor_active,
+      quantity: doctor.quantity,
+    })),
+  };
 }
 
 export async function listAdmissionEntriesForExport(

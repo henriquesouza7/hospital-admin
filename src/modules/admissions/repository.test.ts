@@ -27,6 +27,7 @@ import {
   createAdmissionEntry,
   createAdmissionTarget,
   createDoctor,
+  getAdmissionDashboardTotals,
   importAdmissionEntries,
   listAdmissionEntries,
   listAdmissionEntriesForExport,
@@ -330,5 +331,50 @@ describe("doctors repository", () => {
       "30000000-0000-4000-8000-000000001000",
     );
     expect(limit).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("admissions dashboard repository", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.requireAdmin.mockResolvedValue({ id: "admin-user-id" });
+  });
+
+  it("should_load_month_and_doctor_totals_without_listing_entries_or_doctors", async () => {
+    mocks.rpc.mockResolvedValue({
+      data: {
+        monthly_totals: [{ month: 1, quantity: 5 }],
+        annual_total: 5,
+        by_doctor: [
+          {
+            doctor_id: doctor.id,
+            doctor_name: doctor.name,
+            doctor_active: false,
+            quantity: 5,
+          },
+        ],
+      },
+      error: null,
+    });
+
+    await expect(
+      getAdmissionDashboardTotals("2026-01-01", "2027-01-01"),
+    ).resolves.toEqual({
+      monthlyTotals: [{ month: 1, quantity: 5 }],
+      annualTotal: 5,
+      byDoctor: [
+        {
+          doctorId: doctor.id,
+          doctorName: doctor.name,
+          active: false,
+          quantity: 5,
+        },
+      ],
+    });
+    expect(mocks.rpc).toHaveBeenCalledWith("get_admission_dashboard_totals", {
+      p_start: "2026-01-01",
+      p_through_exclusive: "2027-01-01",
+    });
+    expect(mocks.from).not.toHaveBeenCalled();
   });
 });

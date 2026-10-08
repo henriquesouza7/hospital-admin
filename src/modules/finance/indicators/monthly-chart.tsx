@@ -10,6 +10,7 @@ import {
   YAxis,
 } from "recharts";
 import { formatCurrency } from "@/modules/admin-dashboard/domain";
+import { currencyChartTickCents } from "./domain";
 
 type ChartPoint = Readonly<{
   month: string;
@@ -55,7 +56,7 @@ export function MonthlyChart({
             tickLine={false}
             axisLine={false}
             tickFormatter={(value: number) =>
-              formatCurrency(BigInt(Math.round(value)) * BigInt(scale))
+              formatCurrency(currencyChartTickCents(value, BigInt(scale)))
             }
           />
           <Tooltip

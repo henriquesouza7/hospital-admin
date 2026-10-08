@@ -16,9 +16,9 @@ import {
   parseYearMonth,
   saoPauloToday,
 } from "@/modules/admissions/period";
-import { summarizeAdmissions } from "@/modules/admissions/domain";
+import { summarizeAdmissionTotals } from "@/modules/admissions/domain";
 import {
-  listAdmissionEntries,
+  getAdmissionDashboardTotals,
   listAdmissionTargets,
 } from "@/modules/admissions/repository";
 import { MonthlyEvolutionCharts } from "@/modules/production/indicators/indicator-charts";
@@ -59,14 +59,14 @@ export default async function Home({ searchParams }: HomeProps) {
   const todayDate = today.toISOString().slice(0, 10);
   const surgeryThrough = addMonthsClamped(today, 24);
   const [
-    admissionEntries,
+    admissionTotals,
     targets,
     financeRows,
     productionSource,
     productionImports,
     surgery,
   ] = await Promise.all([
-    listAdmissionEntries(startDate, endDate),
+    getAdmissionDashboardTotals(startDate, endDate),
     listAdmissionTargets(startDate, endDate),
     listMonthlyExpenseTotals(`${period.year}-01`, `${period.year}-12`),
     loadProductionIndicatorSource({
@@ -76,8 +76,8 @@ export default async function Home({ searchParams }: HomeProps) {
     listProductionImports(3),
     getSurgerySummary(todayDate, surgeryThrough.toISOString().slice(0, 10), 5),
   ]);
-  const admissions = summarizeAdmissions(
-    admissionEntries,
+  const admissions = summarizeAdmissionTotals(
+    admissionTotals,
     targets,
     period.year,
     period.month,

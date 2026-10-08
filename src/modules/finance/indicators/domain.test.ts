@@ -5,6 +5,7 @@ import {
   buildPriceGroups,
   calculateSavingsOpportunities,
   compareConsecutivePrices,
+  currencyChartTickCents,
   currencyChartScale,
   currencyChartValue,
   getHistoricalPriceHistory,
@@ -33,6 +34,8 @@ describe("financial chart precision", () => {
   it("should_preserve_fractional_scaled_chart_values_when_amount_is_below_scale", () => {
     expect(currencyChartValue(BigInt(99), BigInt(100))).toBe(0.99);
     expect(currencyChartValue(BigInt(1099), BigInt(100))).toBe(10.99);
+    expect(currencyChartTickCents(0.25, BigInt(100))).toBe(BigInt(25));
+    expect(currencyChartTickCents(0.75, BigInt(100))).toBe(BigInt(75));
   });
 });
 

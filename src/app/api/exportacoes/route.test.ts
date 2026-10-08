@@ -6,6 +6,13 @@ const mocks = vi.hoisted(() => ({
   listAdmissionEntriesForExport: vi.fn(),
   listAdmissionTargets: vi.fn(),
   listMonthlyExpenseTotals: vi.fn(),
+  amountToCents: vi.fn((value: string) => {
+    const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(value);
+    if (!match) throw new Error("Valor monetário inválido recebido do banco.");
+    return (
+      BigInt(match[1]) * BigInt(100) + BigInt((match[2] ?? "").padEnd(2, "0"))
+    );
+  }),
   loadIndicatorsSource: vi.fn(),
   listProductionEntries: vi.fn(),
   getSurgerySummary: vi.fn(),
@@ -23,6 +30,9 @@ vi.mock("@/modules/admissions/repository", () => ({
 vi.mock("@/modules/finance/indicators/repository", () => ({
   listMonthlyExpenseTotals: mocks.listMonthlyExpenseTotals,
   loadIndicatorsSource: mocks.loadIndicatorsSource,
+}));
+vi.mock("@/modules/finance/indicators/domain", () => ({
+  amountToCents: mocks.amountToCents,
 }));
 vi.mock("@/modules/audit/domain", () => ({
   buildCsv: (rows: readonly (readonly unknown[])[]) =>

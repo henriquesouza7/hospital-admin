@@ -8,6 +8,7 @@ import {
   listMonthlyExpenseTotals,
   loadIndicatorsSource,
 } from "@/modules/finance/indicators/repository";
+import { amountToCents } from "@/modules/finance/indicators/domain";
 import { listProductionEntries } from "@/modules/production/repository";
 import { getSurgerySummary } from "@/modules/minor-surgeries/repository";
 import { buildCsv } from "@/modules/audit/domain";
@@ -49,14 +50,6 @@ function money(cents: bigint) {
   }).format(absolute / BigInt(100));
   const fraction = (absolute % BigInt(100)).toString().padStart(2, "0");
   return `${negative ? "-" : ""}${whole},${fraction}`;
-}
-
-function amountToCents(value: string) {
-  const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(value);
-  if (!match) throw new Error("Valor monetário inválido recebido do banco.");
-  return (
-    BigInt(match[1]) * BigInt(100) + BigInt((match[2] ?? "").padEnd(2, "0"))
-  );
 }
 
 function decimalForCsv(value: string | number) {

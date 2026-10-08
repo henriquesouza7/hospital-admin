@@ -26,6 +26,12 @@ export function currencyChartValue(cents: bigint, scale: bigint): number {
   return Number(whole) + Number(fractional) / 1_000_000;
 }
 
+export function currencyChartTickCents(value: number, scale: bigint): bigint {
+  const precision = BigInt(1_000_000);
+  const scaledTick = BigInt(Math.round(value * Number(precision)));
+  return (scaledTick * scale) / precision;
+}
+
 export type IndicatorPurchase = Readonly<{
   id: string;
   sector: "farmacia" | "laboratorio";
