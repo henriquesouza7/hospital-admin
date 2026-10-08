@@ -7,6 +7,7 @@ test("protects production administration routes without a session", async ({
     "/producao",
     "/producao/procedimentos",
     "/producao/lancamentos",
+    "/producao/indicadores",
   ]) {
     await page.goto(route);
     await expect(page).toHaveURL(/\/login/);

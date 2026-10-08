@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createProductionEntry,
   DuplicateProductionRecordError,
+  loadProductionIndicatorSource,
   listProcedureCategories,
   listProductionEntries,
   listProductionProcedures,
@@ -25,6 +26,76 @@ beforeEach(() => {
 });
 
 describe("production repository", () => {
+  it("should_load_indicator_source_with_three_paginated_dataset_queries", async () => {
+    const categoryId = "00000000-0000-4000-8000-000000000101";
+    const procedureId = "00000000-0000-4000-8000-000000000201";
+    const createdAt = "2026-03-01T00:00:00.000Z";
+    const rowsByTable: Record<string, unknown[]> = {
+      procedure_categories: [
+        {
+          id: categoryId,
+          name: "Laboratório",
+          active: true,
+          created_at: createdAt,
+          updated_at: createdAt,
+        },
+      ],
+      procedures: [
+        {
+          id: procedureId,
+          category_id: categoryId,
+          name: "Hemograma",
+          counting_unit: "exames",
+          active: false,
+          created_at: createdAt,
+          updated_at: createdAt,
+        },
+      ],
+      production_entries: [
+        {
+          id: "00000000-0000-4000-8000-000000000301",
+          procedure_id: procedureId,
+          counting_unit: "procedimentos",
+          reference_period: "2026-02-01",
+          quantity: 0,
+          source: "realizado",
+          created_at: createdAt,
+          updated_at: createdAt,
+        },
+      ],
+    };
+    from.mockImplementation((table: string) => {
+      const query = {
+        select: () => query,
+        order: () => query,
+        range: async () => ({ data: rowsByTable[table], error: null }),
+      };
+      return query;
+    });
+
+    const source = await loadProductionIndicatorSource();
+
+    expect(requireProductionAdmin).toHaveBeenCalledOnce();
+    expect(from.mock.calls.map(([table]) => table).sort()).toEqual([
+      "procedure_categories",
+      "procedures",
+      "production_entries",
+    ]);
+    expect(source.procedures[0]).toMatchObject({
+      id: procedureId,
+      active: false,
+      category_name: "Laboratório",
+    });
+    expect(source.entries[0]).toMatchObject({
+      procedure_id: procedureId,
+      procedure_name: "Hemograma",
+      category_id: categoryId,
+      category_name: "Laboratório",
+      counting_unit: "procedimentos",
+      quantity: "0",
+    });
+  });
+
   it("sends a normalized entry payload without client supplied actor identity", async () => {
     rpc.mockResolvedValueOnce({
       data: "f10a7281-2a42-4fd4-b7f5-d5b7d46d54bd",

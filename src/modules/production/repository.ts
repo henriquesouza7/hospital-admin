@@ -39,6 +39,15 @@ const entryRowSchema = z.object({
 const uuidResultSchema = z.string().uuid();
 const PAGE_SIZE = 1000;
 
+export type ProductionIndicatorEntry = ProductionEntry &
+  Readonly<{ category_id: string }>;
+
+export type ProductionIndicatorSource = Readonly<{
+  categories: readonly ProcedureCategory[];
+  procedures: readonly ProductionProcedure[];
+  entries: readonly ProductionIndicatorEntry[];
+}>;
+
 export class DuplicateProductionRecordError extends Error {
   constructor(
     message = "Já existe um registro com os mesmos dados de origem.",
@@ -241,6 +250,37 @@ async function listProductionEntryRows(filters: {
     rows.push(...page);
     if (page.length < PAGE_SIZE) return rows;
   }
+}
+
+export async function loadProductionIndicatorSource(): Promise<ProductionIndicatorSource> {
+  await requireProductionAdmin();
+  const [categoryRows, procedureRows, entryRows] = await Promise.all([
+    listProcedureCategoryRows(),
+    listProductionProcedureRows({ status: "todos" }),
+    listProductionEntryRows({}),
+  ]);
+  const categories: ProcedureCategory[] = categoryRows;
+  const categoryNames = new Map(
+    categories.map((category) => [category.id, category.name]),
+  );
+  const procedures: ProductionProcedure[] = procedureRows.map((procedure) => ({
+    ...procedure,
+    category_name:
+      categoryNames.get(procedure.category_id) ?? "Categoria indisponível",
+  }));
+  const procedureById = new Map(
+    procedures.map((procedure) => [procedure.id, procedure]),
+  );
+  const entries: ProductionIndicatorEntry[] = entryRows.map((entry) => {
+    const procedure = procedureById.get(entry.procedure_id);
+    return {
+      ...entry,
+      procedure_name: procedure?.name ?? "Procedimento indisponível",
+      category_id: procedure?.category_id ?? "",
+      category_name: procedure?.category_name ?? "Categoria indisponível",
+    };
+  });
+  return { categories, procedures, entries };
 }
 
 export async function createProcedureCategory(name: string) {
