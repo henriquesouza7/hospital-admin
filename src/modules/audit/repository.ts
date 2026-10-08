@@ -50,7 +50,7 @@ export async function listAdministrativeAudit(filters: AuditFilters) {
     .order("id", { ascending: false });
 
   if (filters.from) query = query.gte("created_at", filters.from);
-  if (filters.through) query = query.lte("created_at", filters.through);
+  if (filters.through) query = query.lt("created_at", filters.through);
   if (filters.actorId) query = query.eq("actor_id", filters.actorId);
   if (filters.action) query = query.eq("action", filters.action);
   if (filters.entityType) query = query.eq("entity_type", filters.entityType);

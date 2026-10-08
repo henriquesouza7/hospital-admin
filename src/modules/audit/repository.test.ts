@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
   select: vi.fn(),
   order: vi.fn(),
   gte: vi.fn(),
-  lte: vi.fn(),
+  lt: vi.fn(),
   eq: vi.fn(),
   in: vi.fn(),
   range: vi.fn(),
@@ -28,7 +28,7 @@ describe("administrative audit repository", () => {
     select: mocks.select,
     order: mocks.order,
     gte: mocks.gte,
-    lte: mocks.lte,
+    lt: mocks.lt,
     eq: mocks.eq,
     in: mocks.in,
     range: mocks.range,
@@ -42,7 +42,7 @@ describe("administrative audit repository", () => {
       mocks.select,
       mocks.order,
       mocks.gte,
-      mocks.lte,
+      mocks.lt,
       mocks.eq,
       mocks.in,
     ]) {
@@ -107,7 +107,7 @@ describe("administrative audit repository", () => {
     await expect(
       listAdministrativeAudit({
         from: "2026-10-01T00:00:00.000-03:00",
-        through: "2026-10-31T23:59:59.999-03:00",
+        through: "2026-11-01T00:00:00.000-03:00",
         module: "internacoes",
         entityType: null,
         action: "updated",
@@ -127,6 +127,10 @@ describe("administrative audit repository", () => {
     expect(mocks.order).toHaveBeenNthCalledWith(2, "id", {
       ascending: false,
     });
+    expect(mocks.lt).toHaveBeenCalledWith(
+      "created_at",
+      "2026-11-01T00:00:00.000-03:00",
+    );
     expect(mocks.in).toHaveBeenCalledWith("entity_type", [
       "doctor",
       "admission_entry",

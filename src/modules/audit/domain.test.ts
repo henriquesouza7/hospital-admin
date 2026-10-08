@@ -10,7 +10,7 @@ describe("audit and CSV domain", () => {
   it("should_reject_invalid_calendar_dates_when_filtering", () => {
     expect(parseAuditDate("2026-02-30")).toBeNull();
     expect(parseAuditDate("2026-10-08", true)).toBe(
-      "2026-10-08T23:59:59.999-03:00",
+      "2026-10-09T00:00:00.000-03:00",
     );
   });
 

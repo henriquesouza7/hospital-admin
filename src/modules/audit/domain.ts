@@ -78,5 +78,9 @@ export function parseAuditDate(
   ) {
     return null;
   }
-  return `${value}T${endOfDay ? "23:59:59.999" : "00:00:00.000"}-03:00`;
+  if (!endOfDay) return `${value}T00:00:00.000-03:00`;
+  const exclusiveEnd = new Date(timestamp);
+  exclusiveEnd.setUTCDate(exclusiveEnd.getUTCDate() + 1);
+  const nextDate = exclusiveEnd.toISOString().slice(0, 10);
+  return `${nextDate}T00:00:00.000-03:00`;
 }

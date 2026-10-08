@@ -27,7 +27,9 @@ vi.mock("@/modules/finance/indicators/domain", () => ({
 }));
 vi.mock("@/modules/audit/domain", () => ({
   buildCsv: (rows: readonly (readonly unknown[])[]) =>
-    rows.map((row) => row.map(String).join(",")).join("\n"),
+    rows
+      .map((row) => row.map((value) => JSON.stringify(String(value))).join(","))
+      .join("\n"),
 }));
 vi.mock("@/modules/production/repository", () => ({
   listProductionEntries: mocks.listProductionEntries,
@@ -71,6 +73,37 @@ beforeEach(() => {
 });
 
 describe("administrative exports", () => {
+  it("should_use_comma_decimals_for_purchase_and_fair_amounts", async () => {
+    mocks.loadIndicatorsSource.mockResolvedValue({
+      purchases: [
+        {
+          orderDate: "2026-10-08",
+          sector: "farmacia",
+          supplierName: "Fornecedor sintético",
+          productName: "Produto sintético",
+          presentation: "Caixa",
+          quantity: "2.500",
+          unitPrice: "10.20",
+          lineTotal: "25.50",
+        },
+      ],
+      fairExpenses: [{ competence: "2026-10-01", totalAmount: "100.50" }],
+    });
+
+    const response = await GET(
+      new Request(
+        "http://localhost/api/exportacoes?tipo=compras&inicio=2026-10&fim=2026-10",
+      ),
+    );
+    const csv = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(csv).toContain('"2,500"');
+    expect(csv).toContain('"10,20"');
+    expect(csv).toContain('"25,50"');
+    expect(csv).toContain('"100,50"');
+  });
+
   it("should_include_annual_targets_for_years_intersecting_monthly_export", async () => {
     const response = await GET(
       new Request(
@@ -84,8 +117,8 @@ describe("administrative exports", () => {
       "2026-01-01",
       "2027-01-01",
     );
-    expect(csv).toContain("Anual,2026-01-01,100");
-    expect(csv).toContain("Mensal,2026-10-01,10");
+    expect(csv).toContain('"Anual","2026-01-01","100"');
+    expect(csv).toContain('"Mensal","2026-10-01","10"');
     expect(csv).not.toContain("2026-09-01");
     expect(csv).not.toContain("2027-01-01");
   });

@@ -46,6 +46,13 @@ function money(cents: bigint) {
   return (Number(cents) / 100).toFixed(2).replace(".", ",");
 }
 
+function decimalForCsv(value: string) {
+  if (!/^-?\d+(?:\.\d+)?$/.test(value)) {
+    throw new Error("Valor decimal inválido para exportação.");
+  }
+  return value.replace(".", ",");
+}
+
 function responseCsv(
   type: ExportType,
   from: string,
@@ -150,9 +157,9 @@ export async function GET(request: Request) {
             item.supplierName,
             item.productName,
             item.presentation,
-            item.quantity,
-            item.unitPrice,
-            item.lineTotal,
+            decimalForCsv(item.quantity),
+            decimalForCsv(item.unitPrice),
+            decimalForCsv(item.lineTotal),
           ]),
           ...source.fairExpenses
             .filter(
@@ -168,7 +175,7 @@ export async function GET(request: Request) {
               "",
               "",
               "",
-              expense.totalAmount,
+              decimalForCsv(expense.totalAmount),
             ]),
         ]);
       }
