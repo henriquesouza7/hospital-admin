@@ -26,12 +26,21 @@
 - Cada internação deve ser atribuída por uma regra administrativa única ao médico responsável.
 - Meses em andamento devem ser visualmente diferenciados de meses encerrados.
 - Quantidade de internações mede volume, não qualidade clínica.
+- O cadastro de médicos nesta etapa contém somente nome, situação ativa/inativa e timestamps; não armazena dados clínicos, de contato, vínculo ou de pacientes.
+- O nome é obrigatório, persistido após `trim` e limitado a 160 caracteres. Médicos novos começam ativos; registros são inativados, não apagados fisicamente.
+- A lista administrativa inclui ativos e inativos e é ordenada por nome. Inativar um médico não removerá lançamentos históricos associados.
+- Criação, alteração de nome e mudanças efetivas de situação geram auditoria com ator da sessão; tentativas sem mudança não geram evento.
 
 ## Produção
 - Cada procedimento precisa de unidade de contagem definida.
 - Procedimentos diferentes não devem ser somados como se fossem equivalentes.
 - Produção apresentada, aprovada e realizada devem permanecer distintas quando a fonte fornecer essas categorias.
 - Reimportação da mesma competência deve detectar dados existentes.
+- A primeira entrega registra volumes administrativos agregados; não armazena nem solicita identificadores ou dados individualizados de pacientes.
+- A competência é mensal e persistida no primeiro dia do mês. A quantidade é inteira e não negativa, inclusive zero quando o fechamento do período exigir registrar ausência de ocorrências.
+- Cada lançamento é único por procedimento, competência e fonte normalizada. Uma nova origem pode ser registrada separadamente; a mesma combinação deve ser corrigida pela edição do registro existente.
+- Categorias e procedimentos são inativados, nunca excluídos pelo fluxo administrativo. Para inativar uma categoria, seus procedimentos ativos precisam ser inativados antes; procedimentos inativos continuam associados ao histórico.
+- Cadastros e correções administrativas registram ator autenticado e valores anteriores/novos em `audit_logs`.
 
 ## Pequenas Cirurgias
 - Datas são criadas manualmente.

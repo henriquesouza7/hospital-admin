@@ -38,14 +38,14 @@
 - [x] Importação fiscal
 
 ## Fase 4 — Internações
-- [ ] Médicos
+- [x] Médicos
 - [ ] Lançamentos
 - [ ] Metas
 - [ ] Dashboards
 
 ## Fase 5 — Produção
-- [ ] Procedimentos e categorias
-- [ ] Lançamentos
+- [x] Procedimentos e categorias
+- [x] Lançamentos
 - [ ] Dashboards
 - [ ] Importador SUS
 - [ ] Reconciliação de importações

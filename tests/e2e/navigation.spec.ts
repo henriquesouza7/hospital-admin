@@ -19,9 +19,7 @@ test("renders the email and password login form", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Entrar" })).toBeVisible();
 });
 
-test("redirects financial administration routes without a session", async ({
-  page,
-}) => {
+test("redirects administrative routes without a session", async ({ page }) => {
   for (const route of [
     "/financeiro/fornecedores?setor=farmacia",
     "/financeiro/fornecedores?setor=laboratorio",
@@ -35,6 +33,7 @@ test("redirects financial administration routes without a session", async ({
     "/financeiro/laboratorio/produtos",
     "/financeiro/laboratorio/pedidos/novo",
     "/financeiro/feira",
+    "/internacoes",
   ]) {
     await page.goto(route);
     await expect(page).toHaveURL(/\/login/);
