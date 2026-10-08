@@ -12,6 +12,12 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
+vi.mock("next/navigation", () => ({
+  unstable_rethrow: (error: unknown) => {
+    if (error instanceof Error && error.message === "NEXT_REDIRECT_TEST")
+      throw error;
+  },
+}));
 vi.mock("./repository", () => ({
   createSurgeryDay: mocks.createSurgeryDay,
   updateSurgeryDayCapacity: mocks.updateSurgeryDayCapacity,
@@ -23,6 +29,7 @@ vi.mock("./repository", () => ({
 }));
 
 import {
+  createSurgeryDayAction,
   initialMinorSurgeryActionState,
   updateSurgeryDayCapacityAction,
 } from "./actions";
@@ -48,5 +55,17 @@ describe("minor surgeries actions", () => {
       "/pequenas-cirurgias/dias/[id]",
       "page",
     );
+  });
+
+  it("should_propagate_redirects_when_mutations_encounter_auth_redirect", async () => {
+    const redirectError = new Error("NEXT_REDIRECT_TEST");
+    const formData = new FormData();
+    formData.set("procedure_date", "2026-10-30");
+
+    mocks.createSurgeryDay.mockRejectedValue(redirectError);
+
+    await expect(
+      createSurgeryDayAction(initialMinorSurgeryActionState, formData),
+    ).rejects.toBe(redirectError);
   });
 });

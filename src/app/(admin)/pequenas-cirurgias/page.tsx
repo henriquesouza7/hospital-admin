@@ -166,7 +166,7 @@ export default async function MinorSurgeriesPage() {
       <section className="rounded-xl border bg-card p-5 shadow-sm sm:p-6">
         <SectionHeader
           title="Histórico recente"
-          description="Eventos administrativos registrados para a sua sessão. Os dados de identificação não são duplicados na auditoria."
+          description="Eventos administrativos recentes, inclusive alterações de nome com registro dos valores anterior e novo. CPF, contato e dados clínicos não são armazenados neste módulo."
         />
         {audit.length === 0 ? (
           <p className="mt-5 text-sm text-muted-foreground">

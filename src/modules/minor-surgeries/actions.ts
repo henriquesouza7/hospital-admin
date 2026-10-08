@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { unstable_rethrow } from "next/navigation";
 import {
   createSurgeryAppointment,
   createSurgeryDay,
@@ -55,6 +56,7 @@ export async function createSurgeryDayAction(
   try {
     await createSurgeryDay(parsed.data);
   } catch (error) {
+    unstable_rethrow(error);
     return errorState(
       error instanceof Error ? error.message : "Não foi possível criar o dia.",
     );
@@ -72,6 +74,7 @@ export async function updateSurgeryDayCapacityAction(
   try {
     await updateSurgeryDayCapacity(parsed.data);
   } catch (error) {
+    unstable_rethrow(error);
     return errorState(
       error instanceof Error
         ? error.message
@@ -94,6 +97,7 @@ export async function createSurgeryAppointmentAction(
   try {
     await createSurgeryAppointment(parsed.data);
   } catch (error) {
+    unstable_rethrow(error);
     return errorState(
       error instanceof Error
         ? error.message
@@ -113,6 +117,7 @@ export async function updateSurgeryAppointmentStatusAction(
   try {
     await updateSurgeryAppointmentStatus(parsed.data);
   } catch (error) {
+    unstable_rethrow(error);
     return errorState(
       error instanceof Error
         ? error.message
@@ -135,6 +140,7 @@ export async function createSurgeryWaitlistEntryAction(
   try {
     await createSurgeryWaitlistEntry(parsed.data);
   } catch (error) {
+    unstable_rethrow(error);
     return errorState(
       error instanceof Error
         ? error.message
@@ -155,6 +161,7 @@ export async function transferSurgeryWaitlistEntryAction(
   try {
     await transferSurgeryWaitlistEntry(parsed.data);
   } catch (error) {
+    unstable_rethrow(error);
     return errorState(
       error instanceof Error
         ? error.message
@@ -176,6 +183,7 @@ export async function updateSurgeryPatientAction(
   try {
     await updateSurgeryPatient(parsed.data);
   } catch (error) {
+    unstable_rethrow(error);
     return errorState(
       error instanceof Error
         ? error.message
