@@ -43,6 +43,7 @@ const auditSchema = z.object({
 });
 const PAGE_SIZE = 1000;
 const WAITLIST_HISTORY_PAGE_SIZE = 50;
+const AUDIT_PAGE_SIZE = 50;
 const PATIENT_ID_BATCH_SIZE = 500;
 const SURGERY_DAY_ID_BATCH_SIZE = 500;
 const activeDayAppointmentSchema = z.object({
@@ -279,7 +280,7 @@ export async function listSurgeryWaitlist(transferPage = 1): Promise<{
         .from("surgery_waitlist")
         .select("id,patient_id,status,transferred_at,created_at")
         .eq("status", "transferred")
-        .order("created_at", { ascending: false })
+        .order("transferred_at", { ascending: false })
         .order("id", { ascending: false })
         .range(start, end);
       return ensureResult(data, error, z.array(waitlistSchema));
@@ -313,20 +314,22 @@ export async function listAvailableSurgeryDays() {
   return days.filter((day) => day.occupied < day.capacity);
 }
 
-export async function listMinorSurgeryAudit() {
+export async function listMinorSurgeryAudit(page = 1) {
   await requireMinorSurgeriesAdmin();
-  const { data, error } = await getNeonDataApiClient()
-    .from("audit_logs")
-    .select("id,entity_type,entity_id,action,payload,created_at")
-    .in("entity_type", [
-      "surgery_day",
-      "surgery_patient",
-      "surgery_appointment",
-      "surgery_waitlist",
-    ])
-    .order("created_at", { ascending: false })
-    .limit(50);
-  return ensureResult(data, error, z.array(auditSchema));
+  const safePage = Number.isSafeInteger(page) && page > 0 ? page : 1;
+  const offset = (safePage - 1) * AUDIT_PAGE_SIZE;
+  if (!Number.isSafeInteger(offset))
+    return { events: [], page: safePage, hasMore: false };
+  const { data, error } = await getNeonDataApiClient().rpc(
+    "list_minor_surgery_audit",
+    { p_offset: offset },
+  );
+  const rows = ensureResult(data, error, z.array(auditSchema));
+  return {
+    events: rows.slice(0, AUDIT_PAGE_SIZE),
+    page: safePage,
+    hasMore: rows.length > AUDIT_PAGE_SIZE,
+  };
 }
 
 function throwRpcError(error: unknown, fallback: string): never {

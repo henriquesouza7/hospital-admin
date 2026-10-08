@@ -7,12 +7,13 @@ const mocks = vi.hoisted(() => ({
   appointmentPage: vi.fn(),
   dayIdBatch: vi.fn(),
   patientBatch: vi.fn(),
+  rpc: vi.fn(),
   requireMinorSurgeriesAdmin: vi.fn(),
 }));
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/neon/data-api", () => ({
-  getNeonDataApiClient: () => ({ from: mocks.from }),
+  getNeonDataApiClient: () => ({ from: mocks.from, rpc: mocks.rpc }),
 }));
 vi.mock("./access", () => ({
   requireMinorSurgeriesAdmin: mocks.requireMinorSurgeriesAdmin,
@@ -22,6 +23,7 @@ import {
   getSurgeryDay,
   listAllSurgeryDays,
   listDayAppointments,
+  listMinorSurgeryAudit,
   listSurgeryPatients,
   listSurgeryWaitlist,
   listUpcomingSurgeryDays,
@@ -109,7 +111,7 @@ describe("minor surgeries repository", () => {
       id: makeId(index + 2),
       patient_id: makeId(index + 10_002),
       status: "transferred",
-      transferred_at: "2026-10-01T12:00:00Z",
+      transferred_at: new Date(Date.UTC(2026, 9, 51 - index, 12)).toISOString(),
       created_at: new Date(Date.UTC(2020, 0, index + 1)).toISOString(),
     }));
     const entries = [waitingEntry, ...transferredEntries];
@@ -166,6 +168,10 @@ describe("minor surgeries repository", () => {
         ),
       ).size,
     );
+    expect(mocks.rangePage.mock.calls[1][3]).toEqual([
+      { column: "transferred_at", ascending: false },
+      { column: "id", ascending: false },
+    ]);
     expect(result.waiting).toHaveLength(1);
     expect(result.waiting[0].id).toBe(waitingEntry.id);
     expect(result.transferred).toHaveLength(50);
@@ -187,7 +193,9 @@ describe("minor surgeries repository", () => {
       id: makeId(index + 1),
       patient_id: makeId(index + 1_001),
       status: "transferred",
-      transferred_at: "2026-10-01T12:00:00Z",
+      transferred_at: new Date(
+        Date.UTC(2026, 9, 121 - index, 12),
+      ).toISOString(),
       created_at: new Date(Date.UTC(2020, 0, index + 1)).toISOString(),
     }));
     mocks.rangePage.mockImplementation(
@@ -307,6 +315,51 @@ describe("minor surgeries repository", () => {
         (entry) => entry.patient.name,
       ),
     ).toEqual(["Pessoa sintética repetida", "Pessoa sintética repetida"]);
+  });
+
+  it("should_load_minor_surgery_audit_through_the_admin_rpc", async () => {
+    const audit = {
+      id: 1,
+      entity_type: "surgery_patient",
+      entity_id: makeId(31_001),
+      action: "updated",
+      payload: { name: { old: "Nome anterior", new: "Nome atualizado" } },
+      created_at: "2026-10-01T12:00:00Z",
+    };
+    mocks.rpc.mockResolvedValue({ data: [audit], error: null });
+
+    await expect(listMinorSurgeryAudit()).resolves.toEqual({
+      events: [audit],
+      page: 1,
+      hasMore: false,
+    });
+
+    expect(mocks.requireMinorSurgeriesAdmin).toHaveBeenCalledOnce();
+    expect(mocks.rpc).toHaveBeenCalledWith("list_minor_surgery_audit", {
+      p_offset: 0,
+    });
+  });
+
+  it("should_paginate_minor_surgery_audit_with_one_row_to_detect_more", async () => {
+    const events = Array.from({ length: 51 }, (_, index) => ({
+      id: index + 1,
+      entity_type: "surgery_appointment",
+      entity_id: makeId(index + 32_000),
+      action: "created",
+      payload: { status: "confirmed" },
+      created_at: new Date(Date.UTC(2026, 9, index + 1)).toISOString(),
+    }));
+    mocks.rpc.mockResolvedValue({ data: events, error: null });
+
+    const result = await listMinorSurgeryAudit(2);
+
+    expect(result.events).toHaveLength(50);
+    expect(result.events[0].id).toBe(1);
+    expect(result.page).toBe(2);
+    expect(result.hasMore).toBe(true);
+    expect(mocks.rpc).toHaveBeenCalledWith("list_minor_surgery_audit", {
+      p_offset: 50,
+    });
   });
 
   it("should_return_all_upcoming_days_when_catalog_exceeds_page_size", async () => {

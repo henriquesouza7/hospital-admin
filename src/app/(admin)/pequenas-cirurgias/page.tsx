@@ -37,10 +37,37 @@ function auditLabel(action: string) {
   return labels[action] ?? "Evento administrativo";
 }
 
-export default async function MinorSurgeriesPage() {
+function auditDetail(event: {
+  entity_type: string;
+  action: string;
+  payload: Record<string, unknown>;
+}) {
+  if (event.entity_type !== "surgery_patient" || event.action !== "updated")
+    return null;
+  const name = event.payload.name;
+  if (typeof name !== "object" || name === null || Array.isArray(name))
+    return null;
+  if (!("old" in name) || !("new" in name)) return null;
+  if (typeof name.old !== "string" || typeof name.new !== "string") return null;
+  return `Nome: ${name.old} → ${name.new}`;
+}
+
+function parseAuditPage(value: string | string[] | undefined) {
+  if (typeof value !== "string" || !/^\d+$/.test(value)) return 1;
+  const page = Number(value);
+  return Number.isSafeInteger(page) && page > 0 ? page : 1;
+}
+
+export default async function MinorSurgeriesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ auditPage?: string | string[] }>;
+}) {
+  const { auditPage: rawAuditPage } = await searchParams;
+  const auditPage = parseAuditPage(rawAuditPage);
   const [days, audit] = await Promise.all([
     listUpcomingSurgeryDays(),
-    listMinorSurgeryAudit(),
+    listMinorSurgeryAudit(auditPage),
   ]);
   const occupied = days.reduce((total, day) => total + day.occupied, 0);
   const free = days.reduce((total, day) => total + availableCapacity(day), 0);
@@ -168,13 +195,13 @@ export default async function MinorSurgeriesPage() {
           title="Histórico recente"
           description="Eventos administrativos recentes, inclusive alterações de nome com registro dos valores anterior e novo. CPF, contato e dados clínicos não são armazenados neste módulo."
         />
-        {audit.length === 0 ? (
+        {audit.events.length === 0 ? (
           <p className="mt-5 text-sm text-muted-foreground">
             Nenhum evento de pequenas cirurgias registrado ainda.
           </p>
         ) : (
           <ol className="mt-5 divide-y">
-            {audit.map((event) => (
+            {audit.events.map((event) => (
               <li
                 key={event.id}
                 className="flex flex-col gap-1 py-3 sm:flex-row sm:items-center sm:justify-between"
@@ -186,6 +213,11 @@ export default async function MinorSurgeriesPage() {
                   <p className="text-xs text-muted-foreground">
                     {event.entity_type.replaceAll("_", " ")}
                   </p>
+                  {auditDetail(event) ? (
+                    <p className="text-xs text-muted-foreground">
+                      {auditDetail(event)}
+                    </p>
+                  ) : null}
                 </div>
                 <time
                   className="text-xs text-muted-foreground"
@@ -196,6 +228,34 @@ export default async function MinorSurgeriesPage() {
               </li>
             ))}
           </ol>
+        )}
+        {(audit.page > 1 || audit.hasMore) && (
+          <nav
+            aria-label="Paginação do histórico administrativo"
+            className="flex items-center justify-between gap-3"
+          >
+            {audit.page > 1 ? (
+              <Link
+                href={`/pequenas-cirurgias?auditPage=${audit.page - 1}`}
+                className="inline-flex h-10 items-center rounded-md border px-4 text-sm font-medium hover:bg-muted"
+              >
+                Eventos mais recentes
+              </Link>
+            ) : (
+              <span />
+            )}
+            <span className="text-sm text-muted-foreground">
+              Página {audit.page}
+            </span>
+            {audit.hasMore ? (
+              <Link
+                href={`/pequenas-cirurgias?auditPage=${audit.page + 1}`}
+                className="inline-flex h-10 items-center rounded-md border px-4 text-sm font-medium hover:bg-muted"
+              >
+                Eventos anteriores
+              </Link>
+            ) : null}
+          </nav>
         )}
       </section>
     </div>
