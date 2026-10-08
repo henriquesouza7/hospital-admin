@@ -170,9 +170,9 @@ export default async function Home({ searchParams }: HomeProps) {
           />
           <KpiCard
             icon={FileChartColumn}
-            label="Procedimentos com registro"
+            label="Séries de produção"
             value={formatInteger(production.length)}
-            detail="Indicadores e unidades discriminados abaixo"
+            detail="Procedimento, origem e unidade discriminados"
           />
           <KpiCard
             icon={ClipboardPlus}
@@ -236,7 +236,7 @@ export default async function Home({ searchParams }: HomeProps) {
         <div className="rounded-xl border bg-card p-5 shadow-sm sm:p-6">
           <SectionHeader
             title="Produção por procedimento"
-            description={`Competência ${periodLabel}; não soma procedimentos com unidades diferentes.`}
+            description={`Competência ${periodLabel}; classificações e unidades permanecem separadas.`}
           />
           {production.length === 0 ? (
             <p className="mt-5 text-sm text-muted-foreground">
@@ -248,6 +248,7 @@ export default async function Home({ searchParams }: HomeProps) {
                 <thead>
                   <tr className="border-b text-muted-foreground">
                     <th className="py-2 font-medium">Procedimento</th>
+                    <th className="py-2 font-medium">Classificação</th>
                     <th className="py-2 font-medium">Quantidade</th>
                     <th className="py-2 font-medium">Unidade</th>
                   </tr>
@@ -256,6 +257,7 @@ export default async function Home({ searchParams }: HomeProps) {
                   {production.map((item) => (
                     <tr key={item.id} className="border-b last:border-0">
                       <td className="py-3 font-medium">{item.name}</td>
+                      <td className="py-3">{item.source}</td>
                       <td className="py-3">{formatInteger(item.quantity)}</td>
                       <td className="py-3">{item.unit}</td>
                     </tr>

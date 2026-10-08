@@ -22,6 +22,7 @@ export function getProductionForMonth(
     procedure_id: string;
     procedure_name: string;
     counting_unit: string;
+    source: string;
     reference_period: string;
     quantity: string;
   }[],
@@ -31,23 +32,33 @@ export function getProductionForMonth(
   const competence = `${year}-${String(month).padStart(2, "0")}`;
   const grouped = new Map<
     string,
-    { name: string; unit: string; quantity: number }
+    { name: string; unit: string; source: string; quantity: number }
   >();
   for (const entry of entries) {
     if (entry.reference_period.slice(0, 7) !== competence) continue;
-    const key = `${entry.procedure_id}:${entry.counting_unit}`;
+    const key = JSON.stringify([
+      entry.procedure_id,
+      entry.counting_unit,
+      entry.source,
+    ]);
     const current = grouped.get(key);
     if (current) current.quantity += Number(entry.quantity);
     else
       grouped.set(key, {
         name: entry.procedure_name,
         unit: entry.counting_unit,
+        source: entry.source,
         quantity: Number(entry.quantity),
       });
   }
   return [...grouped.entries()]
     .map(([key, value]) => ({ id: key, ...value }))
-    .sort((left, right) => left.name.localeCompare(right.name, "pt-BR"));
+    .sort(
+      (left, right) =>
+        left.name.localeCompare(right.name, "pt-BR") ||
+        left.source.localeCompare(right.source, "pt-BR") ||
+        left.unit.localeCompare(right.unit, "pt-BR"),
+    );
 }
 
 export function summarizeSurgeryDays(days: readonly SurgeryDaySummary[]) {

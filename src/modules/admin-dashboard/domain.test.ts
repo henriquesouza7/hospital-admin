@@ -6,13 +6,14 @@ import {
 } from "./domain";
 
 describe("administrative overview aggregations", () => {
-  it("should_group_production_by_procedure_and_unit_when_competence_matches", () => {
+  it("should_keep_production_sources_separate_when_competence_matches", () => {
     const result = getProductionForMonth(
       [
         {
           procedure_id: "a",
           procedure_name: "Hemograma",
           counting_unit: "exame",
+          source: "realizado",
           reference_period: "2026-10-01",
           quantity: "4",
         },
@@ -20,6 +21,7 @@ describe("administrative overview aggregations", () => {
           procedure_id: "a",
           procedure_name: "Hemograma",
           counting_unit: "exame",
+          source: "realizado",
           reference_period: "2026-10-01",
           quantity: "6",
         },
@@ -27,6 +29,7 @@ describe("administrative overview aggregations", () => {
           procedure_id: "b",
           procedure_name: "Consulta",
           counting_unit: "atendimento",
+          source: "manual",
           reference_period: "2026-10-01",
           quantity: "3",
         },
@@ -34,6 +37,15 @@ describe("administrative overview aggregations", () => {
           procedure_id: "a",
           procedure_name: "Hemograma",
           counting_unit: "exame",
+          source: "aprovado",
+          reference_period: "2026-10-01",
+          quantity: "2",
+        },
+        {
+          procedure_id: "a",
+          procedure_name: "Hemograma",
+          counting_unit: "exame",
+          source: "realizado",
           reference_period: "2026-09-01",
           quantity: "100",
         },
@@ -43,12 +55,26 @@ describe("administrative overview aggregations", () => {
     );
     expect(result).toEqual([
       {
-        id: "b:atendimento",
+        id: '["b","atendimento","manual"]',
         name: "Consulta",
         unit: "atendimento",
+        source: "manual",
         quantity: 3,
       },
-      { id: "a:exame", name: "Hemograma", unit: "exame", quantity: 10 },
+      {
+        id: '["a","exame","aprovado"]',
+        name: "Hemograma",
+        unit: "exame",
+        source: "aprovado",
+        quantity: 2,
+      },
+      {
+        id: '["a","exame","realizado"]',
+        name: "Hemograma",
+        unit: "exame",
+        source: "realizado",
+        quantity: 10,
+      },
     ]);
   });
 
