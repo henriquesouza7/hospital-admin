@@ -1,5 +1,11 @@
 import Link from "next/link";
-import { ArrowRight, ClipboardList, FileUp, Stethoscope } from "lucide-react";
+import {
+  Activity,
+  ArrowRight,
+  ClipboardList,
+  FileUp,
+  Stethoscope,
+} from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 
 const sections = [
@@ -16,6 +22,13 @@ const sections = [
     description:
       "Registre e corrija quantidades agregadas por competência e fonte.",
     icon: ClipboardList,
+  },
+  {
+    href: "/producao/indicadores",
+    title: "Indicadores e dashboards",
+    description:
+      "Analise volumes por procedimento, competência, unidade histórica e origem.",
+    icon: Activity,
   },
   {
     href: "/producao/importacoes",

@@ -46,7 +46,7 @@
 ## Fase 5 — Produção
 - [x] Procedimentos e categorias
 - [x] Lançamentos
-- [ ] Dashboards
+- [x] Dashboards
 - [x] Importador SUS
 - [x] Reconciliação de importações
 
@@ -57,7 +57,7 @@
 - [ ] Fila de espera
 - [ ] Histórico
 
-O núcleo está implementado nesta branch e validado em testes unitários, gates de build/E2E e smoke na branch Neon temporária com dados fictícios. Os itens permanecem desmarcados até a validação autenticada pela interface; a sessão disponível não foi reconhecida pelo Auth da branch isolada.
+O módulo de Produção foi implementado e validado por gates automatizados e smoke de banco na branch Neon temporária. A validação autenticada pela interface permanece pendente; nenhuma sessão administrativa real estava disponível.
 
 ## Fase 7 — Consolidação
 - [ ] Dashboard geral
