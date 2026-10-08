@@ -41,6 +41,15 @@ const auditSchema = z.object({
   payload: z.record(z.string(), z.unknown()),
   created_at: z.iso.datetime({ offset: true }),
 });
+const PAGE_SIZE = 1000;
+const PATIENT_ID_BATCH_SIZE = 500;
+const SURGERY_DAY_ID_BATCH_SIZE = 500;
+const activeDayAppointmentSchema = z.object({
+  surgery_day_id: z.string().uuid(),
+  status: z.enum(["awaiting_confirmation", "confirmed"]),
+});
+
+type QueryResult = { data: unknown; error: unknown };
 
 function ensureResult<T>(
   data: unknown,
@@ -55,6 +64,20 @@ function ensureResult<T>(
   return schema.parse(data);
 }
 
+async function fetchAllPages<T>(
+  loadPage: (offset: number) => Promise<QueryResult>,
+  schema: z.ZodType<T[]>,
+): Promise<T[]> {
+  const rows: T[] = [];
+
+  for (let offset = 0; ; offset += PAGE_SIZE) {
+    const { data, error } = await loadPage(offset);
+    const page = ensureResult(data, error, schema);
+    rows.push(...page);
+    if (page.length < PAGE_SIZE) return rows;
+  }
+}
+
 function todayInSaoPaulo() {
   return new Intl.DateTimeFormat("sv-SE", {
     timeZone: "America/Sao_Paulo",
@@ -64,53 +87,85 @@ function todayInSaoPaulo() {
   }).format(new Date());
 }
 
+async function listActiveAppointmentsByDayIds(dayIds: readonly string[]) {
+  const appointments: z.infer<typeof activeDayAppointmentSchema>[] = [];
+
+  for (
+    let offset = 0;
+    offset < dayIds.length;
+    offset += SURGERY_DAY_ID_BATCH_SIZE
+  ) {
+    const batch = dayIds.slice(offset, offset + SURGERY_DAY_ID_BATCH_SIZE);
+    const page = await fetchAllPages(
+      async (pageOffset) =>
+        await getNeonDataApiClient()
+          .from("surgery_appointments")
+          .select("surgery_day_id,status")
+          .in("surgery_day_id", batch)
+          .in("status", ["awaiting_confirmation", "confirmed"])
+          .order("id", { ascending: true })
+          .range(pageOffset, pageOffset + PAGE_SIZE - 1),
+      z.array(activeDayAppointmentSchema),
+    );
+    appointments.push(...page);
+  }
+
+  return appointments;
+}
+
 async function listPatientsByIds(ids: readonly string[]) {
   if (ids.length === 0) return new Map<string, SurgeryPatient>();
-  const { data, error } = await getNeonDataApiClient()
-    .from("patients")
-    .select("id,name")
-    .in("id", [...new Set(ids)]);
-  const patients = ensureResult(data, error, z.array(patientSchema));
-  return new Map(patients.map((patient) => [patient.id, patient]));
+  const uniqueIds = [...new Set(ids)];
+  const patients = new Map<string, SurgeryPatient>();
+
+  for (
+    let offset = 0;
+    offset < uniqueIds.length;
+    offset += PATIENT_ID_BATCH_SIZE
+  ) {
+    const batch = uniqueIds.slice(offset, offset + PATIENT_ID_BATCH_SIZE);
+    const { data, error } = await getNeonDataApiClient()
+      .from("patients")
+      .select("id,name")
+      .in("id", batch);
+    const page = ensureResult(data, error, z.array(patientSchema));
+    for (const patient of page) patients.set(patient.id, patient);
+  }
+
+  return patients;
 }
 
 export async function listSurgeryPatients(): Promise<SurgeryPatient[]> {
   await requireMinorSurgeriesAdmin();
-  const { data, error } = await getNeonDataApiClient()
-    .from("patients")
-    .select("id,name")
-    .order("name", { ascending: true });
-  return ensureResult(data, error, z.array(patientSchema));
+  return fetchAllPages(
+    async (offset) =>
+      await getNeonDataApiClient()
+        .from("patients")
+        .select("id,name")
+        .order("name", { ascending: true })
+        .order("id", { ascending: true })
+        .range(offset, offset + PAGE_SIZE - 1),
+    z.array(patientSchema),
+  );
 }
 
 export async function listUpcomingSurgeryDays(): Promise<SurgeryDaySummary[]> {
   await requireMinorSurgeriesAdmin();
-  const { data, error } = await getNeonDataApiClient()
-    .from("surgery_days")
-    .select("id,procedure_date,capacity")
-    .gte("procedure_date", todayInSaoPaulo())
-    .order("procedure_date", { ascending: true });
-  const days = ensureResult(data, error, z.array(daySchema));
+  const days = await fetchAllPages(
+    async (offset) =>
+      await getNeonDataApiClient()
+        .from("surgery_days")
+        .select("id,procedure_date,capacity")
+        .gte("procedure_date", todayInSaoPaulo())
+        .order("procedure_date", { ascending: true })
+        .order("id", { ascending: true })
+        .range(offset, offset + PAGE_SIZE - 1),
+    z.array(daySchema),
+  );
   if (days.length === 0) return [];
 
-  const { data: appointmentData, error: appointmentError } =
-    await getNeonDataApiClient()
-      .from("surgery_appointments")
-      .select("surgery_day_id,status")
-      .in(
-        "surgery_day_id",
-        days.map((day) => day.id),
-      )
-      .in("status", ["awaiting_confirmation", "confirmed"]);
-  const appointments = ensureResult(
-    appointmentData,
-    appointmentError,
-    z.array(
-      z.object({
-        surgery_day_id: z.string().uuid(),
-        status: z.enum(["awaiting_confirmation", "confirmed"]),
-      }),
-    ),
+  const appointments = await listActiveAppointmentsByDayIds(
+    days.map((day) => day.id),
   );
 
   return days.map((day) =>
@@ -125,31 +180,20 @@ export async function listUpcomingSurgeryDays(): Promise<SurgeryDaySummary[]> {
 
 export async function listAllSurgeryDays(): Promise<SurgeryDaySummary[]> {
   await requireMinorSurgeriesAdmin();
-  const { data, error } = await getNeonDataApiClient()
-    .from("surgery_days")
-    .select("id,procedure_date,capacity")
-    .order("procedure_date", { ascending: false });
-  const days = ensureResult(data, error, z.array(daySchema));
+  const days = await fetchAllPages(
+    async (offset) =>
+      await getNeonDataApiClient()
+        .from("surgery_days")
+        .select("id,procedure_date,capacity")
+        .order("procedure_date", { ascending: false })
+        .order("id", { ascending: true })
+        .range(offset, offset + PAGE_SIZE - 1),
+    z.array(daySchema),
+  );
   if (days.length === 0) return [];
 
-  const { data: appointmentData, error: appointmentError } =
-    await getNeonDataApiClient()
-      .from("surgery_appointments")
-      .select("surgery_day_id,status")
-      .in(
-        "surgery_day_id",
-        days.map((day) => day.id),
-      )
-      .in("status", ["awaiting_confirmation", "confirmed"]);
-  const appointments = ensureResult(
-    appointmentData,
-    appointmentError,
-    z.array(
-      z.object({
-        surgery_day_id: z.string().uuid(),
-        status: z.enum(["awaiting_confirmation", "confirmed"]),
-      }),
-    ),
+  const appointments = await listActiveAppointmentsByDayIds(
+    days.map((day) => day.id),
   );
 
   return days.map((day) =>
@@ -177,14 +221,19 @@ export async function listDayAppointments(
   dayId: string,
 ): Promise<SurgeryAppointment[]> {
   await requireMinorSurgeriesAdmin();
-  const { data, error } = await getNeonDataApiClient()
-    .from("surgery_appointments")
-    .select(
-      "id,surgery_day_id,patient_id,source_waitlist_id,status,created_at,updated_at",
-    )
-    .eq("surgery_day_id", dayId)
-    .order("created_at", { ascending: true });
-  const appointments = ensureResult(data, error, z.array(appointmentSchema));
+  const appointments = await fetchAllPages(
+    async (offset) =>
+      await getNeonDataApiClient()
+        .from("surgery_appointments")
+        .select(
+          "id,surgery_day_id,patient_id,source_waitlist_id,status,created_at,updated_at",
+        )
+        .eq("surgery_day_id", dayId)
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true })
+        .range(offset, offset + PAGE_SIZE - 1),
+    z.array(appointmentSchema),
+  );
   const patients = await listPatientsByIds(
     appointments.map((item) => item.patient_id),
   );
@@ -199,12 +248,16 @@ export async function listDayAppointments(
 
 export async function listSurgeryWaitlist(): Promise<SurgeryWaitlistEntry[]> {
   await requireMinorSurgeriesAdmin();
-  const { data, error } = await getNeonDataApiClient()
-    .from("surgery_waitlist")
-    .select("id,patient_id,status,transferred_at,created_at")
-    .order("created_at", { ascending: true })
-    .order("id", { ascending: true });
-  const entries = ensureResult(data, error, z.array(waitlistSchema));
+  const entries = await fetchAllPages(
+    async (offset) =>
+      await getNeonDataApiClient()
+        .from("surgery_waitlist")
+        .select("id,patient_id,status,transferred_at,created_at")
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true })
+        .range(offset, offset + PAGE_SIZE - 1),
+    z.array(waitlistSchema),
+  );
   const patients = await listPatientsByIds(
     entries.map((entry) => entry.patient_id),
   );
