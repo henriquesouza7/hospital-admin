@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  amountToCents,
   buildIndicatorsData,
   buildPriceGroups,
   calculateSavingsOpportunities,
   compareConsecutivePrices,
+  currencyChartScale,
+  currencyChartValue,
   getHistoricalPriceHistory,
   getLargestIncreases,
   topSavingsOpportunities,
@@ -16,6 +19,17 @@ const productId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const otherProductId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const supplierOne = "11111111-1111-4111-8111-111111111111";
 const supplierTwo = "22222222-2222-4222-8222-222222222222";
+
+describe("financial chart precision", () => {
+  it("should_scale_bigint_chart_values_without_losing_exact_totals", () => {
+    const cents = amountToCents("90071992547409.93");
+    const scale = currencyChartScale([cents]);
+
+    expect(cents).toBe(BigInt("9007199254740993"));
+    expect(scale).toBe(BigInt(10_000_000));
+    expect(currencyChartValue(cents, scale)).toBe(900_719_925);
+  });
+});
 
 function purchase(
   overrides: Partial<IndicatorPurchase> = {},

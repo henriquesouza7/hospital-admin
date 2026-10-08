@@ -58,6 +58,25 @@ const activeDayAppointmentSchema = z.object({
   surgery_day_id: z.string().uuid(),
   status: z.enum(["awaiting_confirmation", "confirmed"]),
 });
+const surgeryExportSummarySchema = z.object({
+  days: z.array(
+    z.object({
+      id: z.string().uuid(),
+      procedure_date: z.iso.date(),
+      capacity: z.number().int().nonnegative(),
+      occupied: z.number().int().nonnegative(),
+      awaiting_confirmation: z.number().int().nonnegative(),
+      confirmed: z.number().int().nonnegative(),
+    }),
+  ),
+  has_more: z.boolean(),
+  day_count: z.number().int().nonnegative(),
+  waiting_count: z.number().int().nonnegative(),
+  capacity: z.number().int().nonnegative(),
+  occupied: z.number().int().nonnegative(),
+  awaiting_confirmation: z.number().int().nonnegative(),
+  confirmed: z.number().int().nonnegative(),
+});
 const transferDestinationSchema = z.object({
   source_waitlist_id: z.string().uuid(),
   appointment_id: z.string().uuid(),
@@ -209,6 +228,23 @@ export async function listUpcomingSurgeryDays(): Promise<SurgeryDaySummary[]> {
       ),
     ),
   );
+}
+
+export async function getSurgerySummary(
+  startDate: string,
+  throughExclusive: string,
+  maxRows: number,
+) {
+  await requireMinorSurgeriesAdmin();
+  const { data, error } = await getNeonDataApiClient().rpc(
+    "get_surgery_summary",
+    {
+      p_start: startDate,
+      p_through_exclusive: throughExclusive,
+      p_max_rows: maxRows,
+    },
+  );
+  return ensureResult(data, error, surgeryExportSummarySchema);
 }
 
 export async function listSurgeryDaysPage(

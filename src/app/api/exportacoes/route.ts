@@ -9,10 +9,7 @@ import {
   loadIndicatorsSource,
 } from "@/modules/finance/indicators/repository";
 import { listProductionEntries } from "@/modules/production/repository";
-import {
-  listUpcomingSurgeryDays,
-  listSurgeryWaitlist,
-} from "@/modules/minor-surgeries/repository";
+import { getSurgerySummary } from "@/modules/minor-surgeries/repository";
 import { buildCsv } from "@/modules/audit/domain";
 
 const MAX_MONTHS = 24;
@@ -299,33 +296,37 @@ export async function GET(request: Request) {
         ]);
       }
       case "cirurgias": {
-        const [days, waitingList] = await Promise.all([
-          listUpcomingSurgeryDays(),
-          listSurgeryWaitlist(1),
-        ]);
+        const summary = await getSurgerySummary(
+          firstDay,
+          afterLastDay,
+          MAX_ROWS + 1,
+        );
+        if (summary.has_more || summary.days.length >= MAX_ROWS) {
+          return NextResponse.json(
+            {
+              error: `A extração ultrapassa o limite de ${MAX_ROWS.toLocaleString("pt-BR")} linhas.`,
+            },
+            { status: 413 },
+          );
+        }
         return responseCsv(exportType, from, through, [
           [
-            "Data futura",
+            "Data",
             "Capacidade",
             "Ocupadas",
             "Aguardando confirmação",
             "Confirmadas",
             "Pessoas na fila",
           ],
-          ...days
-            .filter(
-              (day) =>
-                day.procedure_date.slice(0, 7) >= from &&
-                day.procedure_date.slice(0, 7) <= through,
-            )
-            .map((day) => [
-              day.procedure_date,
-              day.capacity,
-              day.occupied,
-              day.awaitingConfirmation,
-              day.confirmed,
-            ]),
-          ["Fila atual", "", "", "", "", waitingList.waiting.length],
+          ...summary.days.map((day) => [
+            day.procedure_date,
+            day.capacity,
+            day.occupied,
+            day.awaiting_confirmation,
+            day.confirmed,
+            "",
+          ]),
+          ["Fila atual", "", "", "", "", summary.waiting_count],
         ]);
       }
     }

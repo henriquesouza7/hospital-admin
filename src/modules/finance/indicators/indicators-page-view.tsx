@@ -11,6 +11,7 @@ import { KpiCard } from "@/components/kpi-card";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDate } from "@/modules/finance/pharmacy/format";
+import { currencyChartScale, currencyChartValue } from "./domain";
 import type {
   IndicatorsData,
   IndicatorPurchase,
@@ -78,13 +79,25 @@ export function IndicatorsPageView({
   const availableProducts = products.filter(
     (product) => filters.setor === "todos" || product.sector === filters.setor,
   );
+  const chartScale = currencyChartScale(
+    data.monthly.flatMap((month) => [
+      month.pharmacyCents,
+      month.laboratoryCents,
+      month.fairCents,
+      month.totalCents,
+    ]),
+  );
   const points = data.monthly.map((month) => ({
     month: month.month,
     label: monthLabel(month.month),
-    pharmacy: Number(month.pharmacyCents) / 100,
-    laboratory: Number(month.laboratoryCents) / 100,
-    fair: Number(month.fairCents) / 100,
-    total: Number(month.totalCents) / 100,
+    pharmacy: currencyChartValue(month.pharmacyCents, chartScale),
+    pharmacyExact: formatCurrency(month.pharmacyCents),
+    laboratory: currencyChartValue(month.laboratoryCents, chartScale),
+    laboratoryExact: formatCurrency(month.laboratoryCents),
+    fair: currencyChartValue(month.fairCents, chartScale),
+    fairExact: formatCurrency(month.fairCents),
+    total: currencyChartValue(month.totalCents, chartScale),
+    totalExact: formatCurrency(month.totalCents),
     hasRecords: month.hasRecords,
   }));
   const selectedProduct = products.find(
@@ -241,7 +254,7 @@ export function IndicatorsPageView({
         description="Meses sem registros aparecem com zero apenas na série; isso não afirma ausência de gastos."
         badge="Período consultado"
       >
-        <MonthlyChart points={points} />
+        <MonthlyChart points={points} scale={chartScale.toString()} />
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[680px] text-left text-sm">
             <caption className="sr-only">

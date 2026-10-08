@@ -109,8 +109,7 @@ describe("administrative overview aggregations", () => {
   });
 
   it("should_preserve_bigint_cents_when_formatting_large_totals", () => {
-    expect(formatCurrency(BigInt("9007199254740993"))).toBe(
-      "R$ 90.071.992.547.409,93",
-    );
+    const cents = BigInt("9007199254740993");
+    expect(formatCurrency(cents)).toBe("R$ 90.071.992.547.409,93");
   });
 });

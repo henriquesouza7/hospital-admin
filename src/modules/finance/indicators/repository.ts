@@ -37,6 +37,9 @@ const monthlyTotalsSchema = z.array(
     pharmacy_total: numeric,
     laboratory_total: numeric,
     fair_total: numeric,
+    pharmacy_item_count: z.number().int().nonnegative(),
+    laboratory_item_count: z.number().int().nonnegative(),
+    has_fair_record: z.boolean(),
   }),
 );
 const productSchema = z.array(

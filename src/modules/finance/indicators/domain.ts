@@ -1,6 +1,28 @@
 import { calculateLineTotalCents } from "../pharmacy/validation";
 import type { IndicatorsFilters } from "./validation";
 
+export function amountToCents(value: string): bigint {
+  const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(value);
+  if (!match) throw new Error("Valor monetário inválido recebido do banco.");
+  return (
+    BigInt(match[1]) * BigInt(100) + BigInt((match[2] ?? "").padEnd(2, "0"))
+  );
+}
+
+export function currencyChartScale(amounts: readonly bigint[]): bigint {
+  const maximum = amounts.reduce(
+    (largest, amount) => (amount > largest ? amount : largest),
+    BigInt(0),
+  );
+  let scale = BigInt(100);
+  while (maximum / scale > BigInt(1_000_000_000)) scale *= BigInt(10);
+  return scale;
+}
+
+export function currencyChartValue(cents: bigint, scale: bigint): number {
+  return Number(cents / scale);
+}
+
 export type IndicatorPurchase = Readonly<{
   id: string;
   sector: "farmacia" | "laboratorio";

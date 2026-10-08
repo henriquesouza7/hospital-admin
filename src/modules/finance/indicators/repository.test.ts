@@ -30,6 +30,9 @@ describe("financial indicators repository", () => {
           pharmacy_total: "123.45",
           laboratory_total: "67.89",
           fair_total: "10.00",
+          pharmacy_item_count: 1,
+          laboratory_item_count: 2,
+          has_fair_record: true,
         },
       ],
       error: null,
@@ -43,6 +46,9 @@ describe("financial indicators repository", () => {
         pharmacy_total: "123.45",
         laboratory_total: "67.89",
         fair_total: "10.00",
+        pharmacy_item_count: 1,
+        laboratory_item_count: 2,
+        has_fair_record: true,
       },
     ]);
     expect(mocks.rpc).toHaveBeenCalledWith("list_monthly_expense_totals", {

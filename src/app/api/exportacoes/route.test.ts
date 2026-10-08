@@ -8,8 +8,7 @@ const mocks = vi.hoisted(() => ({
   listMonthlyExpenseTotals: vi.fn(),
   loadIndicatorsSource: vi.fn(),
   listProductionEntries: vi.fn(),
-  listUpcomingSurgeryDays: vi.fn(),
-  listSurgeryWaitlist: vi.fn(),
+  getSurgerySummary: vi.fn(),
   buildCsv: vi.fn(),
 }));
 
@@ -35,8 +34,7 @@ vi.mock("@/modules/production/repository", () => ({
   listProductionEntries: mocks.listProductionEntries,
 }));
 vi.mock("@/modules/minor-surgeries/repository", () => ({
-  listUpcomingSurgeryDays: mocks.listUpcomingSurgeryDays,
-  listSurgeryWaitlist: mocks.listSurgeryWaitlist,
+  getSurgerySummary: mocks.getSurgerySummary,
 }));
 
 import { GET } from "./route";
@@ -73,6 +71,69 @@ beforeEach(() => {
 });
 
 describe("administrative exports", () => {
+  it("should_bound_surgery_export_and_count_the_waitlist_in_the_database", async () => {
+    mocks.getSurgerySummary.mockResolvedValue({
+      days: [
+        {
+          id: "20000000-0000-4000-8000-000000000001",
+          procedure_date: "2026-10-08",
+          capacity: 10,
+          occupied: 2,
+          awaiting_confirmation: 1,
+          confirmed: 1,
+        },
+      ],
+      has_more: false,
+      day_count: 1,
+      waiting_count: 3,
+      capacity: 10,
+      occupied: 2,
+      awaiting_confirmation: 1,
+      confirmed: 1,
+    });
+
+    const response = await GET(
+      new Request(
+        "http://localhost/api/exportacoes?tipo=cirurgias&inicio=2026-10&fim=2026-10",
+      ),
+    );
+    const csv = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(mocks.getSurgerySummary).toHaveBeenCalledWith(
+      "2026-10-01",
+      "2026-11-01",
+      10_001,
+    );
+    expect(csv).toContain('"Fila atual","","","","","3"');
+  });
+
+  it("should_reject_surgery_export_when_the_database_summary_exceeds_the_cap", async () => {
+    mocks.getSurgerySummary.mockResolvedValue({
+      days: [],
+      has_more: true,
+      day_count: 10_002,
+      waiting_count: 0,
+      capacity: 0,
+      occupied: 0,
+      awaiting_confirmation: 0,
+      confirmed: 0,
+    });
+
+    const response = await GET(
+      new Request(
+        "http://localhost/api/exportacoes?tipo=cirurgias&inicio=2026-10&fim=2026-10",
+      ),
+    );
+
+    expect(response.status).toBe(413);
+    expect(mocks.getSurgerySummary).toHaveBeenCalledWith(
+      "2026-10-01",
+      "2026-11-01",
+      10_001,
+    );
+  });
+
   it("should_export_expense_totals_without_number_precision_loss", async () => {
     mocks.listMonthlyExpenseTotals.mockResolvedValue([
       {
@@ -80,6 +141,9 @@ describe("administrative exports", () => {
         pharmacy_total: "90071992547409.93",
         laboratory_total: "0.00",
         fair_total: "0.00",
+        pharmacy_item_count: 1,
+        laboratory_item_count: 0,
+        has_fair_record: false,
       },
     ]);
 

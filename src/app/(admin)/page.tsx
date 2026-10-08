@@ -19,22 +19,22 @@ import {
 } from "@/modules/admissions/repository";
 import { MonthlyEvolutionCharts } from "@/modules/production/indicators/indicator-charts";
 import { buildProductionIndicatorData } from "@/modules/production/indicators/domain";
-import { buildIndicatorsData } from "@/modules/finance/indicators/domain";
-import { loadIndicatorsSource } from "@/modules/finance/indicators/repository";
+import { listMonthlyExpenseTotals } from "@/modules/finance/indicators/repository";
+import {
+  amountToCents,
+  currencyChartScale,
+  currencyChartValue,
+} from "@/modules/finance/indicators/domain";
 import { AdmissionDashboardChart } from "@/modules/admissions/admission-dashboard-chart";
 import { MonthlyChart } from "@/modules/finance/indicators/monthly-chart";
 import { loadProductionIndicatorSource } from "@/modules/production/repository";
 import { listProductionImports } from "@/modules/production-import/repository";
-import {
-  listSurgeryWaitlist,
-  listUpcomingSurgeryDays,
-} from "@/modules/minor-surgeries/repository";
+import { getSurgerySummary } from "@/modules/minor-surgeries/repository";
 import {
   formatCurrency,
   formatInteger,
   getProductionForMonth,
   monthName,
-  summarizeSurgeryDays,
 } from "@/modules/admin-dashboard/domain";
 
 export const dynamic = "force-dynamic";
@@ -51,27 +51,28 @@ export default async function Home({ searchParams }: HomeProps) {
   const startDate = `${period.year}-01-01`;
   const endDate = `${period.year + 1}-01-01`;
   const competence = `${period.year}-${String(period.month).padStart(2, "0")}`;
+  const today = saoPauloToday();
+  const todayDate = today.toISOString().slice(0, 10);
+  const surgeryThrough = new Date(`${todayDate}T00:00:00Z`);
+  surgeryThrough.setUTCFullYear(surgeryThrough.getUTCFullYear() + 2);
   const [
     admissionEntries,
     targets,
-    financeSource,
+    financeRows,
     productionSource,
     productionImports,
-    surgeryDays,
-    waitlist,
+    surgery,
   ] = await Promise.all([
     listAdmissionEntries(startDate, endDate),
     listAdmissionTargets(startDate, endDate),
-    loadIndicatorsSource(`${period.year}-01`, `${period.year}-12`),
+    listMonthlyExpenseTotals(`${period.year}-01`, `${period.year}-12`),
     loadProductionIndicatorSource({
       from: `${period.year}-01`,
       to: `${period.year}-12`,
     }),
     listProductionImports(3),
-    listUpcomingSurgeryDays(),
-    listSurgeryWaitlist(1),
+    getSurgerySummary(todayDate, surgeryThrough.toISOString().slice(0, 10), 5),
   ]);
-  const today = saoPauloToday();
   const admissions = summarizeAdmissions(
     admissionEntries,
     targets,
@@ -79,17 +80,25 @@ export default async function Home({ searchParams }: HomeProps) {
     period.month,
     today,
   );
-  const finance = buildIndicatorsData(
-    { inicio: `${period.year}-01`, fim: `${period.year}-12`, setor: "todos" },
-    financeSource.purchases,
-    financeSource.fairExpenses,
-  );
-  const selectedMonth = finance.monthly.find(
-    (item) => item.month === competence,
-  );
-  const monthlyPurchases = finance.purchases.filter(
-    (purchase) => purchase.orderDate.slice(0, 7) === competence,
-  );
+  const finance = financeRows.map((row) => {
+    const pharmacyCents = amountToCents(row.pharmacy_total);
+    const laboratoryCents = amountToCents(row.laboratory_total);
+    const fairCents = amountToCents(row.fair_total);
+    return {
+      month: row.competence.slice(0, 7),
+      pharmacyCents,
+      laboratoryCents,
+      fairCents,
+      totalCents: pharmacyCents + laboratoryCents + fairCents,
+      pharmacyItemCount: row.pharmacy_item_count,
+      laboratoryItemCount: row.laboratory_item_count,
+      hasRecords:
+        row.pharmacy_item_count > 0 ||
+        row.laboratory_item_count > 0 ||
+        row.has_fair_record,
+    };
+  });
+  const selectedMonth = finance.find((item) => item.month === competence);
   const production = getProductionForMonth(
     productionSource.entries,
     period.year,
@@ -108,9 +117,15 @@ export default async function Home({ searchParams }: HomeProps) {
         source: "",
       }).monthlyEvolution
     : [];
-  const surgery = summarizeSurgeryDays(surgeryDays);
   const available = Math.max(0, surgery.capacity - surgery.occupied);
-  const money = (value: bigint) => Number(value) / 100;
+  const chartScale = currencyChartScale(
+    finance.flatMap((month) => [
+      month.pharmacyCents,
+      month.laboratoryCents,
+      month.fairCents,
+      month.totalCents,
+    ]),
+  );
   const periodLabel = `${monthName(period.month)} ${period.year}`;
 
   return (
@@ -177,7 +192,7 @@ export default async function Home({ searchParams }: HomeProps) {
             icon={CircleDollarSign}
             label="Gastos registrados"
             value={formatCurrency(selectedMonth?.totalCents ?? BigInt(0))}
-            detail={`${monthlyPurchases.filter((item) => item.sector === "farmacia").length} itens de Farmácia · ${monthlyPurchases.filter((item) => item.sector === "laboratorio").length} de Laboratório`}
+            detail={`${selectedMonth?.pharmacyItemCount ?? 0} itens de Farmácia · ${selectedMonth?.laboratoryItemCount ?? 0} de Laboratório`}
           />
           <KpiCard
             icon={CalendarDays}
@@ -197,9 +212,9 @@ export default async function Home({ searchParams }: HomeProps) {
           />
           <KpiCard
             icon={ClipboardPlus}
-            label="Vagas futuras disponíveis"
+            label="Vagas disponíveis · próximos 2 anos"
             value={formatInteger(available)}
-            detail={`${surgery.occupied} ocupadas · ${waitlist.waiting.length} na fila`}
+            detail={`${surgery.occupied} ocupadas · ${surgery.waiting_count} na fila`}
           />
         </div>
       </section>
@@ -211,15 +226,20 @@ export default async function Home({ searchParams }: HomeProps) {
           badge="R$"
         >
           <MonthlyChart
-            points={finance.monthly.map((item) => ({
+            points={finance.map((item) => ({
               month: item.month,
               label: monthName(Number(item.month.slice(5, 7))),
-              pharmacy: money(item.pharmacyCents),
-              laboratory: money(item.laboratoryCents),
-              fair: money(item.fairCents),
-              total: money(item.totalCents),
+              pharmacy: currencyChartValue(item.pharmacyCents, chartScale),
+              pharmacyExact: formatCurrency(item.pharmacyCents),
+              laboratory: currencyChartValue(item.laboratoryCents, chartScale),
+              laboratoryExact: formatCurrency(item.laboratoryCents),
+              fair: currencyChartValue(item.fairCents, chartScale),
+              fairExact: formatCurrency(item.fairCents),
+              total: currencyChartValue(item.totalCents, chartScale),
+              totalExact: formatCurrency(item.totalCents),
               hasRecords: item.hasRecords,
             }))}
+            scale={chartScale.toString()}
           />
           {!selectedMonth?.hasRecords ? (
             <p className="text-sm text-muted-foreground">
@@ -338,9 +358,9 @@ export default async function Home({ searchParams }: HomeProps) {
           />
           <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
             <p className="rounded-lg bg-muted/60 p-3">
-              Datas futuras
+              Datas futuras · próximos 2 anos
               <strong className="mt-1 block text-xl">
-                {surgeryDays.length}
+                {surgery.day_count}
               </strong>
             </p>
             <p className="rounded-lg bg-muted/60 p-3">
@@ -349,7 +369,9 @@ export default async function Home({ searchParams }: HomeProps) {
             </p>
             <p className="rounded-lg bg-muted/60 p-3">
               Aguardando confirmação
-              <strong className="mt-1 block text-xl">{surgery.awaiting}</strong>
+              <strong className="mt-1 block text-xl">
+                {surgery.awaiting_confirmation}
+              </strong>
             </p>
             <p className="rounded-lg bg-muted/60 p-3">
               Confirmados
@@ -360,13 +382,13 @@ export default async function Home({ searchParams }: HomeProps) {
             <p className="rounded-lg bg-muted/60 p-3">
               Fila de espera
               <strong className="mt-1 block text-xl">
-                {waitlist.waiting.length}
+                {surgery.waiting_count}
               </strong>
             </p>
           </div>
-          {surgeryDays.length ? (
+          {surgery.days.length ? (
             <ul className="mt-4 divide-y">
-              {surgeryDays.slice(0, 4).map((day) => (
+              {surgery.days.slice(0, 4).map((day) => (
                 <li
                   key={day.id}
                   className="flex justify-between gap-3 py-2 text-sm"
