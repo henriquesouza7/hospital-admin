@@ -4,10 +4,21 @@ import { listDoctors } from "@/modules/admissions/repository";
 import type { Doctor } from "@/modules/admissions/domain";
 import { buttonVariants } from "@/components/ui/button";
 import Link from "next/link";
+import { parseYearMonth } from "@/modules/admissions/period";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdmissionDoctorsPage() {
+type AdmissionDoctorsPageProps = Readonly<{
+  searchParams: Promise<{
+    year?: string | string[];
+    month?: string | string[];
+  }>;
+}>;
+
+export default async function AdmissionDoctorsPage({
+  searchParams,
+}: AdmissionDoctorsPageProps) {
+  const period = parseYearMonth(await searchParams);
   let doctors: Doctor[] = [];
   let loadError = false;
   try {
@@ -24,7 +35,7 @@ export default async function AdmissionDoctorsPage() {
         actions={
           <Link
             className={buttonVariants({ variant: "outline" })}
-            href="/internacoes"
+            href={`/internacoes?year=${period.year}&month=${period.month}`}
           >
             Voltar ao dashboard
           </Link>

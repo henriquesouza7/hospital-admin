@@ -6,14 +6,23 @@ import {
   AdmissionTargetsTable,
 } from "@/modules/admissions/admission-management";
 import { listAdmissionTargets } from "@/modules/admissions/repository";
-import { saoPauloToday } from "@/modules/admissions/period";
+import { parseYearMonth } from "@/modules/admissions/period";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdmissionTargetsPage() {
-  const today = saoPauloToday();
-  const year = today.getUTCFullYear();
-  const month = `${year}-${String(today.getUTCMonth() + 1).padStart(2, "0")}`;
+type AdmissionTargetsPageProps = Readonly<{
+  searchParams: Promise<{
+    year?: string | string[];
+    month?: string | string[];
+  }>;
+}>;
+
+export default async function AdmissionTargetsPage({
+  searchParams,
+}: AdmissionTargetsPageProps) {
+  const period = parseYearMonth(await searchParams);
+  const year = period.year;
+  const month = `${year}-${String(period.month).padStart(2, "0")}`;
   const targets = await listAdmissionTargets("1900-01-01", "2101-01-01");
   return (
     <div className="grid gap-6">
@@ -24,7 +33,7 @@ export default async function AdmissionTargetsPage() {
         actions={
           <Link
             className={buttonVariants({ variant: "outline" })}
-            href="/internacoes"
+            href={`/internacoes?year=${year}&month=${period.month}`}
           >
             Dashboard
           </Link>

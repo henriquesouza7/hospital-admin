@@ -51,13 +51,13 @@ export function AdmissionsDashboardView({
         </Link>
         <Link
           className={buttonVariants({ size: "sm", variant: "outline" })}
-          href="/internacoes/metas"
+          href={`/internacoes/metas?year=${dashboard.year}&month=${selectedMonth}`}
         >
           Metas
         </Link>
         <Link
           className={buttonVariants({ size: "sm", variant: "outline" })}
-          href="/internacoes/medicos"
+          href={`/internacoes/medicos?year=${dashboard.year}&month=${selectedMonth}`}
         >
           Médicos
         </Link>
