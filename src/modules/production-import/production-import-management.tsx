@@ -395,6 +395,11 @@ export function ProductionImportHistory({
             const importedQuantity = String(
               rows.reduce((sum, row) => sum + Number(row.quantity), 0),
             );
+            const unitsDiffer =
+              !first.imported_counting_unit_snapshot ||
+              !first.existing_counting_unit_snapshot ||
+              first.imported_counting_unit_snapshot !==
+                first.existing_counting_unit_snapshot;
             return (
               <article
                 key={key}
@@ -418,6 +423,13 @@ export function ProductionImportHistory({
                   </span>
                   <span>{rows.length} linha(s) de origem</span>
                 </div>
+                {unitsDiffer && (
+                  <p className="mt-3 rounded-md bg-amber-100 px-3 py-2 text-sm text-amber-950">
+                    As unidades diferem ou não puderam ser verificadas. A
+                    substituição está bloqueada; é possível manter o lançamento
+                    existente.
+                  </p>
+                )}
                 {rows.some(
                   (row) => row.import_id !== first.import_id,
                 ) ? null : (
@@ -461,6 +473,10 @@ export function ProductionImportHistory({
                           <Button
                             type="submit"
                             size="sm"
+                            disabled={
+                              resolution === "replace_with_import" &&
+                              unitsDiffer
+                            }
                             variant={
                               resolution === "replace_with_import"
                                 ? "default"

@@ -8,7 +8,9 @@ language plpgsql
 set search_path = pg_catalog
 as $$
 begin
-  if tg_op = 'INSERT' or new.procedure_id is distinct from old.procedure_id then
+  if tg_op = 'INSERT'
+    or new.procedure_id is distinct from old.procedure_id
+    or new.imported_counting_unit_snapshot is distinct from old.imported_counting_unit_snapshot then
     select procedure.counting_unit
     into new.imported_counting_unit_snapshot
     from public.procedures as procedure
@@ -21,7 +23,8 @@ begin
   end if;
 
   if tg_op = 'INSERT'
-    or new.production_entry_id is distinct from old.production_entry_id then
+    or new.production_entry_id is distinct from old.production_entry_id
+    or new.existing_counting_unit_snapshot is distinct from old.existing_counting_unit_snapshot then
     if new.production_entry_id is null then
       new.existing_counting_unit_snapshot := null;
     else
