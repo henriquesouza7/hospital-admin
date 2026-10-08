@@ -44,7 +44,7 @@
 - Prioridade clínica não será inferida pelo sistema.
 - A identificação administrativa coleta somente o nome. CPF, data de nascimento, contato e dados clínicos não são obrigatórios nem armazenados neste módulo.
 - A ordem da fila é oldest-first para organização administrativa e não representa prioridade clínica.
-- Transferir da fila cria um agendamento vinculado à entrada original e reutiliza o mesmo cadastro de pessoa.
+- Transferir da fila, sob validação transacional da capacidade da data, cria um agendamento `confirmed` vinculado à entrada original e reutiliza o mesmo `patient_id`; a entrada permanece preservada com status `transferred`.
 - Criação de agendamento, mudança de status, ajuste de capacidade e transferência validam a capacidade no banco sob bloqueio transacional da data.
 - Uma pessoa pode ter somente um agendamento ativo por data e uma entrada ativa na fila; cancelamentos e transferências permanecem registrados.
 
