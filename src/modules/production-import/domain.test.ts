@@ -87,12 +87,18 @@ describe("production SUS CSV import", () => {
       "quantidade_pacientes",
       "total de pacientes",
       "patient_count",
+      "pacientes_atendidos",
+      "pacientes_aprovados",
+      "patients_served",
+      "total de pacientes atendidos",
     ];
 
     expect(containsPatientColumns(aggregateHeaders)).toBe(false);
-    expect(() =>
-      parseSusCsv(`${aggregateHeaders.join(";")}\n1;2;3`, ";"),
-    ).not.toThrow();
+    for (const header of aggregateHeaders) {
+      expect(() =>
+        parseSusCsv(`procedimento;${header}\nExame;3`, ";"),
+      ).not.toThrow();
+    }
   });
 
   it("should_allow_procedure_and_exam_name_headers_without_patient_identifiers", () => {

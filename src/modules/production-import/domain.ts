@@ -59,6 +59,7 @@ const patientIdentifierHeaderPatterns = [
 const aggregatePatientCountHeaderPatterns = [
   /^(?:quantidade|qtd|total|numero|count|number)(?:\s+(?:de|of))?\s+(?:paciente|patient)s?$/,
   /^(?:paciente|patient)\s+count$/,
+  /^(?:(?:quantidade|qtd|total|numero|count|number)(?:\s+(?:de|of))?\s+)?(?:paciente|patient)s?\s+(?:atendid[oa]s?|aprovad[oa]s?|served)$/,
 ];
 
 function normalizeHeader(header: string): string {
