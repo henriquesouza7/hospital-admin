@@ -164,7 +164,27 @@ describe("fiscal import actions", () => {
     );
     expect(preview.status).toBe("success");
     if (preview.status !== "success") throw new Error("Preview failed.");
-    const token = `${preview.previewToken.slice(0, -1)}${preview.previewToken.endsWith("A") ? "B" : "A"}`;
+    const validRedirect = await redirectFrom(
+      confirmFiscalImportAction(
+        confirmationForm(pharmacyXml, preview.previewToken),
+      ),
+    );
+    expect(validRedirect).toBe(
+      `REDIRECT:/financeiro/farmacia/pedidos/${orderId}`,
+    );
+    expect(mocks.createFiscalPurchaseOrder).toHaveBeenCalledOnce();
+    mocks.createFiscalPurchaseOrder.mockClear();
+
+    const signatureSeparator = preview.previewToken.lastIndexOf(".");
+    const signature = Buffer.from(
+      preview.previewToken.slice(signatureSeparator + 1),
+      "base64url",
+    );
+    expect(signature).toHaveLength(32);
+    signature[0] = signature[0]! ^ 0x01;
+    const tamperedSignature = signature.toString("base64url");
+    const token = `${preview.previewToken.slice(0, signatureSeparator + 1)}${tamperedSignature}`;
+    expect(token).toMatch(/^v1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
 
     const redirect = await redirectFrom(
       confirmFiscalImportAction(confirmationForm(pharmacyXml, token)),
