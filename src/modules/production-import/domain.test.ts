@@ -69,6 +69,19 @@ describe("production SUS CSV import", () => {
     }
   });
 
+  it("should_allow_aggregate_patient_count_headers", () => {
+    const aggregateHeaders = [
+      "quantidade_pacientes",
+      "total de pacientes",
+      "patient_count",
+    ];
+
+    expect(containsPatientColumns(aggregateHeaders)).toBe(false);
+    expect(() =>
+      parseSusCsv(`${aggregateHeaders.join(";")}\n1;2;3`, ";"),
+    ).not.toThrow();
+  });
+
   it("should_allow_procedure_and_exam_name_headers_without_patient_identifiers", () => {
     expect(containsPatientColumns(["nome_procedimento", "nome do exame"])).toBe(
       false,

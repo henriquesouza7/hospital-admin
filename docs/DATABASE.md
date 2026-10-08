@@ -137,6 +137,11 @@ bloqueado e registrando o estado capturado e o estado mantido na auditoria;
 migration incremental `20261008130000_avoid_noop_sus_reconciliation_updates.sql`
 evita atualizar o lançamento de produção quando a quantidade importada já é
 igual à atual, sem gerar timestamp ou auditoria de alteração sem mudança real.
+`20261008160000_allow_keep_after_production_entry_moved.sql` mantém uma rota de
+resolução auditada quando o lançamento capturado é movido para outro
+procedimento, competência ou origem: `keep_existing` bloqueia a linha pelo ID e
+registra a identidade atual; `replace_with_import` continua exigindo que a
+identidade, quantidade e unidade permaneçam iguais à captura.
 
 Nomes de categorias são únicos após normalização de espaços externos e caixa;
 nomes de procedimentos têm a mesma regra dentro da categoria. Lançamentos têm

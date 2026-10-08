@@ -54,6 +54,10 @@ const patientIdentifierHeaderPatterns = [
   /(?:^|\s)(?:telefone|celular|fone|phone|whatsapp|wpp)(?:\s|$)/,
   /(?:^|\s)(?:endereco|address)(?:\s|$)/,
 ];
+const aggregatePatientCountHeaderPatterns = [
+  /^(?:quantidade|qtd|total|numero|count|number)(?:\s+(?:de|of))?\s+(?:paciente|patient)s?$/,
+  /^(?:paciente|patient)\s+count$/,
+];
 
 function normalizeHeader(header: string): string {
   return header
@@ -69,6 +73,13 @@ function normalizeHeader(header: string): string {
 export function containsPatientColumns(headers: readonly string[]): boolean {
   return headers.some((header) => {
     const normalized = normalizeHeader(header);
+    if (
+      aggregatePatientCountHeaderPatterns.some((pattern) =>
+        pattern.test(normalized),
+      )
+    ) {
+      return false;
+    }
     return patientIdentifierHeaderPatterns.some((pattern) =>
       pattern.test(normalized),
     );
