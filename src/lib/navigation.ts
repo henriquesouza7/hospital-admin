@@ -2,7 +2,9 @@ import type { LucideIcon } from "lucide-react";
 import {
   CalendarDays,
   ChartNoAxesCombined,
+  ClipboardCheck,
   ClipboardPlus,
+  FileDown,
   FlaskConical,
   LayoutDashboard,
   Pill,
@@ -47,6 +49,8 @@ export const navigationGroups: readonly NavigationGroup[] = [
     label: "Pequenas cirurgias",
     icon: ClipboardPlus,
   },
+  { href: "/auditoria", label: "Auditoria", icon: ClipboardCheck },
+  { href: "/exportacoes", label: "Exportações", icon: FileDown },
   { href: "/configuracoes", label: "Configurações", icon: Settings },
 ] as const;
 

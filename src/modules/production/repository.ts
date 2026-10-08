@@ -193,6 +193,7 @@ export async function listProductionEntries(
     procedure_id?: string;
     from?: string;
     to?: string;
+    maxRows?: number;
   } = {},
 ): Promise<ProductionEntry[]> {
   await requireProductionAdmin();
@@ -224,6 +225,7 @@ async function listProductionEntryRows(filters: {
   procedure_id?: string;
   from?: string;
   to?: string;
+  maxRows?: number;
 }) {
   const rows: z.infer<typeof entryRowSchema>[] = [];
   for (let offset = 0; ; offset += PAGE_SIZE) {
@@ -237,10 +239,14 @@ async function listProductionEntryRows(filters: {
     if (filters.from)
       query = query.gte("reference_period", `${filters.from}-01`);
     if (filters.to) query = query.lte("reference_period", `${filters.to}-01`);
+    const pageSize =
+      filters.maxRows === undefined
+        ? PAGE_SIZE
+        : Math.min(PAGE_SIZE, filters.maxRows + 1 - rows.length);
     const { data, error } = await query
       .order("reference_period", { ascending: false })
       .order("id", { ascending: true })
-      .range(offset, offset + PAGE_SIZE - 1);
+      .range(offset, offset + pageSize - 1);
     const page = requireData(
       data,
       error,
@@ -248,7 +254,11 @@ async function listProductionEntryRows(filters: {
       z.array(entryRowSchema),
     );
     rows.push(...page);
-    if (page.length < PAGE_SIZE) return rows;
+    if (
+      (filters.maxRows !== undefined && rows.length > filters.maxRows) ||
+      page.length < pageSize
+    )
+      return rows;
   }
 }
 

@@ -34,6 +34,9 @@ test("redirects administrative routes without a session", async ({ page }) => {
     "/financeiro/laboratorio/pedidos/novo",
     "/financeiro/feira",
     "/internacoes",
+    "/auditoria",
+    "/exportacoes",
+    "/api/exportacoes?tipo=gastos&inicio=2026-10&fim=2026-10",
   ]) {
     await page.goto(route);
     await expect(page).toHaveURL(/\/login/);

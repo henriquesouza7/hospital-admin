@@ -59,6 +59,8 @@
 
 O núcleo de Pequenas Cirurgias foi integrado. Os itens desta fase permanecem abertos até que dias, capacidade, pacientes/agendamentos, fila e histórico sejam concluídos e homologados por interface autenticada. Nenhum dado sintético de negócio foi criado.
 
+Em 08/10/2026, os fluxos da Fase 6 continuam sem homologação autenticada no banco de demonstração; os itens permanecem abertos.
+
 ## Fase 7 — Consolidação
 - [ ] Dashboard geral
 - [ ] Auditoria
@@ -66,3 +68,8 @@ O núcleo de Pequenas Cirurgias foi integrado. Os itens desta fase permanecem ab
 - [ ] Exportações
 - [ ] Testes de segurança
 - [ ] Homologação
+
+Dashboard geral, consulta de auditoria, exportações e novos testes automatizados
+foram implementados no branch de consolidação final. Os itens permanecem abertos
+até a migration incremental da auditoria ser validada no branch Neon isolado,
+gates finais serem concluídos e os fluxos serem homologados com sessão real.

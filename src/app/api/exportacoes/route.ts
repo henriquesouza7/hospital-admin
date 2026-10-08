@@ -1,0 +1,276 @@
+import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/auth/require-admin";
+import {
+  listAdmissionEntries,
+  listAdmissionTargets,
+} from "@/modules/admissions/repository";
+import { loadIndicatorsSource } from "@/modules/finance/indicators/repository";
+import { buildIndicatorsData } from "@/modules/finance/indicators/domain";
+import { listProductionEntries } from "@/modules/production/repository";
+import {
+  listUpcomingSurgeryDays,
+  listSurgeryWaitlist,
+} from "@/modules/minor-surgeries/repository";
+import { buildCsv } from "@/modules/audit/domain";
+
+const MAX_MONTHS = 24;
+const MAX_ROWS = 10_000;
+const exportTypes = [
+  "gastos",
+  "compras",
+  "internacoes",
+  "metas",
+  "producao",
+  "cirurgias",
+] as const;
+type ExportType = (typeof exportTypes)[number];
+
+function isMonth(value: string | null): value is string {
+  if (!value || !/^\d{4}-(0[1-9]|1[0-2])$/.test(value)) return false;
+  const [year, month] = value.split("-").map(Number);
+  return year >= 1900 && year <= 2100 && month >= 1 && month <= 12;
+}
+
+function monthCount(from: string, through: string) {
+  const [startYear, startMonth] = from.split("-").map(Number);
+  const [endYear, endMonth] = through.split("-").map(Number);
+  return (endYear - startYear) * 12 + endMonth - startMonth + 1;
+}
+
+function nextMonthDate(value: string) {
+  const [year, month] = value.split("-").map(Number);
+  return new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10);
+}
+
+function money(cents: bigint) {
+  return (Number(cents) / 100).toFixed(2).replace(".", ",");
+}
+
+function responseCsv(
+  type: ExportType,
+  from: string,
+  through: string,
+  rows: readonly (readonly unknown[])[],
+) {
+  if (rows.length > MAX_ROWS) {
+    return NextResponse.json(
+      {
+        error: `A extração ultrapassa o limite de ${MAX_ROWS.toLocaleString("pt-BR")} linhas.`,
+      },
+      { status: 413 },
+    );
+  }
+  const csv = buildCsv([
+    [
+      "Critério de extração",
+      `${from} até ${through}`,
+      "Dados administrativos agregados",
+    ],
+    ...rows,
+  ]);
+  return new NextResponse(csv, {
+    headers: {
+      "content-type": "text/csv; charset=utf-8",
+      "content-disposition": `attachment; filename="${type}-${from}-${through}.csv"`,
+      "cache-control": "private, no-store",
+      "x-content-type-options": "nosniff",
+    },
+  });
+}
+
+export async function GET(request: Request) {
+  await requireAdmin();
+  const params = new URL(request.url).searchParams;
+  const type = params.get("tipo");
+  const from = params.get("inicio");
+  const through = params.get("fim");
+  if (
+    !exportTypes.some((item) => item === type) ||
+    !isMonth(from) ||
+    !isMonth(through)
+  ) {
+    return NextResponse.json(
+      { error: "Selecione um tipo e um período mensal válido." },
+      { status: 400 },
+    );
+  }
+  if (from > through || monthCount(from, through) > MAX_MONTHS) {
+    return NextResponse.json(
+      {
+        error: `O período deve estar em ordem e conter no máximo ${MAX_MONTHS} meses.`,
+      },
+      { status: 400 },
+    );
+  }
+  const exportType = type as ExportType;
+  const firstDay = `${from}-01`;
+  const afterLastDay = nextMonthDate(through);
+  try {
+    switch (exportType) {
+      case "gastos": {
+        const source = await loadIndicatorsSource(from, through);
+        const data = buildIndicatorsData(
+          { inicio: from, fim: through, setor: "todos" },
+          source.purchases,
+          source.fairExpenses,
+        );
+        return responseCsv(exportType, from, through, [
+          [
+            "Competência",
+            "Farmácia (R$)",
+            "Laboratório (R$)",
+            "Feira (R$)",
+            "Total (R$)",
+          ],
+          ...data.monthly.map((item) => [
+            item.month,
+            money(item.pharmacyCents),
+            money(item.laboratoryCents),
+            money(item.fairCents),
+            money(item.totalCents),
+          ]),
+        ]);
+      }
+      case "compras": {
+        const source = await loadIndicatorsSource(from, through);
+        return responseCsv(exportType, from, through, [
+          [
+            "Data",
+            "Setor",
+            "Fornecedor",
+            "Produto",
+            "Apresentação",
+            "Quantidade",
+            "Preço unitário (R$)",
+            "Subtotal (R$)",
+          ],
+          ...source.purchases.map((item) => [
+            item.orderDate,
+            item.sector,
+            item.supplierName,
+            item.productName,
+            item.presentation,
+            item.quantity,
+            item.unitPrice,
+            item.lineTotal,
+          ]),
+          ...source.fairExpenses
+            .filter(
+              (expense) =>
+                expense.competence.slice(0, 7) >= from &&
+                expense.competence.slice(0, 7) <= through,
+            )
+            .map((expense) => [
+              expense.competence,
+              "feira",
+              "",
+              "Despesa mensal consolidada",
+              "",
+              "",
+              "",
+              expense.totalAmount,
+            ]),
+        ]);
+      }
+      case "internacoes": {
+        const entries = await listAdmissionEntries(firstDay, afterLastDay);
+        return responseCsv(exportType, from, through, [
+          ["Data", "Médico responsável", "Internações registradas"],
+          ...entries
+            .filter(
+              (entry) =>
+                entry.entry_date >= firstDay && entry.entry_date < afterLastDay,
+            )
+            .map((entry) => [
+              entry.entry_date,
+              entry.doctor_name,
+              entry.quantity,
+            ]),
+        ]);
+      }
+      case "metas": {
+        const targets = await listAdmissionTargets(firstDay, afterLastDay);
+        return responseCsv(exportType, from, through, [
+          ["Tipo de período", "Competência", "Meta de internações"],
+          ...targets.map((target) => [
+            target.period_type === "month" ? "Mensal" : "Anual",
+            target.reference_period,
+            target.target_quantity,
+          ]),
+        ]);
+      }
+      case "producao": {
+        const entries = await listProductionEntries({
+          from,
+          to: through,
+          maxRows: MAX_ROWS,
+        });
+        if (entries.length > MAX_ROWS) {
+          return NextResponse.json(
+            {
+              error: `A extração ultrapassa o limite de ${MAX_ROWS.toLocaleString("pt-BR")} linhas.`,
+            },
+            { status: 413 },
+          );
+        }
+        return responseCsv(exportType, from, through, [
+          [
+            "Competência",
+            "Categoria",
+            "Procedimento",
+            "Quantidade",
+            "Unidade",
+            "Origem",
+          ],
+          ...entries.map((entry) => [
+            entry.reference_period,
+            entry.category_name,
+            entry.procedure_name,
+            entry.quantity,
+            entry.counting_unit,
+            entry.source,
+          ]),
+        ]);
+      }
+      case "cirurgias": {
+        const [days, waitingList] = await Promise.all([
+          listUpcomingSurgeryDays(),
+          listSurgeryWaitlist(1),
+        ]);
+        return responseCsv(exportType, from, through, [
+          [
+            "Data futura",
+            "Capacidade",
+            "Ocupadas",
+            "Aguardando confirmação",
+            "Confirmadas",
+            "Pessoas na fila",
+          ],
+          ...days
+            .filter(
+              (day) =>
+                day.procedure_date.slice(0, 7) >= from &&
+                day.procedure_date.slice(0, 7) <= through,
+            )
+            .map((day) => [
+              day.procedure_date,
+              day.capacity,
+              day.occupied,
+              day.awaitingConfirmation,
+              day.confirmed,
+            ]),
+          ["Fila atual", "", "", "", "", waitingList.waiting.length],
+        ]);
+      }
+    }
+  } catch {
+    return NextResponse.json(
+      { error: "Não foi possível gerar a exportação solicitada." },
+      { status: 500 },
+    );
+  }
+  return NextResponse.json(
+    { error: "Tipo de exportação não suportado." },
+    { status: 400 },
+  );
+}
