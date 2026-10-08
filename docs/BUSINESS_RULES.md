@@ -46,7 +46,7 @@
 - Classificações `apresentado`, `aprovado` e `realizado` permanecem em fontes distintas e nunca são somadas entre si.
 - O SHA-256 do arquivo confirmado é único. Cada linha administrativa e seu vínculo manual ficam associados ao histórico da importação, sem persistir o CSV bruto nem colunas não selecionadas.
 - Linhas do mesmo procedimento, competência e classificação são agregadas apenas dentro do arquivo confirmado. Se já houver lançamento na mesma combinação, o grupo fica pendente de reconciliação; a confirmação não soma nem substitui o valor existente.
-- Na reconciliação, o administrador escolhe manter o lançamento existente ou substituí-lo pelo total importado. A substituição altera o lançamento existente e registra auditoria; nenhuma importação ou lançamento é excluído.
+- Na reconciliação, o administrador escolhe manter o lançamento existente ou substituí-lo pelo total importado. A decisão só atua sobre o lançamento capturado na confirmação e é bloqueada se competência, procedimento, classificação ou quantidade tiverem mudado; a substituição registra auditoria e nenhuma importação ou lançamento é excluído.
 
 ## Pequenas Cirurgias
 - Datas são criadas manualmente.

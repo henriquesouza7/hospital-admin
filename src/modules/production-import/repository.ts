@@ -151,6 +151,11 @@ export async function reconcileProductionSusImport(input: {
       p_resolution: input.resolution,
     },
   );
+  if (error?.code === "40001") {
+    throw new Error(
+      "O lançamento mudou desde a importação. Recarregue a página e confira o lançamento antes de decidir a reconciliação.",
+    );
+  }
   if (error || data !== true)
     throw new Error("Não foi possível concluir a reconciliação.");
 }

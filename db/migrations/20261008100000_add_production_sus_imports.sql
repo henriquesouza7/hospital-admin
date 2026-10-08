@@ -295,6 +295,8 @@ as $$
 declare
   import_record public.production_imports%rowtype;
   target_entry_id uuid;
+  captured_entry_id uuid;
+  captured_quantity numeric(13, 3);
   current_quantity numeric(13, 3);
   imported_quantity numeric(13, 3);
   affected_rows integer;
@@ -314,9 +316,13 @@ begin
   for update;
   if not found then raise exception 'Import not found' using errcode = 'P0002'; end if;
 
-  perform 1 from public.production_import_rows
-  where import_id = p_import_id and procedure_id = p_procedure_id
-    and source_type = p_source_type and status = 'pending_reconciliation'
+  select import_line.production_entry_id, import_line.existing_quantity_snapshot
+  into captured_entry_id, captured_quantity
+  from public.production_import_rows as import_line
+  where import_line.import_id = p_import_id and import_line.procedure_id = p_procedure_id
+    and import_line.source_type = p_source_type and import_line.status = 'pending_reconciliation'
+  order by import_line.source_row_number
+  limit 1
   for update;
   select sum(quantity) into imported_quantity
   from public.production_import_rows
@@ -325,15 +331,31 @@ begin
   if imported_quantity is null then
     raise exception 'No pending rows for reconciliation' using errcode = 'P0002';
   end if;
+  if captured_entry_id is null or captured_quantity is null or exists (
+    select 1 from public.production_import_rows as import_line
+    where import_line.import_id = p_import_id and import_line.procedure_id = p_procedure_id
+      and import_line.source_type = p_source_type and import_line.status = 'pending_reconciliation'
+      and (import_line.production_entry_id is distinct from captured_entry_id
+        or import_line.existing_quantity_snapshot is distinct from captured_quantity)
+  ) then
+    raise exception 'Captured production entry is unavailable; review the current entry before reconciling'
+      using errcode = '40001';
+  end if;
 
   select entry.id, entry.quantity into target_entry_id, current_quantity
   from public.production_entries as entry
-  where entry.procedure_id = p_procedure_id
+  where entry.id = captured_entry_id
+    and entry.procedure_id = p_procedure_id
     and entry.reference_period = import_record.reference_period
     and lower(btrim(entry.source)) = lower('SUS: ' || p_source_type)
   for update;
   if not found then
-    raise exception 'Existing production entry not found' using errcode = 'P0002';
+    raise exception 'Captured production entry changed; review the current entry before reconciling'
+      using errcode = '40001';
+  end if;
+  if current_quantity is distinct from captured_quantity then
+    raise exception 'Captured production entry quantity changed; review the current entry before reconciling'
+      using errcode = '40001';
   end if;
 
   if p_resolution = 'replace_with_import' then

@@ -202,8 +202,12 @@ export async function reconcileProductionSusImportAction(
   if (!parsed.success) redirect("/producao/importacoes?erro=reconciliacao");
   try {
     await reconcileProductionSusImport(parsed.data);
-  } catch {
-    redirect("/producao/importacoes?erro=reconciliacao");
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Não foi possível concluir a reconciliação.";
+    redirect(`/producao/importacoes?erro=${encodeURIComponent(message)}`);
   }
   revalidatePath("/producao/importacoes");
   revalidatePath("/producao/lancamentos");

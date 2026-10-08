@@ -406,7 +406,7 @@ export function ProductionImportHistory({
                   </span>
                   <span>{sourceTypeLabels[first.source_type]}</span>
                   <span>
-                    Existente:{" "}
+                    Existente na importação:{" "}
                     {first.existing_quantity_snapshot ?? "indisponível"}{" "}
                     {procedure?.counting_unit}
                   </span>

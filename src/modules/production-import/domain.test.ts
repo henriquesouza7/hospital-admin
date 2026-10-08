@@ -36,9 +36,13 @@ describe("production SUS CSV import", () => {
     );
   });
 
-  it("should_reject_camel_case_patient_identifiers_when_headers_are_sensitive", () => {
+  it("should_reject_qualified_patient_identifiers_when_headers_are_sensitive", () => {
     expect(containsPatientColumns(["procedimento", "patientId"])).toBe(true);
     expect(containsPatientColumns(["patient_name", "quantidade"])).toBe(true);
+    expect(containsPatientColumns(["cpf_do_paciente"])).toBe(true);
+    expect(containsPatientColumns(["CNS do paciente"])).toBe(true);
+    expect(containsPatientColumns(["numero_prontuario"])).toBe(true);
+    expect(containsPatientColumns(["telefone do paciente"])).toBe(true);
   });
 
   it("should_reject_malformed_csv_when_quotes_are_unclosed", () => {

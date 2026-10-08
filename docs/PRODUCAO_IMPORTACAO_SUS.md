@@ -17,7 +17,9 @@ O CSV precisa ter pelo menos duas colunas com nomes únicos. Linhas precisam ter
 a mesma quantidade de campos. Aspas, delimitadores e quebras de linha em campos
 seguem o formato CSV com aspas duplas. Cabeçalhos que identificam paciente,
 CPF, CNS, prontuário, nascimento, telefone ou endereço são recusados. O arquivo
-bruto e as colunas não mapeadas não são persistidos.
+bruto e as colunas não mapeadas não são persistidos. Cabeçalhos compostos e
+qualificados, como `cpf_do_paciente` e `telefone do paciente`, também são
+recusados.
 
 Exemplo fictício, somente administrativo:
 
@@ -52,6 +54,10 @@ fica pendente. O administrador escolhe manter o valor existente ou substituí-lo
 pelo total importado. O fluxo nunca soma os dois valores. A substituição corrige
 o lançamento existente, preserva a unidade histórica e dispara auditoria. As
 decisões e as linhas de origem permanecem no histórico; não há exclusão física.
+Cada pendência aponta para o lançamento capturado na confirmação. Se esse
+lançamento tiver mudado de competência, procedimento, classificação ou
+quantidade, a reconciliação é bloqueada e pede nova conferência; ela não procura
+nem altera outro lançamento semelhante.
 
 As tabelas de importação têm leitura administrativa por RLS e sem DML direto
 para `authenticated`. As RPCs `SECURITY DEFINER` validam `public.is_admin()`,

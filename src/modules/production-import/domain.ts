@@ -37,34 +37,15 @@ export type ProductionImportRow = Readonly<{
   procedure_id: string;
 }>;
 
-const patientHeaderNames = new Set([
-  "paciente",
-  "patient",
-  "patient id",
-  "patient name",
-  "nome",
-  "nome paciente",
-  "nome do paciente",
-  "nome completo",
-  "nome da mae",
-  "cpf",
-  "ssn",
-  "cns",
-  "cartao sus",
-  "cartao nacional de saude",
-  "prontuario",
-  "medical record",
-  "nascimento",
-  "data nascimento",
-  "data de nascimento",
-  "birth date",
-  "date of birth",
-  "telefone",
-  "celular",
-  "phone",
-  "endereco",
-  "address",
-]);
+const patientIdentifierHeaderPatterns = [
+  /(?:^|\s)(?:paciente|patient)(?:\s|$)/,
+  /(?:^|\s)(?:nome|cpf|cns|ssn)(?:\s|$)/,
+  /(?:^|\s)(?:cartao sus|cartao nacional de saude)(?:\s|$)/,
+  /(?:^|\s)(?:prontuario|medical record)(?:\s|$)/,
+  /(?:^|\s)(?:nascimento|birth date|date of birth)(?:\s|$)/,
+  /(?:^|\s)(?:telefone|celular|phone)(?:\s|$)/,
+  /(?:^|\s)(?:endereco|address)(?:\s|$)/,
+];
 
 function normalizeHeader(header: string): string {
   return header
@@ -73,14 +54,17 @@ function normalizeHeader(header: string): string {
     .replace(/[\u0300-\u036f]/g, "")
     .trim()
     .toLocaleLowerCase("pt-BR")
-    .replace(/[_-]+/g, " ")
+    .replace(/[._-]+/g, " ")
     .replace(/\s+/g, " ");
 }
 
 export function containsPatientColumns(headers: readonly string[]): boolean {
-  return headers.some((header) =>
-    patientHeaderNames.has(normalizeHeader(header)),
-  );
+  return headers.some((header) => {
+    const normalized = normalizeHeader(header);
+    return patientIdentifierHeaderPatterns.some((pattern) =>
+      pattern.test(normalized),
+    );
+  });
 }
 
 export function parseSusCsv(
