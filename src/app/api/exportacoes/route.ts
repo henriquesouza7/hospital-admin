@@ -46,11 +46,12 @@ function money(cents: bigint) {
   return (Number(cents) / 100).toFixed(2).replace(".", ",");
 }
 
-function decimalForCsv(value: string) {
-  if (!/^-?\d+(?:\.\d+)?$/.test(value)) {
+function decimalForCsv(value: string | number) {
+  const text = String(value);
+  if (!/^-?\d+(?:\.\d+)?$/.test(text)) {
     throw new Error("Valor decimal inválido para exportação.");
   }
-  return value.replace(".", ",");
+  return text.replace(".", ",");
 }
 
 function responseCsv(
@@ -139,7 +140,21 @@ export async function GET(request: Request) {
         ]);
       }
       case "compras": {
-        const source = await loadIndicatorsSource(from, through);
+        const source = await loadIndicatorsSource(from, through, {
+          maxPurchaseRows: MAX_ROWS + 1,
+          includeProducts: false,
+        });
+        if (source.purchases.length > MAX_ROWS) {
+          return NextResponse.json(
+            {
+              error:
+                "A extração ultrapassa o limite de " +
+                MAX_ROWS.toLocaleString("pt-BR") +
+                " linhas.",
+            },
+            { status: 413 },
+          );
+        }
         return responseCsv(exportType, from, through, [
           [
             "Data",
@@ -246,7 +261,7 @@ export async function GET(request: Request) {
             entry.reference_period,
             entry.category_name,
             entry.procedure_name,
-            entry.quantity,
+            decimalForCsv(entry.quantity),
             entry.counting_unit,
             entry.source,
           ]),

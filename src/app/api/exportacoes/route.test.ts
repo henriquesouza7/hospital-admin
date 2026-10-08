@@ -73,6 +73,52 @@ beforeEach(() => {
 });
 
 describe("administrative exports", () => {
+  it("should_bound_purchase_export_and_skip_unneeded_products", async () => {
+    mocks.loadIndicatorsSource.mockResolvedValue({
+      purchases: Array.from({ length: 10_001 }, () => ({})),
+      fairExpenses: [],
+    });
+
+    const response = await GET(
+      new Request(
+        "http://localhost/api/exportacoes?tipo=compras&inicio=2026-10&fim=2026-10",
+      ),
+    );
+
+    expect(response.status).toBe(413);
+    expect(mocks.loadIndicatorsSource).toHaveBeenCalledWith(
+      "2026-10",
+      "2026-10",
+      {
+        maxPurchaseRows: 10_001,
+        includeProducts: false,
+      },
+    );
+  });
+
+  it("should_localize_production_quantities_in_csv", async () => {
+    mocks.listProductionEntries.mockResolvedValue([
+      {
+        reference_period: "2026-10-01",
+        category_name: "Categoria sintética",
+        procedure_name: "Procedimento sintético",
+        quantity: "12.000",
+        counting_unit: "atendimentos",
+        source: "manual",
+      },
+    ]);
+
+    const response = await GET(
+      new Request(
+        "http://localhost/api/exportacoes?tipo=producao&inicio=2026-10&fim=2026-10",
+      ),
+    );
+    const csv = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(csv).toContain('"12,000"');
+  });
+
   it("should_use_comma_decimals_for_purchase_and_fair_amounts", async () => {
     mocks.loadIndicatorsSource.mockResolvedValue({
       purchases: [

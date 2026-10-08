@@ -52,6 +52,10 @@ function assertData<T>(data: unknown, error: unknown, schema: z.ZodType<T>): T {
 export async function loadIndicatorsSource(
   startMonth: string,
   endMonth: string,
+  options: Readonly<{
+    maxPurchaseRows?: number;
+    includeProducts?: boolean;
+  }> = {},
 ) {
   await requireFinanceAdmin();
   const from = `${startMonth}-01`;
@@ -59,8 +63,17 @@ export async function loadIndicatorsSource(
   const throughExclusive = `${new Date(Date.UTC(endYear, endMonthNumber, 1)).toISOString().slice(0, 10)}`;
 
   const purchases: IndicatorPurchase[] = [];
+  const purchaseLimit =
+    options.maxPurchaseRows === undefined
+      ? Number.POSITIVE_INFINITY
+      : Math.max(0, Math.floor(options.maxPurchaseRows));
   for (const sector of ["farmacia", "laboratorio"] as const) {
-    for (let offset = 0; ; offset += PAGE_SIZE) {
+    for (
+      let offset = 0;
+      offset < purchaseLimit - purchases.length;
+      offset += PAGE_SIZE
+    ) {
+      const pageSize = Math.min(PAGE_SIZE, purchaseLimit - purchases.length);
       const { data, error } = await getNeonDataApiClient()
         .from("purchase_order_items")
         .select(
@@ -70,7 +83,7 @@ export async function loadIndicatorsSource(
         .gte("purchase_order.order_date", from)
         .lt("purchase_order.order_date", throughExclusive)
         .order("id", { ascending: true })
-        .range(offset, offset + PAGE_SIZE - 1);
+        .range(offset, offset + pageSize - 1);
       const items = assertData(data, error, z.array(itemWithOrderSchema));
       purchases.push(
         ...items.map((item) => ({
@@ -88,8 +101,9 @@ export async function loadIndicatorsSource(
           category: item.product_category_snapshot,
         })),
       );
-      if (items.length < PAGE_SIZE) break;
+      if (items.length < pageSize) break;
     }
+    if (purchases.length >= purchaseLimit) break;
   }
 
   const { data: fairData, error: fairError } = await getNeonDataApiClient()
@@ -100,15 +114,17 @@ export async function loadIndicatorsSource(
     .order("competence", { ascending: true });
 
   const products: ProductOption[] = [];
-  for (let offset = 0; ; offset += PAGE_SIZE) {
-    const { data, error } = await getNeonDataApiClient()
-      .from("products")
-      .select("id,sector,name,presentation,is_active")
-      .order("id", { ascending: true })
-      .range(offset, offset + PAGE_SIZE - 1);
-    const rows = assertData(data, error, productSchema);
-    products.push(...rows);
-    if (rows.length < PAGE_SIZE) break;
+  if (options.includeProducts !== false) {
+    for (let offset = 0; ; offset += PAGE_SIZE) {
+      const { data, error } = await getNeonDataApiClient()
+        .from("products")
+        .select("id,sector,name,presentation,is_active")
+        .order("id", { ascending: true })
+        .range(offset, offset + PAGE_SIZE - 1);
+      const rows = assertData(data, error, productSchema);
+      products.push(...rows);
+      if (rows.length < PAGE_SIZE) break;
+    }
   }
 
   return {
