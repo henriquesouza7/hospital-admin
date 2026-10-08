@@ -63,7 +63,10 @@ export default async function Home({ searchParams }: HomeProps) {
     listAdmissionEntries(startDate, endDate),
     listAdmissionTargets(startDate, endDate),
     loadIndicatorsSource(`${period.year}-01`, `${period.year}-12`),
-    loadProductionIndicatorSource(),
+    loadProductionIndicatorSource({
+      from: `${period.year}-01`,
+      to: `${period.year}-12`,
+    }),
     listProductionImports(3),
     listUpcomingSurgeryDays(),
     listSurgeryWaitlist(1),

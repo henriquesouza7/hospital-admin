@@ -262,12 +262,14 @@ async function listProductionEntryRows(filters: {
   }
 }
 
-export async function loadProductionIndicatorSource(): Promise<ProductionIndicatorSource> {
+export async function loadProductionIndicatorSource(
+  filters: { from?: string; to?: string } = {},
+): Promise<ProductionIndicatorSource> {
   await requireProductionAdmin();
   const [categoryRows, procedureRows, entryRows] = await Promise.all([
     listProcedureCategoryRows(),
     listProductionProcedureRows({ status: "todos" }),
-    listProductionEntryRows({}),
+    listProductionEntryRows(filters),
   ]);
   const categories: ProcedureCategory[] = categoryRows;
   const categoryNames = new Map(
