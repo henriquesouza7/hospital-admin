@@ -55,13 +55,13 @@ pelo total importado. O fluxo nunca soma os dois valores. A substituição corri
 o lançamento existente, preserva a unidade histórica e dispara auditoria. As
 decisões e as linhas de origem permanecem no histórico; não há exclusão física.
 Cada pendência aponta para o lançamento capturado na confirmação. Se esse
-lançamento tiver mudado apenas de quantidade, a opção de substituição é
-bloqueada. A opção de manter continua disponível: ela bloqueia o valor atual
-sob lock, finaliza a pendência sem sobrescrever esse valor e audita tanto a
-quantidade capturada na importação quanto a quantidade mantida. Se o lançamento
-capturado não existir mais ou tiver mudado de competência, procedimento ou
-classificação, a RPC pede nova conferência; ela não procura nem altera outro
-lançamento semelhante.
+lançamento tiver mudado desde a captura, a interface exibe seu estado atual.
+A opção de manter bloqueia por ID esse lançamento atual, finaliza a pendência
+sem sobrescrevê-lo e audita tanto a identidade/quantidade capturadas quanto o
+estado mantido. A substituição é bloqueada quando identidade, quantidade ou
+unidade diferem da captura. Assim, uma edição de competência, procedimento ou
+classificação não deixa o grupo pendente sem resolução e não faz a RPC procurar
+nem alterar outro lançamento semelhante.
 
 As tabelas de importação têm leitura administrativa por RLS e sem DML direto
 para `authenticated`. As RPCs `SECURITY DEFINER` validam `public.is_admin()`,

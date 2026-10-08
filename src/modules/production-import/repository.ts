@@ -43,6 +43,14 @@ const importRowSchema = z.object({
     "replaced_existing",
   ]),
 });
+const currentProductionEntrySchema = z.object({
+  id: z.string().uuid(),
+  procedure_id: z.string().uuid(),
+  reference_period: z.iso.date(),
+  quantity: z.union([z.string(), z.number()]).transform(String),
+  source: z.string(),
+  counting_unit: z.string(),
+});
 
 function requireData<T>(
   data: unknown,
@@ -101,8 +109,40 @@ export async function listPendingProductionImportRows() {
       z.array(importRowSchema),
     );
     rows.push(...page);
-    if (page.length < PAGE_SIZE) return rows;
+    if (page.length < PAGE_SIZE) break;
   }
+  const entryIds = [
+    ...new Set(
+      rows.flatMap((row) =>
+        row.production_entry_id ? [row.production_entry_id] : [],
+      ),
+    ),
+  ];
+  const currentEntries: z.infer<typeof currentProductionEntrySchema>[] = [];
+  for (let offset = 0; offset < entryIds.length; offset += PAGE_SIZE) {
+    const ids = entryIds.slice(offset, offset + PAGE_SIZE);
+    const { data, error } = await getNeonDataApiClient()
+      .from("production_entries")
+      .select("id,procedure_id,reference_period,quantity,source,counting_unit")
+      .in("id", ids);
+    currentEntries.push(
+      ...requireData(
+        data,
+        error,
+        "Não foi possível carregar os lançamentos atuais das pendências.",
+        z.array(currentProductionEntrySchema),
+      ),
+    );
+  }
+  const currentEntryById = new Map(
+    currentEntries.map((entry) => [entry.id, entry]),
+  );
+  return rows.map((row) => ({
+    ...row,
+    current_entry: row.production_entry_id
+      ? (currentEntryById.get(row.production_entry_id) ?? null)
+      : null,
+  }));
 }
 
 export async function confirmProductionSusImport(input: {

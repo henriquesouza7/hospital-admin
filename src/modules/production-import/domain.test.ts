@@ -58,6 +58,10 @@ describe("production SUS CSV import", () => {
     expect(containsPatientColumns(["whatsapp", "quantidade"])).toBe(true);
     expect(containsPatientColumns(["numero_prontuario"])).toBe(true);
     expect(containsPatientColumns(["telefone do paciente"])).toBe(true);
+    expect(containsPatientColumns(["dt_nasc"])).toBe(true);
+    expect(containsPatientColumns(["data_nasc"])).toBe(true);
+    expect(containsPatientColumns(["data_de_nascimento"])).toBe(true);
+    expect(containsPatientColumns(["dob"])).toBe(true);
   });
 
   it("should_reject_slash_separated_patient_identifier_headers", () => {

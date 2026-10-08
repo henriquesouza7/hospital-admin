@@ -475,10 +475,25 @@ export function ProductionImportHistory({
             const importedQuantity = String(
               rows.reduce((sum, row) => sum + Number(row.quantity), 0),
             );
+            const currentEntry = first.current_entry;
+            const currentProcedure = currentEntry
+              ? procedureById.get(currentEntry.procedure_id)
+              : undefined;
             const unitsDiffer =
               !first.imported_counting_unit_snapshot ||
               !first.existing_counting_unit_snapshot ||
               first.imported_counting_unit_snapshot !==
+                first.existing_counting_unit_snapshot;
+            const capturedPeriod = importPeriodById.get(first.import_id);
+            const entryChanged =
+              !currentEntry ||
+              currentEntry.procedure_id !== first.procedure_id ||
+              currentEntry.reference_period.slice(0, 7) !== capturedPeriod ||
+              currentEntry.source.trim().toLowerCase() !==
+                `sus: ${first.source_type}` ||
+              Number(currentEntry.quantity) !==
+                Number(first.existing_quantity_snapshot) ||
+              currentEntry.counting_unit !==
                 first.existing_counting_unit_snapshot;
             return (
               <article
@@ -501,6 +516,12 @@ export function ProductionImportHistory({
                       "unidade não preservada"}
                   </span>
                   <span>
+                    Atual no banco:{" "}
+                    {currentEntry
+                      ? `${currentEntry.quantity} ${currentEntry.counting_unit} · ${currentProcedure?.name ?? "procedimento indisponível"} · ${currentEntry.reference_period.slice(0, 7)} · ${currentEntry.source}`
+                      : "lançamento indisponível; reconciliação bloqueada"}
+                  </span>
+                  <span>
                     Importado: {importedQuantity}{" "}
                     {first.imported_counting_unit_snapshot ??
                       "unidade indisponível"}
@@ -508,9 +529,15 @@ export function ProductionImportHistory({
                   <span>{rows.length} linha(s) de origem</span>
                 </div>
                 <p className="mt-3 text-sm text-muted-foreground">
-                  Manter preserva o valor que estiver registrado no momento da
-                  confirmação, mesmo que ele tenha mudado desde esta importação.
+                  Manter preserva o lançamento atual exibido acima. A decisão é
+                  auditada junto com o estado capturado na importação.
                 </p>
+                {currentEntry && entryChanged ? (
+                  <p className="mt-3 rounded-md bg-amber-100 px-3 py-2 text-sm text-amber-950">
+                    O lançamento foi alterado após a captura. Manter preserva o
+                    estado atual; a substituição fica bloqueada.
+                  </p>
+                ) : null}
                 {unitsDiffer && (
                   <p className="mt-3 rounded-md bg-amber-100 px-3 py-2 text-sm text-amber-950">
                     As unidades diferem ou não puderam ser verificadas. A
@@ -562,8 +589,9 @@ export function ProductionImportHistory({
                             type="submit"
                             size="sm"
                             disabled={
-                              resolution === "replace_with_import" &&
-                              unitsDiffer
+                              resolution === "keep_existing"
+                                ? !currentEntry
+                                : unitsDiffer || entryChanged
                             }
                             variant={
                               resolution === "replace_with_import"

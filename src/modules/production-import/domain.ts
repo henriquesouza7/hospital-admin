@@ -50,7 +50,8 @@ const patientIdentifierHeaderPatterns = [
   /(?:^|\s)(?:rg|registro geral|carteira de identidade)(?:\s|$)/,
   /(?:^|\s)(?:cartao sus|cartao nacional de saude)(?:\s|$)/,
   /(?:^|\s)(?:prontuario|medical record)(?:\s|$)/,
-  /(?:^|\s)(?:nascimento|birth date|date of birth)(?:\s|$)/,
+  /(?:^|\s)(?:nascimento|nasc|birth date|birthdate|date of birth|dob)(?:\s|$)/,
+  /(?:^|\s)(?:dt|data)(?:\s+de)?\s+nasc(?:imento)?(?:\s|$)/,
   /(?:^|\s)(?:telefone|celular|fone|phone|whatsapp|wpp)(?:\s|$)/,
   /(?:^|\s)(?:endereco|address)(?:\s|$)/,
 ];
