@@ -103,6 +103,14 @@ lançamento conflitante. A reconciliação não substitui o volume quando a unid
 importada diverge da unidade histórica do lançamento; nesse caso, o operador
 deve manter o lançamento ou importar novamente após revisar o cadastro.
 
+A migration `20261008120000_resolve_stale_sus_reconciliations.sql` permite
+concluir `keep_existing` após mudança concorrente, preservando o valor atual
+bloqueado e registrando o estado capturado e o estado mantido na auditoria;
+`replace_with_import` continua rejeitando quantidade ou unidade obsoleta. A
+migration incremental `20261008130000_avoid_noop_sus_reconciliation_updates.sql`
+evita atualizar o lançamento de produção quando a quantidade importada já é
+igual à atual, sem gerar timestamp ou auditoria de alteração sem mudança real.
+
 Nomes de categorias são únicos após normalização de espaços externos e caixa;
 nomes de procedimentos têm a mesma regra dentro da categoria. Lançamentos têm
 unicidade por procedimento, competência e fonte normalizada. As três tabelas
