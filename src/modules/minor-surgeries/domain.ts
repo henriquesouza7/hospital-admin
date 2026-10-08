@@ -42,6 +42,7 @@ export type SurgeryTransferredWaitlistEntry = SurgeryWaitlistEntry &
   Readonly<{
     transferDestination: Readonly<{
       appointment_id: string;
+      appointment_page: number;
       surgery_day_id: string;
       procedure_date: string;
     }> | null;

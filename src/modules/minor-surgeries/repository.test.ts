@@ -6,8 +6,6 @@ const mocks = vi.hoisted(() => ({
   singleResult: vi.fn(),
   appointmentPage: vi.fn(),
   headCount: vi.fn(),
-  transferAppointmentBatch: vi.fn(),
-  destinationDayBatch: vi.fn(),
   dayIdBatch: vi.fn(),
   patientBatch: vi.fn(),
   rpc: vi.fn(),
@@ -41,8 +39,7 @@ describe("minor surgeries repository", () => {
     vi.clearAllMocks();
     mocks.requireMinorSurgeriesAdmin.mockResolvedValue(undefined);
     mocks.headCount.mockResolvedValue({ count: 0, error: null });
-    mocks.transferAppointmentBatch.mockResolvedValue({ data: [], error: null });
-    mocks.destinationDayBatch.mockResolvedValue({ data: [], error: null });
+    mocks.rpc.mockResolvedValue({ data: [], error: null });
     mocks.rangePage.mockResolvedValue({ data: [], error: null });
     mocks.from.mockImplementation((table: string) => {
       const orders: Array<{ column: string; ascending: boolean }> = [];
@@ -73,25 +70,13 @@ describe("minor surgeries repository", () => {
         maybeSingle: vi.fn(() => mocks.singleResult()),
         range: vi.fn((start: number, end: number) => {
           if (table === "surgery_appointments") {
-            const sourceIds = filters.find(
-              ([column]) => column === "source_waitlist_id",
-            )?.[1];
-            return Array.isArray(sourceIds)
-              ? mocks.transferAppointmentBatch(sourceIds, start, end)
-              : mocks.appointmentPage(
-                  surgeryDayIds,
-                  start,
-                  end,
-                  [...orders],
-                  [...filters],
-                );
-          }
-          if (
-            table === "surgery_days" &&
-            filters.some(([column]) => column === "id")
-          ) {
-            const dayIds = filters.find(([column]) => column === "id")?.[1];
-            return mocks.destinationDayBatch(dayIds, start, end);
+            return mocks.appointmentPage(
+              surgeryDayIds,
+              start,
+              end,
+              [...orders],
+              [...filters],
+            );
           }
           return mocks.rangePage(table, start, end, [...orders], [...filters]);
         }),
@@ -289,10 +274,12 @@ describe("minor surgeries repository", () => {
       transferred_at: "2026-10-01T12:00:00Z",
       created_at: "2026-09-30T12:00:00Z",
     };
-    const appointment = {
-      id: makeId(9_003),
+    const destination = {
       source_waitlist_id: entry.id,
+      appointment_id: makeId(9_003),
+      appointment_page: 3,
       surgery_day_id: makeId(9_004),
+      procedure_date: "2040-05-20",
     };
     mocks.rangePage.mockImplementation(
       async (
@@ -314,30 +301,21 @@ describe("minor surgeries repository", () => {
       data: [{ id: entry.patient_id, name: "Pessoa sintética transferida" }],
       error: null,
     });
-    mocks.transferAppointmentBatch.mockResolvedValue({
-      data: [appointment],
-      error: null,
-    });
-    mocks.destinationDayBatch.mockResolvedValue({
-      data: [{ id: appointment.surgery_day_id, procedure_date: "2040-05-20" }],
+    mocks.rpc.mockResolvedValue({
+      data: [destination],
       error: null,
     });
 
     const result = await listSurgeryWaitlist();
 
-    expect(mocks.transferAppointmentBatch).toHaveBeenCalledWith(
-      [entry.id],
-      0,
-      49,
-    );
-    expect(mocks.destinationDayBatch).toHaveBeenCalledWith(
-      [appointment.surgery_day_id],
-      0,
-      0,
+    expect(mocks.rpc).toHaveBeenCalledWith(
+      "list_minor_surgery_transfer_destinations",
+      { p_waitlist_ids: [entry.id] },
     );
     expect(result.transferred[0].transferDestination).toEqual({
-      appointment_id: appointment.id,
-      surgery_day_id: appointment.surgery_day_id,
+      appointment_id: destination.appointment_id,
+      appointment_page: 3,
+      surgery_day_id: destination.surgery_day_id,
       procedure_date: "2040-05-20",
     });
   });

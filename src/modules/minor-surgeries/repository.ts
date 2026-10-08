@@ -58,13 +58,11 @@ const activeDayAppointmentSchema = z.object({
   surgery_day_id: z.string().uuid(),
   status: z.enum(["awaiting_confirmation", "confirmed"]),
 });
-const transferredAppointmentSchema = z.object({
-  id: z.string().uuid(),
+const transferDestinationSchema = z.object({
   source_waitlist_id: z.string().uuid(),
+  appointment_id: z.string().uuid(),
+  appointment_page: z.number().int().positive(),
   surgery_day_id: z.string().uuid(),
-});
-const destinationDaySchema = z.object({
-  id: z.string().uuid(),
   procedure_date: z.iso.date(),
 });
 
@@ -344,43 +342,25 @@ async function listTransferDestinations(waitlistIds: readonly string[]) {
     >();
   }
 
-  const client = getNeonDataApiClient();
-  const { data: appointmentData, error: appointmentError } = await client
-    .from("surgery_appointments")
-    .select("id,source_waitlist_id,surgery_day_id")
-    .in("source_waitlist_id", waitlistIds)
-    .range(0, WAITLIST_HISTORY_PAGE_SIZE - 1);
-  const appointments = ensureResult(
-    appointmentData,
-    appointmentError,
-    z.array(transferredAppointmentSchema),
+  const { data, error } = await getNeonDataApiClient().rpc(
+    "list_minor_surgery_transfer_destinations",
+    { p_waitlist_ids: waitlistIds },
   );
-  const dayIds = [...new Set(appointments.map((item) => item.surgery_day_id))];
-  if (dayIds.length === 0) return new Map();
-
-  const { data: dayData, error: dayError } = await client
-    .from("surgery_days")
-    .select("id,procedure_date")
-    .in("id", dayIds)
-    .range(0, dayIds.length - 1);
-  const days = ensureResult(dayData, dayError, z.array(destinationDaySchema));
-  const dayById = new Map(days.map((day) => [day.id, day]));
+  const destinations = ensureResult(
+    data,
+    error,
+    z.array(transferDestinationSchema),
+  );
   return new Map(
-    appointments.flatMap((appointment) => {
-      const day = dayById.get(appointment.surgery_day_id);
-      return day
-        ? [
-            [
-              appointment.source_waitlist_id,
-              {
-                appointment_id: appointment.id,
-                surgery_day_id: day.id,
-                procedure_date: day.procedure_date,
-              },
-            ] as const,
-          ]
-        : [];
-    }),
+    destinations.map((destination) => [
+      destination.source_waitlist_id,
+      {
+        appointment_id: destination.appointment_id,
+        appointment_page: destination.appointment_page,
+        surgery_day_id: destination.surgery_day_id,
+        procedure_date: destination.procedure_date,
+      },
+    ]),
   );
 }
 
