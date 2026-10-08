@@ -46,7 +46,7 @@
 ## Fase 5 — Produção
 - [x] Procedimentos e categorias
 - [x] Lançamentos
-- [ ] Dashboards
+- [x] Dashboards
 - [ ] Importador SUS
 - [ ] Reconciliação de importações
 
