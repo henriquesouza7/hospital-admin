@@ -500,6 +500,10 @@ export function ProductionImportHistory({
                   </span>
                   <span>{rows.length} linha(s) de origem</span>
                 </div>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Manter preserva o valor que estiver registrado no momento da
+                  confirmação, mesmo que ele tenha mudado desde esta importação.
+                </p>
                 {unitsDiffer && (
                   <p className="mt-3 rounded-md bg-amber-100 px-3 py-2 text-sm text-amber-950">
                     As unidades diferem ou não puderam ser verificadas. A
@@ -561,7 +565,7 @@ export function ProductionImportHistory({
                             }
                           >
                             {resolution === "keep_existing"
-                              ? "Manter lançamento existente"
+                              ? "Manter valor atual do lançamento"
                               : "Substituir pela quantidade importada"}
                           </Button>
                         </form>
