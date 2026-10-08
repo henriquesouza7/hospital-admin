@@ -230,7 +230,7 @@ export function AdmissionsDashboardView({
                       <td className="px-4 py-4">
                         <Link
                           className="text-link underline-offset-4 hover:underline"
-                          href={`/internacoes/medicos/${doctor.doctorId}`}
+                          href={`/internacoes/medicos/${doctor.doctorId}?year=${dashboard.year}&month=${selectedMonth}`}
                         >
                           Ver histórico
                         </Link>
