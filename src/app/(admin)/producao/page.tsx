@@ -1,5 +1,11 @@
 import Link from "next/link";
-import { Activity, ArrowRight, ClipboardList, Stethoscope } from "lucide-react";
+import {
+  Activity,
+  ArrowRight,
+  ClipboardList,
+  FileUp,
+  Stethoscope,
+} from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 
 const sections = [
@@ -23,6 +29,13 @@ const sections = [
     description:
       "Analise volumes por procedimento, competência, unidade histórica e origem.",
     icon: Activity,
+  },
+  {
+    href: "/producao/importacoes",
+    title: "Importação SUS e reconciliação",
+    description:
+      "Valide arquivos CSV, associe procedimentos manualmente e reconcilie colisões sem duplicar volumes.",
+    icon: FileUp,
   },
 ] as const;
 

@@ -105,8 +105,16 @@ revoga execução de `PUBLIC` e concede somente a `authenticated`.
 da primeira entrega. `procedure_categories` mantém nome, status e timestamps;
 `procedures` referencia a categoria e exige unidade de contagem; `production_entries`
 guarda o procedimento, competência mensal (normalizada para o primeiro dia),
-quantidade inteira não negativa, fonte e timestamps. Não há dados de pacientes
-nem tabela de importação nesta etapa. A migration incremental
+quantidade inteira não negativa, fonte e timestamps. Não há dados individuais
+de pacientes. A migration `20261008100000_add_production_sus_imports.sql`
+cria `production_imports` e `production_import_rows` para registrar hash,
+competência, decisão de vínculo manual, quantidades originais por linha e
+resultado de reconciliação, sem armazenar o CSV bruto. As tabelas têm RLS para
+leitura administrativa e não permitem DML direto ao papel `authenticated`.
+As RPCs `confirm_production_sus_import` e `reconcile_production_sus_import`
+validam o administrador, persistem a importação e aplicam/reconciliam grupos
+em transação. A confirmação impede arquivo duplicado pelo SHA-256 e envia
+conflitos à reconciliação em vez de somar um lançamento existente. A migration incremental
 `20261007185000_harden_production_data_integrity.sql` preserva a unidade de
 contagem de cada lançamento e endurece a normalização das RPCs e constraints;
 ela também permite corrigir um procedimento mantendo sua categoria atual
@@ -115,6 +123,25 @@ procedimentos. A migration incremental
 `20261007185500_skip_production_noop_updates.sql` evita executar updates sem
 mudança administrativa real, preservando timestamps e evitando eventos de
 auditoria duplicados.
+
+A migration `20261008110000_preserve_sus_counting_unit.sql` registra, em cada
+linha importada, as unidades de contagem capturadas na confirmação e no
+lançamento conflitante. A reconciliação não substitui o volume quando a unidade
+importada diverge da unidade histórica do lançamento; nesse caso, o operador
+deve manter o lançamento ou importar novamente após revisar o cadastro.
+
+A migration `20261008120000_resolve_stale_sus_reconciliations.sql` permite
+concluir `keep_existing` após mudança concorrente, preservando o valor atual
+bloqueado e registrando o estado capturado e o estado mantido na auditoria;
+`replace_with_import` continua rejeitando quantidade ou unidade obsoleta. A
+migration incremental `20261008130000_avoid_noop_sus_reconciliation_updates.sql`
+evita atualizar o lançamento de produção quando a quantidade importada já é
+igual à atual, sem gerar timestamp ou auditoria de alteração sem mudança real.
+`20261008160000_allow_keep_after_production_entry_moved.sql` mantém uma rota de
+resolução auditada quando o lançamento capturado é movido para outro
+procedimento, competência ou origem: `keep_existing` bloqueia a linha pelo ID e
+registra a identidade atual; `replace_with_import` continua exigindo que a
+identidade, quantidade e unidade permaneçam iguais à captura.
 
 Nomes de categorias são únicos após normalização de espaços externos e caixa;
 nomes de procedimentos têm a mesma regra dentro da categoria. Lançamentos têm

@@ -126,3 +126,12 @@ O Financeiro segue server-first. Páginas e Server Actions verificam a sessão e
 a role `admin`, validam entradas com Zod e usam o cliente Data API server-only.
 RLS repete a autorização no banco. Pedidos são gravados por RPC transacional;
 subtotais são colunas geradas em `numeric` e auditoria é produzida no PostgreSQL.
+
+Importação de Produção é server-first: o parser CSV e a validação são funções
+testáveis, a página carrega os procedimentos e o histórico por repositórios com
+paginação determinística, e Server Actions exigem administrador. O preview
+emite evidência HMAC de cinco minutos vinculada ao hash do arquivo, competência,
+delimitador, colunas e identidade autenticada. A confirmação reprocessa o CSV;
+somente os campos administrativos selecionados chegam à RPC. As RPCs fazem as
+gravações em transação e geram auditoria, sem persistir arquivo bruto ou criar
+uma fonte paralela de totais.

@@ -47,6 +47,12 @@
 - Cada lançamento é único por procedimento, competência e fonte normalizada. Uma nova origem pode ser registrada separadamente; a mesma combinação deve ser corrigida pela edição do registro existente.
 - Categorias e procedimentos são inativados, nunca excluídos pelo fluxo administrativo. Para inativar uma categoria, seus procedimentos ativos precisam ser inativados antes; procedimentos inativos continuam associados ao histórico.
 - Cadastros e correções administrativas registram ator autenticado e valores anteriores/novos em `audit_logs`.
+- A importação SUS aceita somente CSV UTF-8 com volumes agregados; não recebe nem persiste identificação individual de pacientes.
+- O vínculo com o catálogo é manual e exato para cada código/nome apresentado. Não se cria procedimento e não se usa associação por similaridade.
+- Classificações `apresentado`, `aprovado` e `realizado` permanecem em fontes distintas e nunca são somadas entre si.
+- O SHA-256 do arquivo confirmado é único. Cada linha administrativa e seu vínculo manual ficam associados ao histórico da importação, sem persistir o CSV bruto nem colunas não selecionadas.
+- Linhas do mesmo procedimento, competência e classificação são agregadas apenas dentro do arquivo confirmado. Se já houver lançamento na mesma combinação, o grupo fica pendente de reconciliação; a confirmação não soma nem substitui o valor existente.
+- Na reconciliação, o administrador escolhe manter o lançamento atual ou substituí-lo pelo total importado. `keep_existing` preserva o registro bloqueado no estado atual mesmo se procedimento, competência, origem, quantidade ou unidade tiverem mudado desde a captura; a auditoria registra a identidade capturada e a identidade/quantidade/unidade atuais. `replace_with_import` é bloqueado se a identidade, quantidade ou unidade tiver mudado desde a confirmação. Uma substituição com quantidade igual não dispara atualização nem auditoria de alteração do lançamento. Nenhuma importação ou lançamento é excluído.
 
 ## Pequenas Cirurgias
 - Datas são criadas manualmente.
