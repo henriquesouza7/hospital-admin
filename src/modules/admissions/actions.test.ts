@@ -60,6 +60,16 @@ describe("doctor server actions", () => {
 
     expect(mocks.requireAdmin).toHaveBeenCalledOnce();
     expect(mocks.createDoctor).toHaveBeenCalledWith("Dr. Médico Teste A");
+    expect(mocks.revalidatePath).toHaveBeenNthCalledWith(1, "/internacoes");
+    expect(mocks.revalidatePath).toHaveBeenNthCalledWith(
+      2,
+      "/internacoes/medicos",
+    );
+    expect(mocks.revalidatePath).toHaveBeenNthCalledWith(
+      3,
+      "/internacoes/medicos/[id]",
+      "page",
+    );
     expect(state).toEqual({
       status: "success",
       message: "Médico cadastrado e ativo.",
@@ -99,6 +109,16 @@ describe("doctor server actions", () => {
       "20000000-0000-4000-8000-000000000001",
       "Dra. Teste",
     );
+    expect(mocks.revalidatePath).toHaveBeenNthCalledWith(1, "/internacoes");
+    expect(mocks.revalidatePath).toHaveBeenNthCalledWith(
+      2,
+      "/internacoes/medicos",
+    );
+    expect(mocks.revalidatePath).toHaveBeenNthCalledWith(
+      3,
+      "/internacoes/medicos/[id]",
+      "page",
+    );
   });
 
   it("should_set_doctor_active_state_from_validated_form", async () => {
@@ -109,6 +129,16 @@ describe("doctor server actions", () => {
     expect(mocks.setDoctorActive).toHaveBeenCalledWith(
       "20000000-0000-4000-8000-000000000001",
       false,
+    );
+    expect(mocks.revalidatePath).toHaveBeenNthCalledWith(1, "/internacoes");
+    expect(mocks.revalidatePath).toHaveBeenNthCalledWith(
+      2,
+      "/internacoes/medicos",
+    );
+    expect(mocks.revalidatePath).toHaveBeenNthCalledWith(
+      3,
+      "/internacoes/medicos/[id]",
+      "page",
     );
     expect(state.message).toBe("Médico inativado.");
   });

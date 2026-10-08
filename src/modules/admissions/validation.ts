@@ -76,11 +76,13 @@ export const targetCreateSchema = z
     target_quantity: admissionQuantitySchema,
   })
   .transform((value, context) => {
-    const periodPattern =
-      value.period_type === "month"
-        ? /^(19|20)\d{2}-(0[1-9]|1[0-2])$/
-        : /^(19|20)\d{2}$/;
-    if (!periodPattern.test(value.period)) {
+    const [yearPart, monthPart] = value.period.split("-");
+    const year = Number(yearPart);
+    const isYearValid =
+      /^\d{4}$/.test(yearPart ?? "") && year >= 1900 && year <= 2100;
+    const isMonthValid =
+      value.period_type === "year" || /^(0[1-9]|1[0-2])$/.test(monthPart ?? "");
+    if (!isYearValid || !isMonthValid) {
       context.addIssue({
         code: "custom",
         message: "Informe uma competência válida.",

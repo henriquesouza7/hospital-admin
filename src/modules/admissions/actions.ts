@@ -45,6 +45,8 @@ export async function createDoctorAction(
   }
 
   revalidatePath("/internacoes");
+  revalidatePath("/internacoes/medicos");
+  revalidatePath("/internacoes/medicos/[id]", "page");
   return { status: "success", message: "Médico cadastrado e ativo." };
 }
 
@@ -67,6 +69,8 @@ export async function updateDoctorAction(
   }
 
   revalidatePath("/internacoes");
+  revalidatePath("/internacoes/medicos");
+  revalidatePath("/internacoes/medicos/[id]", "page");
   return { status: "success", message: "Nome do médico atualizado." };
 }
 
@@ -87,6 +91,8 @@ export async function setDoctorActiveAction(
   }
 
   revalidatePath("/internacoes");
+  revalidatePath("/internacoes/medicos");
+  revalidatePath("/internacoes/medicos/[id]", "page");
   return {
     status: "success",
     message: parsed.data.active ? "Médico ativado." : "Médico inativado.",

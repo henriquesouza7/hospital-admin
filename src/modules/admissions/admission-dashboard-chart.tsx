@@ -12,6 +12,16 @@ import {
 } from "recharts";
 import type { AdmissionDashboard } from "./domain";
 
+export function getAdmissionMonthStatusLabel(
+  point: Pick<
+    AdmissionDashboard["monthlyEvolution"][number],
+    "isClosed" | "isCurrentMonth"
+  >,
+): string {
+  if (point.isClosed) return "Período encerrado";
+  return point.isCurrentMonth ? "Período em andamento" : "Período futuro";
+}
+
 const monthNames = [
   "Jan",
   "Fev",
@@ -66,7 +76,7 @@ export function AdmissionDashboardChart({
                 "Quantidade",
               ]}
               labelFormatter={(label) =>
-                `${label} · ${points.find((point) => point.label === label)?.isClosed ? "Período encerrado" : "Período em andamento"}`
+                `${label} · ${getAdmissionMonthStatusLabel(points.find((point) => point.label === label) ?? { isClosed: false, isCurrentMonth: false })}`
               }
             />
             <Bar dataKey="quantity" name="Internações" radius={[5, 5, 0, 0]}>

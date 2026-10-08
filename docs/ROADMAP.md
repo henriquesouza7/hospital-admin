@@ -39,9 +39,9 @@
 
 ## Fase 4 — Internações
 - [x] Médicos
-- [ ] Lançamentos
-- [ ] Metas
-- [ ] Dashboards
+- [x] Lançamentos
+- [x] Metas
+- [x] Dashboards
 
 ## Fase 5 — Produção
 - [ ] Procedimentos e categorias

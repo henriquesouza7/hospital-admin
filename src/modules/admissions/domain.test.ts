@@ -4,6 +4,7 @@ import {
   type AdmissionEntry,
   type AdmissionTarget,
 } from "./domain";
+import { getAdmissionMonthStatusLabel } from "./admission-dashboard-chart";
 
 const entries: AdmissionEntry[] = [
   {
@@ -57,6 +58,18 @@ const targets: AdmissionTarget[] = [
 ];
 
 describe("admissions dashboard analytics", () => {
+  it("should_label_closed_current_and_future_months_in_tooltip", () => {
+    expect(
+      getAdmissionMonthStatusLabel({ isClosed: true, isCurrentMonth: false }),
+    ).toBe("Período encerrado");
+    expect(
+      getAdmissionMonthStatusLabel({ isClosed: false, isCurrentMonth: true }),
+    ).toBe("Período em andamento");
+    expect(
+      getAdmissionMonthStatusLabel({ isClosed: false, isCurrentMonth: false }),
+    ).toBe("Período futuro");
+  });
+
   it("should_calculate_month_and_year_totals_and_targets_from_daily_entries", () => {
     const summary = summarizeAdmissions(
       entries,

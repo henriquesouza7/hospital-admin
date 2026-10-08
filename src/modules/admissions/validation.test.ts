@@ -152,6 +152,54 @@ describe("admission entry and target validation", () => {
     ).toBe(false);
   });
 
+  it("should_accept_year_2100_for_monthly_and_annual_targets", () => {
+    expect(
+      targetCreateSchema.parse({
+        period_type: "year",
+        period: "2100",
+        target_quantity: "1",
+      }).reference_period,
+    ).toBe("2100-01-01");
+    expect(
+      targetCreateSchema.parse({
+        period_type: "month",
+        period: "2100-01",
+        target_quantity: "1",
+      }).reference_period,
+    ).toBe("2100-01-01");
+    expect(
+      targetCreateSchema.parse({
+        period_type: "month",
+        period: "2100-12",
+        target_quantity: "1",
+      }).reference_period,
+    ).toBe("2100-12-01");
+  });
+
+  it("should_reject_target_years_outside_1900_through_2100", () => {
+    for (const period of ["1899", "2101"]) {
+      expect(
+        targetCreateSchema.safeParse({
+          period_type: "year",
+          period,
+          target_quantity: "1",
+        }).success,
+      ).toBe(false);
+    }
+  });
+
+  it("should_reject_invalid_months_in_year_2100", () => {
+    for (const period of ["2100-00", "2100-13"]) {
+      expect(
+        targetCreateSchema.safeParse({
+          period_type: "month",
+          period,
+          target_quantity: "1",
+        }).success,
+      ).toBe(false);
+    }
+  });
+
   it("should_validate_target_update_identifier_and_quantity", () => {
     expect(
       targetUpdateSchema.safeParse({ id: targetId, target_quantity: "15" })

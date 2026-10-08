@@ -234,6 +234,9 @@ begin
     raise exception 'Admission import rows are invalid' using errcode = '22023';
   end if;
 
+  -- Prevent doctor inserts or updates from changing name resolution mid-import.
+  lock table public.doctors in share row exclusive mode;
+
   for entry_row in select value from jsonb_array_elements(p_rows) as import_row(value)
   loop
     if jsonb_typeof(entry_row) <> 'object'
