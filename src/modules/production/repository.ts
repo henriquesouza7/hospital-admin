@@ -126,24 +126,10 @@ export async function listProductionProcedures(
   } = {},
 ): Promise<ProductionProcedure[]> {
   await requireProductionAdmin();
-  let query = getNeonDataApiClient()
-    .from("procedures")
-    .select("id,category_id,name,counting_unit,active,created_at,updated_at")
-    .order("name", { ascending: true });
-  if (filters.category_id) query = query.eq("category_id", filters.category_id);
-  if (filters.status === "ativos") query = query.eq("active", true);
-  if (filters.status === "inativos") query = query.eq("active", false);
-
-  const [{ data, error }, categories] = await Promise.all([
-    query,
+  const [rows, categories] = await Promise.all([
+    listProductionProcedureRows(filters),
     listProcedureCategories(),
   ]);
-  const rows = requireData(
-    data,
-    error,
-    "Não foi possível carregar os procedimentos.",
-    z.array(procedureRowSchema),
-  );
   const categoryNames = new Map(
     categories.map((category) => [category.id, category.name]),
   );
@@ -152,6 +138,34 @@ export async function listProductionProcedures(
     category_name:
       categoryNames.get(procedure.category_id) ?? "Categoria indisponível",
   }));
+}
+
+async function listProductionProcedureRows(filters: {
+  category_id?: string;
+  status?: "todos" | "ativos" | "inativos";
+}) {
+  const rows: z.infer<typeof procedureRowSchema>[] = [];
+  for (let offset = 0; ; offset += PAGE_SIZE) {
+    let query = getNeonDataApiClient()
+      .from("procedures")
+      .select("id,category_id,name,counting_unit,active,created_at,updated_at");
+    if (filters.category_id)
+      query = query.eq("category_id", filters.category_id);
+    if (filters.status === "ativos") query = query.eq("active", true);
+    if (filters.status === "inativos") query = query.eq("active", false);
+    const { data, error } = await query
+      .order("name", { ascending: true })
+      .order("id", { ascending: true })
+      .range(offset, offset + PAGE_SIZE - 1);
+    const page = requireData(
+      data,
+      error,
+      "Não foi possível carregar os procedimentos.",
+      z.array(procedureRowSchema),
+    );
+    rows.push(...page);
+    if (page.length < PAGE_SIZE) return rows;
+  }
 }
 
 export async function listProductionEntries(
