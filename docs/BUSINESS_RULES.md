@@ -42,6 +42,11 @@
 - Procedimentos diferentes não devem ser somados como se fossem equivalentes.
 - Produção apresentada, aprovada e realizada devem permanecer distintas quando a fonte fornecer essas categorias.
 - Reimportação da mesma competência deve detectar dados existentes.
+- A primeira entrega registra volumes administrativos agregados; não armazena nem solicita identificadores ou dados individualizados de pacientes.
+- A competência é mensal e persistida no primeiro dia do mês. A quantidade é inteira e não negativa, inclusive zero quando o fechamento do período exigir registrar ausência de ocorrências.
+- Cada lançamento é único por procedimento, competência e fonte normalizada. Uma nova origem pode ser registrada separadamente; a mesma combinação deve ser corrigida pela edição do registro existente.
+- Categorias e procedimentos são inativados, nunca excluídos pelo fluxo administrativo. Para inativar uma categoria, seus procedimentos ativos precisam ser inativados antes; procedimentos inativos continuam associados ao histórico.
+- Cadastros e correções administrativas registram ator autenticado e valores anteriores/novos em `audit_logs`.
 
 ## Pequenas Cirurgias
 - Datas são criadas manualmente.
@@ -52,6 +57,11 @@
 - Não reduzir capacidade abaixo dos agendamentos ativos.
 - Cancelamento libera vaga, mas preserva histórico.
 - Prioridade clínica não será inferida pelo sistema.
+- A identificação administrativa coleta somente o nome. CPF, data de nascimento, contato e dados clínicos não são obrigatórios nem armazenados neste módulo.
+- A ordem da fila é oldest-first para organização administrativa e não representa prioridade clínica.
+- Transferir da fila somente para datas iguais ou posteriores à data operacional atual em `America/Sao_Paulo`; a operação valida a capacidade, cria um agendamento `confirmed` vinculado à entrada original e reutiliza o mesmo `patient_id`, preservando a entrada com status `transferred`.
+- Criação de agendamento, mudança de status, ajuste de capacidade e transferência validam a capacidade no banco sob bloqueio transacional da data.
+- Uma pessoa pode ter somente um agendamento ativo por data e uma entrada ativa na fila; cancelamentos e transferências permanecem registrados.
 
 ## Importação fiscal por XML da NF-e
 

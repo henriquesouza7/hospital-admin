@@ -44,8 +44,8 @@
 - [x] Dashboards
 
 ## Fase 5 — Produção
-- [ ] Procedimentos e categorias
-- [ ] Lançamentos
+- [x] Procedimentos e categorias
+- [x] Lançamentos
 - [ ] Dashboards
 - [ ] Importador SUS
 - [ ] Reconciliação de importações
@@ -56,6 +56,8 @@
 - [ ] Pacientes/agendamentos
 - [ ] Fila de espera
 - [ ] Histórico
+
+O núcleo está implementado nesta branch e validado em testes unitários, gates de build/E2E e smoke na branch Neon temporária com dados fictícios. Os itens permanecem desmarcados até a validação autenticada pela interface; a sessão disponível não foi reconhecida pelo Auth da branch isolada.
 
 ## Fase 7 — Consolidação
 - [ ] Dashboard geral

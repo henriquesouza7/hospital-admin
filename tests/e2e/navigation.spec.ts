@@ -39,3 +39,14 @@ test("redirects administrative routes without a session", async ({ page }) => {
     await expect(page).toHaveURL(/\/login/);
   }
 });
+
+test("redirects minor surgeries routes without a session", async ({ page }) => {
+  for (const route of [
+    "/pequenas-cirurgias",
+    "/pequenas-cirurgias/dias",
+    "/pequenas-cirurgias/fila",
+  ]) {
+    await page.goto(route);
+    await expect(page).toHaveURL(/\/login/);
+  }
+});
