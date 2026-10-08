@@ -24,9 +24,9 @@ import {
   listAllSurgeryDays,
   listDayAppointments,
   listMinorSurgeryAudit,
-  listSurgeryPatients,
   listSurgeryWaitlist,
   listUpcomingSurgeryDays,
+  searchSurgeryPatients,
 } from "./repository";
 
 const PAGE_SIZE = 1000;
@@ -49,6 +49,10 @@ describe("minor surgeries repository", () => {
         }),
         gte: vi.fn(() => query),
         eq: vi.fn((column: string, value: unknown) => {
+          filters.push([column, value]);
+          return query;
+        }),
+        ilike: vi.fn((column: string, value: string) => {
           filters.push([column, value]);
           return query;
         }),
@@ -230,10 +234,10 @@ describe("minor surgeries repository", () => {
     expect(result.transferPage).toBe(2);
   });
 
-  it("should_list_1001_patients_when_catalog_exceeds_page_size", async () => {
-    const patients = Array.from({ length: PAGE_SIZE + 1 }, (_, index) => ({
+  it("should_search_patients_in_bounded_pages_and_escape_like_wildcards", async () => {
+    const patients = Array.from({ length: 51 }, (_, index) => ({
       id: makeId(index + 20_001),
-      name: `Paciente ${String(index + 1).padStart(4, "0")}`,
+      name: `Paciente ${String(index + 1).padStart(2, "0")}`,
     }));
     mocks.rangePage.mockImplementation(
       async (table: string, start: number, end: number) => ({
@@ -242,28 +246,42 @@ describe("minor surgeries repository", () => {
       }),
     );
 
-    const result = await listSurgeryPatients();
+    const result = await searchSurgeryPatients(" Ana%_\\ ", 0);
 
-    expect(mocks.rangePage).toHaveBeenCalledTimes(2);
-    expect(mocks.rangePage.mock.calls.map((call) => call.slice(1, 3))).toEqual([
-      [0, 999],
-      [1000, 1999],
+    expect(mocks.rangePage).toHaveBeenCalledOnce();
+    expect(mocks.rangePage.mock.calls[0].slice(1, 3)).toEqual([0, 50]);
+    expect(mocks.rangePage.mock.calls[0][3]).toEqual([
+      { column: "name", ascending: true },
+      { column: "id", ascending: true },
     ]);
-    expect(mocks.rangePage.mock.calls.map((call) => call[3])).toEqual([
-      [
-        { column: "name", ascending: true },
-        { column: "id", ascending: true },
-      ],
-      [
-        { column: "name", ascending: true },
-        { column: "id", ascending: true },
-      ],
+    expect(mocks.rangePage.mock.calls[0][4]).toEqual([
+      ["name", "%Ana\\%\\_\\\\%"],
     ]);
-    expect(result).toHaveLength(PAGE_SIZE + 1);
-    expect(result.map((patient) => patient.id)).toEqual(
-      patients.map((patient) => patient.id),
+    expect(result.patients).toHaveLength(50);
+    expect(result.hasMore).toBe(true);
+    expect(result.offset).toBe(0);
+  });
+
+  it("should_fetch_next_patient_search_page_from_its_offset", async () => {
+    mocks.rangePage.mockImplementation(
+      async (table: string, start: number, end: number) => ({
+        data:
+          table === "patients"
+            ? Array.from({ length: 11 }, (_, index) => ({
+                id: makeId(start + index + 21_000),
+                name: `Pessoa ${start + index + 1}`,
+              })).slice(0, end - start + 1)
+            : [],
+        error: null,
+      }),
     );
-    expect(result[PAGE_SIZE].name).toBe("Paciente 1001");
+
+    const result = await searchSurgeryPatients("", 50);
+
+    expect(mocks.rangePage.mock.calls[0].slice(1, 3)).toEqual([50, 100]);
+    expect(mocks.rangePage.mock.calls[0][4]).toEqual([]);
+    expect(result.patients).toHaveLength(11);
+    expect(result.hasMore).toBe(false);
   });
 
   it("should_query_unique_patient_ids_when_waitlist_repeats_a_patient", async () => {

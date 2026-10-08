@@ -44,6 +44,7 @@ const auditSchema = z.object({
 const PAGE_SIZE = 1000;
 const WAITLIST_HISTORY_PAGE_SIZE = 50;
 const AUDIT_PAGE_SIZE = 50;
+const PATIENT_SEARCH_PAGE_SIZE = 50;
 const PATIENT_ID_BATCH_SIZE = 500;
 const SURGERY_DAY_ID_BATCH_SIZE = 500;
 const activeDayAppointmentSchema = z.object({
@@ -137,18 +138,30 @@ async function listPatientsByIds(ids: readonly string[]) {
   return patients;
 }
 
-export async function listSurgeryPatients(): Promise<SurgeryPatient[]> {
+export async function searchSurgeryPatients(query: string, offset: number) {
   await requireMinorSurgeriesAdmin();
-  return fetchAllPages(
-    async (offset) =>
-      await getNeonDataApiClient()
-        .from("patients")
-        .select("id,name")
-        .order("name", { ascending: true })
-        .order("id", { ascending: true })
-        .range(offset, offset + PAGE_SIZE - 1),
-    z.array(patientSchema),
-  );
+  const searchTerm =
+    typeof query === "string" ? query.trim().slice(0, 160) : "";
+  const safeOffset = Number.isSafeInteger(offset) && offset >= 0 ? offset : 0;
+  const end = safeOffset + PATIENT_SEARCH_PAGE_SIZE;
+  if (!Number.isSafeInteger(end))
+    return { patients: [], offset: safeOffset, hasMore: false };
+
+  let request = getNeonDataApiClient().from("patients").select("id,name");
+  if (searchTerm) {
+    const escapedTerm = searchTerm.replace(/[\\%_]/g, "\\$&");
+    request = request.ilike("name", `%${escapedTerm}%`);
+  }
+  const { data, error } = await request
+    .order("name", { ascending: true })
+    .order("id", { ascending: true })
+    .range(safeOffset, end);
+  const rows = ensureResult(data, error, z.array(patientSchema));
+  return {
+    patients: rows.slice(0, PATIENT_SEARCH_PAGE_SIZE),
+    offset: safeOffset,
+    hasMore: rows.length > PATIENT_SEARCH_PAGE_SIZE,
+  };
 }
 
 export async function listUpcomingSurgeryDays(): Promise<SurgeryDaySummary[]> {

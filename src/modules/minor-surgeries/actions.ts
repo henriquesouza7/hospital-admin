@@ -6,11 +6,13 @@ import {
   createSurgeryAppointment,
   createSurgeryDay,
   createSurgeryWaitlistEntry,
+  searchSurgeryPatients,
   transferSurgeryWaitlistEntry,
   updateSurgeryAppointmentStatus,
   updateSurgeryDayCapacity,
   updateSurgeryPatient,
 } from "./repository";
+import type { SurgeryPatient } from "./domain";
 import {
   parseSurgeryAppointmentForm,
   parseSurgeryAppointmentStatusForm,
@@ -30,6 +32,33 @@ export const initialMinorSurgeryActionState: MinorSurgeryActionState = {
   status: "idle",
   message: "",
 };
+
+export type PatientSearchActionResult =
+  | { ok: true; patients: SurgeryPatient[]; hasMore: boolean }
+  | { ok: false; message: string };
+
+export async function searchSurgeryPatientsAction(
+  query: string,
+  offset: number,
+): Promise<PatientSearchActionResult> {
+  try {
+    const result = await searchSurgeryPatients(query, offset);
+    return {
+      ok: true,
+      patients: result.patients,
+      hasMore: result.hasMore,
+    };
+  } catch (error) {
+    unstable_rethrow(error);
+    return {
+      ok: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Não foi possível buscar cadastros.",
+    };
+  }
+}
 
 function errorState(message: string): MinorSurgeryActionState {
   return { status: "error", message };

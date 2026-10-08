@@ -19,7 +19,6 @@ import {
 import {
   getSurgeryDay,
   listDayAppointments,
-  listSurgeryPatients,
 } from "@/modules/minor-surgeries/repository";
 
 function dateLabel(value: string) {
@@ -37,15 +36,13 @@ export default async function SurgeryDayPage({
   const { id } = await params;
   if (!surgeryDayIdSchema.safeParse(id).success) notFound();
 
-  const [day, appointments, patients] = await Promise.all([
+  const [day, appointments] = await Promise.all([
     getSurgeryDay(id),
     listDayAppointments(id),
-    listSurgeryPatients(),
   ]);
   if (!day) notFound();
 
   const summary = summarizeSurgeryDay(day, appointments);
-  const patientById = new Map(patients.map((patient) => [patient.id, patient]));
 
   return (
     <div className="space-y-8">
@@ -109,7 +106,7 @@ export default async function SurgeryDayPage({
           description="Use um cadastro existente para evitar duplicar a pessoa. Apenas o nome é necessário para identificação administrativa."
         />
         <div className="mt-5">
-          <CreateAppointmentForm dayId={day.id} patients={patients} />
+          <CreateAppointmentForm dayId={day.id} />
         </div>
       </section>
 
@@ -135,9 +132,7 @@ export default async function SurgeryDayPage({
               </thead>
               <tbody className="divide-y">
                 {appointments.map((appointment) => {
-                  const patient =
-                    patientById.get(appointment.patient_id) ??
-                    appointment.patient;
+                  const patient = appointment.patient;
                   const tone =
                     appointment.status === "confirmed"
                       ? "success"

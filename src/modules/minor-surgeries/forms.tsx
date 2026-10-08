@@ -1,11 +1,12 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useId, useState, useTransition } from "react";
 import {
   createSurgeryAppointmentAction,
   createSurgeryDayAction,
   createSurgeryWaitlistEntryAction,
   initialMinorSurgeryActionState,
+  searchSurgeryPatientsAction,
   transferSurgeryWaitlistEntryAction,
   updateSurgeryAppointmentStatusAction,
   updateSurgeryDayCapacityAction,
@@ -31,24 +32,103 @@ function Feedback({ state }: { state: { status: string; message: string } }) {
   );
 }
 
-function PatientSelector({
-  patients,
-}: {
-  patients: readonly SurgeryPatient[];
-}) {
+function PatientSelector() {
+  const id = useId();
+  const [query, setQuery] = useState("");
+  const [patients, setPatients] = useState<SurgeryPatient[]>([]);
+  const [selectedId, setSelectedId] = useState("");
+  const [hasMore, setHasMore] = useState(false);
+  const [error, setError] = useState("");
+  const [pending, startTransition] = useTransition();
+
+  function search(offset: number) {
+    setError("");
+    startTransition(async () => {
+      const result = await searchSurgeryPatientsAction(query, offset);
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      setPatients((current) =>
+        offset === 0 ? result.patients : [...current, ...result.patients],
+      );
+      setHasMore(result.hasMore);
+    });
+  }
+
   return (
     <>
-      <label className={labelClass}>
-        Pessoa já cadastrada
-        <select name="patient_id" defaultValue="" className={fieldClass}>
-          <option value="">Selecionar cadastro existente</option>
-          {patients.map((patient) => (
-            <option key={patient.id} value={patient.id}>
-              {patient.name}
-            </option>
-          ))}
-        </select>
-      </label>
+      <fieldset className="space-y-2">
+        <legend className={labelClass}>Pessoa já cadastrada</legend>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <label className="sr-only" htmlFor={`${id}-search`}>
+            Buscar cadastro pelo nome
+          </label>
+          <input
+            id={`${id}-search`}
+            value={query}
+            maxLength={160}
+            disabled={pending}
+            className={fieldClass}
+            placeholder="Digite um nome para buscar"
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setPatients([]);
+              setSelectedId("");
+              setHasMore(false);
+              setError("");
+            }}
+          />
+          <button
+            type="button"
+            className={`${buttonClass} shrink-0`}
+            disabled={pending}
+            onClick={() => search(0)}
+          >
+            {pending ? "Buscando…" : "Buscar"}
+          </button>
+        </div>
+        {patients.length > 0 ? (
+          <>
+            <label className="sr-only" htmlFor={`${id}-patient`}>
+              Selecione um cadastro encontrado
+            </label>
+            <select
+              id={`${id}-patient`}
+              name="patient_id"
+              value={selectedId}
+              className={fieldClass}
+              onChange={(event) => setSelectedId(event.target.value)}
+            >
+              <option value="">Selecionar cadastro encontrado</option>
+              {patients.map((patient) => (
+                <option key={patient.id} value={patient.id}>
+                  {patient.name}
+                </option>
+              ))}
+            </select>
+            {hasMore ? (
+              <button
+                type="button"
+                className="h-9 rounded-md border px-3 text-sm font-medium hover:bg-muted disabled:opacity-60"
+                disabled={pending}
+                onClick={() => search(patients.length)}
+              >
+                {pending ? "Carregando…" : "Mais resultados"}
+              </button>
+            ) : null}
+          </>
+        ) : (
+          <p className="text-xs text-muted-foreground" role="status">
+            Busque pelo nome para selecionar um cadastro existente.
+          </p>
+        )}
+        {error ? (
+          <p className="text-sm text-destructive" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </fieldset>
       <label className={labelClass}>
         Ou cadastre pelo nome
         <input
@@ -102,13 +182,7 @@ export function CreateSurgeryDayForm() {
   );
 }
 
-export function CreateAppointmentForm({
-  dayId,
-  patients,
-}: {
-  dayId: string;
-  patients: readonly SurgeryPatient[];
-}) {
+export function CreateAppointmentForm({ dayId }: { dayId: string }) {
   const [state, action, pending] = useActionState(
     createSurgeryAppointmentAction,
     initialMinorSurgeryActionState,
@@ -116,7 +190,7 @@ export function CreateAppointmentForm({
   return (
     <form action={action} className="grid gap-4 sm:grid-cols-2">
       <input type="hidden" name="surgery_day_id" value={dayId} />
-      <PatientSelector patients={patients} />
+      <PatientSelector />
       <label className={labelClass}>
         Status inicial
         <select
@@ -207,18 +281,14 @@ export function UpdateAppointmentStatusForm({
   );
 }
 
-export function CreateWaitlistEntryForm({
-  patients,
-}: {
-  patients: readonly SurgeryPatient[];
-}) {
+export function CreateWaitlistEntryForm() {
   const [state, action, pending] = useActionState(
     createSurgeryWaitlistEntryAction,
     initialMinorSurgeryActionState,
   );
   return (
     <form action={action} className="grid gap-4 sm:grid-cols-2">
-      <PatientSelector patients={patients} />
+      <PatientSelector />
       <div className="flex flex-col gap-3 sm:col-span-2 sm:flex-row sm:items-center">
         <button className={buttonClass} disabled={pending}>
           Adicionar à fila

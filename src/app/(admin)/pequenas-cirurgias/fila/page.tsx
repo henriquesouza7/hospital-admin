@@ -10,7 +10,6 @@ import {
 } from "@/modules/minor-surgeries/forms";
 import {
   listAvailableSurgeryDays,
-  listSurgeryPatients,
   listSurgeryWaitlist,
 } from "@/modules/minor-surgeries/repository";
 import { formatOperationalTimestamp } from "@/modules/minor-surgeries/date-time";
@@ -28,9 +27,8 @@ export default async function SurgeryWaitlistPage({
 }) {
   const { transferPage: rawTransferPage } = await searchParams;
   const transferPage = parseTransferPage(rawTransferPage);
-  const [entries, patients, days] = await Promise.all([
+  const [entries, days] = await Promise.all([
     listSurgeryWaitlist(transferPage),
-    listSurgeryPatients(),
     listAvailableSurgeryDays(),
   ]);
   const { waiting, transferred, hasMoreTransferred } = entries;
@@ -57,7 +55,7 @@ export default async function SurgeryWaitlistPage({
           description="Selecione um cadastro existente ou registre somente o nome administrativo."
         />
         <div className="mt-5">
-          <CreateWaitlistEntryForm patients={patients} />
+          <CreateWaitlistEntryForm />
         </div>
       </section>
 
@@ -133,8 +131,14 @@ export default async function SurgeryWaitlistPage({
                 <div>
                   <p className="font-medium">{entry.patient.name}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Entrada em{" "}
+                    Entrada na fila:{" "}
                     {formatOperationalTimestamp(entry.created_at, "date")}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Transferida em{" "}
+                    {entry.transferred_at
+                      ? formatOperationalTimestamp(entry.transferred_at)
+                      : "Horário não disponível"}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
