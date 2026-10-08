@@ -41,6 +41,14 @@ describe("production SUS CSV import", () => {
     expect(containsPatientColumns(["patient_name", "quantidade"])).toBe(true);
     expect(containsPatientColumns(["cpf_do_paciente"])).toBe(true);
     expect(containsPatientColumns(["CNS do paciente"])).toBe(true);
+    expect(containsPatientColumns(["email", "quantidade"])).toBe(true);
+    expect(containsPatientColumns(["e-mail", "quantidade"])).toBe(true);
+    expect(containsPatientColumns(["email_contato", "quantidade"])).toBe(true);
+    expect(containsPatientColumns(["rg", "quantidade"])).toBe(true);
+    expect(containsPatientColumns(["registro_geral", "quantidade"])).toBe(true);
+    expect(
+      containsPatientColumns(["carteira de identidade", "quantidade"]),
+    ).toBe(true);
     expect(containsPatientColumns(["numero_prontuario"])).toBe(true);
     expect(containsPatientColumns(["telefone do paciente"])).toBe(true);
   });

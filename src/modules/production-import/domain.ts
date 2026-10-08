@@ -43,6 +43,8 @@ const patientIdentifierHeaderPatterns = [
   /(?:^|\s)nome(?: completo)?\s+(?:(?:do|da|de)\s+)?(?:paciente|patient)(?:\s|$)/,
   /(?:^|\s)full\s+name(?:\s|$)/,
   /(?:^|\s)(?:cpf|cns|ssn)(?:\s|$)/,
+  /(?:^|\s)(?:e mail|email|correio eletronico)(?:\s|$)/,
+  /(?:^|\s)(?:rg|registro geral|carteira de identidade)(?:\s|$)/,
   /(?:^|\s)(?:cartao sus|cartao nacional de saude)(?:\s|$)/,
   /(?:^|\s)(?:prontuario|medical record)(?:\s|$)/,
   /(?:^|\s)(?:nascimento|birth date|date of birth)(?:\s|$)/,
