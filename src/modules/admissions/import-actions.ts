@@ -54,17 +54,20 @@ export async function previewAdmissionCsvAction(
       active,
     }));
     const rows = parseAdmissionCsv(text, doctors);
+    const hasInvalidRows = rows.some((row) => row.error);
     return {
       status: "success",
-      message: rows.some((row) => row.error)
+      message: hasInvalidRows
         ? "Corrija as linhas indicadas antes de confirmar."
         : "Prévia válida. Confirme para persistir os lançamentos.",
       rows,
-      token: issueAdmissionCsvEvidence(
-        hashAdmissionCsv(bytes),
-        admin.id,
-        getNeonServerEnv().authCookieSecret,
-      ),
+      token: hasInvalidRows
+        ? ""
+        : issueAdmissionCsvEvidence(
+            hashAdmissionCsv(bytes),
+            admin.id,
+            getNeonServerEnv().authCookieSecret,
+          ),
     };
   } catch (error) {
     return {

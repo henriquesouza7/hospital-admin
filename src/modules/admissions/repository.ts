@@ -133,35 +133,15 @@ export async function listAdmissionEntries(
 ): Promise<AdmissionEntry[]> {
   await requireAdmin();
   const client = getNeonDataApiClient();
-  const rawEntries: unknown[] = [];
-  let cursor: string | undefined;
-  for (;;) {
-    let query = client
-      .from("admission_entries")
-      .select("id,doctor_id,entry_date,quantity,created_at,updated_at")
-      .gte("entry_date", startDate)
-      .lt("entry_date", endDate);
-    if (doctorId) query = query.eq("doctor_id", doctorId);
-    if (cursor) query = query.gt("id", cursor);
-    const { data, error } = await query
-      .order("id", { ascending: true })
-      .limit(DATA_API_PAGE_SIZE);
-    if (error || data === null || data === undefined) {
-      throw new Error(
-        "Não foi possível carregar os lançamentos de internações.",
-      );
-    }
-    rawEntries.push(...data);
-    if (data.length < DATA_API_PAGE_SIZE) break;
-    const lastEntry = data.at(-1);
-    if (!lastEntry || typeof lastEntry.id !== "string") {
-      throw new Error(
-        "Não foi possível continuar a paginação dos lançamentos.",
-      );
-    }
-    cursor = lastEntry.id;
+  const { data, error } = await client.rpc("list_admission_entries", {
+    p_start_date: startDate,
+    p_end_date: endDate,
+    p_doctor_id: doctorId ?? null,
+  });
+  if (error || data === null || data === undefined) {
+    throw new Error("Não foi possível carregar os lançamentos de internações.");
   }
-  const entries = entryRowsSchema.parse(rawEntries);
+  const entries = entryRowsSchema.parse(data);
   const doctors = await listAllDoctors(client);
   const doctorsById = new Map(doctors.map((doctor) => [doctor.id, doctor]));
   return entries

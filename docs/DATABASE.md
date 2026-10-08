@@ -88,6 +88,13 @@ exige cadastro ativo, insere todas as linhas e audita cada lançamento e o lote
 na mesma transação. Colisões com lançamentos existentes fazem rollback do lote.
 Nenhum dado individual de paciente é armazenado.
 
+A migration `20261008150000_read_admission_entries_in_one_snapshot.sql` cria a
+RPC `list_admission_entries`, que retorna em uma única instrução o recorte de
+lançamentos do período e do médico solicitados. O agregador evita totais
+parciais quando uma importação concorrente grava mais de uma página de dados.
+A RPC exige administrador, usa `SECURITY DEFINER` com `search_path=pg_catalog`,
+revoga execução de `PUBLIC` e concede somente a `authenticated`.
+
 ## Produção
 - procedure_categories
 - procedures

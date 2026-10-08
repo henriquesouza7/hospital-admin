@@ -20,7 +20,10 @@ vi.mock("./repository", () => ({
   listDoctors: mocks.listDoctors,
 }));
 
-import { confirmAdmissionCsvAction } from "./import-actions";
+import {
+  confirmAdmissionCsvAction,
+  previewAdmissionCsvAction,
+} from "./import-actions";
 import { hashAdmissionCsv, issueAdmissionCsvEvidence } from "./import";
 
 const adminId = "admin-user-id";
@@ -66,5 +69,38 @@ describe("admissions CSV import actions", () => {
       "/internacoes/medicos/[id]",
       "page",
     );
+  });
+
+  it("should_not_sign_or_confirm_a_preview_with_invalid_rows", async () => {
+    const invalidCsv =
+      "data,medico,quantidade\n2026-10-01,Médico inexistente,4\n";
+    const previewForm = new FormData();
+    previewForm.set(
+      "csv",
+      new File([invalidCsv], "internacoes.csv", { type: "text/csv" }),
+    );
+
+    const preview = await previewAdmissionCsvAction(
+      { status: "idle", message: "" },
+      previewForm,
+    );
+
+    expect(preview).toMatchObject({ status: "success", token: "" });
+    if (preview.status !== "success") throw new Error("Preview failed.");
+    expect(preview.rows[0]?.error).toContain("não encontrado");
+
+    const confirmationForm = new FormData();
+    confirmationForm.set(
+      "csv",
+      new File([invalidCsv], "internacoes.csv", { type: "text/csv" }),
+    );
+    confirmationForm.set("preview_token", preview.token);
+    const confirmation = await confirmAdmissionCsvAction(
+      { status: "idle", message: "" },
+      confirmationForm,
+    );
+
+    expect(confirmation.status).toBe("error");
+    expect(mocks.importAdmissionEntries).not.toHaveBeenCalled();
   });
 });

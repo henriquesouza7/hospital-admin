@@ -207,65 +207,39 @@ describe("doctors repository", () => {
     });
   });
 
-  it("should_use_cursor_pagination_for_all_dashboard_entries", async () => {
-    const makeEntry = (index: number) => ({
-      id: `20000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
-      doctor_id: doctor.id,
-      entry_date: "2026-10-07",
-      quantity: 1,
-      created_at: "2026-10-07T12:00:00Z",
-      updated_at: "2026-10-07T12:00:00Z",
-    });
-    const limit = vi
-      .fn()
-      .mockResolvedValueOnce({
-        data: Array.from({ length: 1000 }, (_, index) => makeEntry(index)),
-        error: null,
-      })
-      .mockResolvedValueOnce({ data: [makeEntry(1000)], error: null });
-    type Query = {
-      gte: ReturnType<typeof vi.fn>;
-      lt: ReturnType<typeof vi.fn>;
-      gt: ReturnType<typeof vi.fn>;
-      eq: ReturnType<typeof vi.fn>;
-      order: ReturnType<typeof vi.fn>;
-      limit: ReturnType<typeof vi.fn>;
-    };
-    const query = {} as Query;
-    query.gte = vi.fn().mockReturnValue(query);
-    query.lt = vi.fn().mockReturnValue(query);
-    query.gt = vi.fn().mockReturnValue(query);
-    query.eq = vi.fn().mockReturnValue(query);
-    query.order = vi.fn().mockReturnValue(query);
-    query.limit = limit;
-    const select = vi.fn().mockReturnValue(query);
-    const doctorQuery = {
-      gt: vi.fn(),
-      order: vi.fn(),
-      limit: vi.fn(),
-    };
-    doctorQuery.gt.mockReturnValue(doctorQuery);
-    doctorQuery.order.mockReturnValue(doctorQuery);
-    doctorQuery.limit.mockResolvedValue({
-      data: [doctor],
-      error: null,
-    });
-    mocks.from.mockImplementation((table: string) =>
-      table === "doctors"
-        ? { select: vi.fn().mockReturnValue(doctorQuery) }
-        : { select },
-    );
+  it("should_read_all_admission_entries_in_one_database_snapshot", async () => {
+    const mockEntries = [
+      {
+        id: "20000000-0000-4000-8000-000000000002",
+        doctor_id: doctor.id,
+        entry_date: "2026-10-07",
+        quantity: 1,
+        created_at: "2026-10-07T12:00:00Z",
+        updated_at: "2026-10-07T12:00:00Z",
+      },
+      {
+        id: "20000000-0000-4000-8000-000000000001",
+        doctor_id: doctor.id,
+        entry_date: "2026-10-06",
+        quantity: 3,
+        created_at: "2026-10-06T12:00:00Z",
+        updated_at: "2026-10-06T12:00:00Z",
+      },
+    ];
+    mocks.rpc.mockResolvedValue({ data: mockEntries, error: null });
 
     const entries = await listAdmissionEntries("2026-01-01", "2027-01-01");
-    expect(entries).toHaveLength(1001);
-    expect(query.order).toHaveBeenCalledWith("id", { ascending: true });
-    expect(limit).toHaveBeenNthCalledWith(1, 1000);
-    expect(query.gt).toHaveBeenNthCalledWith(
-      1,
-      "id",
-      "20000000-0000-4000-8000-000000001000",
-    );
-    expect(limit).toHaveBeenNthCalledWith(2, 1000);
+    expect(entries.map((entry) => entry.id)).toEqual([
+      "20000000-0000-4000-8000-000000000002",
+      "20000000-0000-4000-8000-000000000001",
+    ]);
+    expect(mocks.rpc).toHaveBeenCalledWith("list_admission_entries", {
+      p_start_date: "2026-01-01",
+      p_end_date: "2027-01-01",
+      p_doctor_id: null,
+    });
+    expect(mocks.rpc).toHaveBeenCalledTimes(1);
+    expect(mocks.from).toHaveBeenCalledWith("doctors");
   });
 
   it("should_cursor_paginate_all_admission_targets", async () => {
