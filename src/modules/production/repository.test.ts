@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createProductionEntry,
   DuplicateProductionRecordError,
+  listProcedureCategories,
   listProductionEntries,
   listProductionProcedures,
 } from "./repository";
@@ -70,6 +71,65 @@ describe("production repository", () => {
         source: "manual",
       }),
     ).rejects.toThrow("Não foi possível confirmar o cadastro de Produção.");
+  });
+
+  it("should_paginate_procedure_categories_in_deterministic_order", async () => {
+    const timestamp = "2026-03-01T00:00:00.000Z";
+    const makeCategory = (index: number) => ({
+      id: `00000000-0000-4000-8002-${index.toString().padStart(12, "0")}`,
+      name: `Categoria ${index.toString().padStart(4, "0")}`,
+      active: true,
+      created_at: timestamp,
+      updated_at: timestamp,
+    });
+    const firstPage = Array.from({ length: 1000 }, (_, index) =>
+      makeCategory(index + 1),
+    );
+    const secondPage = [makeCategory(1001)];
+    const calls: Array<{
+      orders: Array<[string, { ascending: boolean }]>;
+      range?: [number, number];
+    }> = [];
+    from.mockImplementation(() => {
+      const call = { orders: [], range: undefined } as (typeof calls)[number];
+      calls.push(call);
+      const query = {
+        select: () => query,
+        order: (column: string, options: { ascending: boolean }) => {
+          call.orders.push([column, options]);
+          return query;
+        },
+        range: (start: number, end: number) => {
+          call.range = [start, end];
+          return query;
+        },
+        then: (resolve: (value: unknown) => unknown) =>
+          Promise.resolve({
+            data: call.range?.[0] === 0 ? firstPage : secondPage,
+            error: null,
+          }).then(resolve),
+      };
+      return query;
+    });
+
+    const categories = await listProcedureCategories();
+
+    expect(calls.map(({ range }) => range)).toEqual([
+      [0, 999],
+      [1000, 1999],
+    ]);
+    expect(calls.map(({ orders }) => orders)).toEqual([
+      [
+        ["name", { ascending: true }],
+        ["id", { ascending: true }],
+      ],
+      [
+        ["name", { ascending: true }],
+        ["id", { ascending: true }],
+      ],
+    ]);
+    expect(categories).toHaveLength(1001);
+    expect(categories.at(-1)?.id).toBe(makeCategory(1001).id);
   });
 
   it("should_preserve_entry_unit_when_procedure_unit_changes", async () => {
@@ -367,8 +427,71 @@ describe("production repository", () => {
     },
   );
 
+  it("should_preserve_procedure_category_from_second_category_page", async () => {
+    const categoryId = "00000000-0000-4000-8002-000000001001";
+    const timestamp = "2026-03-01T00:00:00.000Z";
+    const makeCategory = (index: number) => ({
+      id: `00000000-0000-4000-8002-${index.toString().padStart(12, "0")}`,
+      name: `Categoria ${index}`,
+      active: true,
+      created_at: timestamp,
+      updated_at: timestamp,
+    });
+    const firstCategoryPage = Array.from({ length: 1000 }, (_, index) =>
+      makeCategory(index + 1),
+    );
+    const secondCategoryPage = [makeCategory(1001)];
+    const procedure = {
+      id: "00000000-0000-4000-8001-000000000001",
+      category_id: categoryId,
+      name: "Procedimento com categoria posterior",
+      counting_unit: "unidade",
+      active: true,
+      created_at: timestamp,
+      updated_at: timestamp,
+    };
+    const categoryCalls: Array<{ range?: [number, number] }> = [];
+    from.mockImplementation((table: string) => {
+      const call: (typeof categoryCalls)[number] = {};
+      if (table === "procedure_categories") categoryCalls.push(call);
+      const query = {
+        select: () => query,
+        eq: () => query,
+        gte: () => query,
+        lte: () => query,
+        order: () => query,
+        range: (start: number, end: number) => {
+          call.range = [start, end];
+          return query;
+        },
+        then: (resolve: (value: unknown) => unknown) =>
+          Promise.resolve({
+            data:
+              table === "procedures"
+                ? [procedure]
+                : call.range?.[0] === 0
+                  ? firstCategoryPage
+                  : secondCategoryPage,
+            error: null,
+          }).then(resolve),
+      };
+      return query;
+    });
+
+    const procedures = await listProductionProcedures();
+
+    expect(procedures[0]).toMatchObject({
+      category_id: categoryId,
+      category_name: "Categoria 1001",
+    });
+    expect(categoryCalls.map(({ range }) => range)).toEqual([
+      [0, 999],
+      [1000, 1999],
+    ]);
+  });
+
   it("should_enrich_entry_with_procedure_from_second_catalog_page", async () => {
-    const categoryId = "fe90a7f4-45c9-4a52-9b4f-fb7ce6f50a9f";
+    const categoryId = "00000000-0000-4000-8002-000000001001";
     const procedureId = "00000000-0000-4000-8001-000000001001";
     const timestamp = "2026-03-01T00:00:00.000Z";
     const makeProcedure = (index: number) => ({
@@ -384,6 +507,17 @@ describe("production repository", () => {
       makeProcedure(index + 1),
     );
     const secondPage = [makeProcedure(1001)];
+    const makeCategory = (index: number) => ({
+      id: `00000000-0000-4000-8002-${index.toString().padStart(12, "0")}`,
+      name: `Categoria ${index}`,
+      active: true,
+      created_at: timestamp,
+      updated_at: timestamp,
+    });
+    const firstCategoryPage = Array.from({ length: 1000 }, (_, index) =>
+      makeCategory(index + 1),
+    );
+    const secondCategoryPage = [makeCategory(1001)];
     const entry = {
       id: "f10a7281-2a42-4fd4-b7f5-d5b7d46d54bd",
       procedure_id: procedureId,
@@ -417,15 +551,9 @@ describe("production repository", () => {
                   : secondPage
                 : table === "production_entries"
                   ? [entry]
-                  : [
-                      {
-                        id: categoryId,
-                        name: "Categoria teste",
-                        active: true,
-                        created_at: timestamp,
-                        updated_at: timestamp,
-                      },
-                    ],
+                  : call.range?.[0] === 0
+                    ? firstCategoryPage
+                    : secondCategoryPage,
             error: null,
           }).then(resolve),
       };
@@ -437,7 +565,7 @@ describe("production repository", () => {
     expect(entries[0]).toMatchObject({
       procedure_id: procedureId,
       procedure_name: "Procedimento 1001",
-      category_name: "Categoria teste",
+      category_name: "Categoria 1001",
       counting_unit: "unidade historica",
     });
     expect(
@@ -448,5 +576,17 @@ describe("production repository", () => {
       [0, 999],
       [1000, 1999],
     ]);
+    expect(
+      calls
+        .filter(({ table }) => table === "procedure_categories")
+        .map(({ range }) => range),
+    ).toEqual(
+      [
+        [0, 999],
+        [1000, 1999],
+        [0, 999],
+        [1000, 1999],
+      ].sort((left, right) => left[0] - right[0]),
+    );
   });
 });

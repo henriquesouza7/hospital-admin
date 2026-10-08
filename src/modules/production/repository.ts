@@ -107,16 +107,27 @@ async function callBooleanRpc(
 
 export async function listProcedureCategories(): Promise<ProcedureCategory[]> {
   await requireProductionAdmin();
-  const { data, error } = await getNeonDataApiClient()
-    .from("procedure_categories")
-    .select("id,name,active,created_at,updated_at")
-    .order("name", { ascending: true });
-  return requireData(
-    data,
-    error,
-    "Não foi possível carregar as categorias.",
-    z.array(categoryRowSchema),
-  );
+  return listProcedureCategoryRows();
+}
+
+async function listProcedureCategoryRows() {
+  const rows: z.infer<typeof categoryRowSchema>[] = [];
+  for (let offset = 0; ; offset += PAGE_SIZE) {
+    const { data, error } = await getNeonDataApiClient()
+      .from("procedure_categories")
+      .select("id,name,active,created_at,updated_at")
+      .order("name", { ascending: true })
+      .order("id", { ascending: true })
+      .range(offset, offset + PAGE_SIZE - 1);
+    const page = requireData(
+      data,
+      error,
+      "Não foi possível carregar as categorias.",
+      z.array(categoryRowSchema),
+    );
+    rows.push(...page);
+    if (page.length < PAGE_SIZE) return rows;
+  }
 }
 
 export async function listProductionProcedures(
