@@ -21,7 +21,7 @@ begin
     raise exception 'Administrator access required' using errcode = '42501';
   end if;
 
-  normalized_name := btrim(p_name);
+  normalized_name := regexp_replace(p_name, '^[[:space:]]+|[[:space:]]+$', '', 'g');
   if normalized_name is null or char_length(normalized_name) not between 1 and 160 then
     raise exception 'Doctor name is invalid' using errcode = '22023';
   end if;
@@ -59,7 +59,7 @@ begin
     raise exception 'Administrator access required' using errcode = '42501';
   end if;
 
-  normalized_name := btrim(p_name);
+  normalized_name := regexp_replace(p_name, '^[[:space:]]+|[[:space:]]+$', '', 'g');
   if normalized_name is null or char_length(normalized_name) not between 1 and 160 then
     raise exception 'Doctor name is invalid' using errcode = '22023';
   end if;
