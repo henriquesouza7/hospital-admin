@@ -62,6 +62,22 @@ describe("admissions CSV import", () => {
     ]);
   });
 
+  it("should_accept_maximum_postgres_integer_quantity_when_importing", () => {
+    const rows = parseAdmissionCsv(
+      "data,medico,quantidade\n2026-10-01,Dra. Teste A,2147483647\n",
+      doctors,
+    );
+    expect(rows[0]).toMatchObject({ quantity: 2147483647, error: null });
+  });
+
+  it("should_reject_quantity_above_postgres_integer_range_when_importing", () => {
+    const rows = parseAdmissionCsv(
+      "data,medico,quantidade\n2026-10-01,Dra. Teste A,2147483648\n",
+      doctors,
+    );
+    expect(rows[0]?.error).toBe("Quantidade deve ser um inteiro não negativo.");
+  });
+
   it("should_reject_ambiguous_exact_doctor_name", () => {
     const ambiguousDoctors = [
       ...doctors,

@@ -191,6 +191,8 @@ describe("doctors repository", () => {
         error: null,
       })
       .mockResolvedValueOnce({ data: [makeEntry(1000)], error: null });
+    const idOrder = vi.fn().mockReturnValue({ range });
+    const dateOrder = vi.fn().mockReturnValue({ order: idOrder });
     const doctorOrder = vi.fn().mockResolvedValue({
       data: [{ id: doctor.id, name: doctor.name, active: true }],
       error: null,
@@ -202,7 +204,7 @@ describe("doctors repository", () => {
             select: vi.fn().mockReturnValue({
               gte: vi.fn().mockReturnValue({
                 lt: vi.fn().mockReturnValue({
-                  order: vi.fn().mockReturnValue({ range }),
+                  order: dateOrder,
                 }),
               }),
             }),
@@ -211,6 +213,8 @@ describe("doctors repository", () => {
 
     const entries = await listAdmissionEntries("2026-01-01", "2027-01-01");
     expect(entries).toHaveLength(1001);
+    expect(dateOrder).toHaveBeenCalledWith("entry_date", { ascending: false });
+    expect(idOrder).toHaveBeenCalledWith("id", { ascending: true });
     expect(range).toHaveBeenNthCalledWith(1, 0, 999);
     expect(range).toHaveBeenNthCalledWith(2, 1000, 1999);
   });

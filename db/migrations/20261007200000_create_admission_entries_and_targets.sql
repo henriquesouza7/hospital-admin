@@ -48,7 +48,7 @@ for each row execute function public.set_admission_updated_at();
 
 alter table public.admission_entries enable row level security;
 alter table public.admission_targets enable row level security;
-revoke all on public.admission_entries, public.admission_targets from public, anon, authenticated;
+revoke all on public.admission_entries, public.admission_targets from public, authenticated;
 grant select on public.admission_entries, public.admission_targets to authenticated;
 
 create policy admission_entries_admin_select
@@ -238,8 +238,11 @@ begin
   loop
     if jsonb_typeof(entry_row) <> 'object'
        or coalesce(entry_row->>'entry_date', '') !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
-       or coalesce(entry_row->>'quantity', '') !~ '^[0-9]{1,9}$' then
+       or coalesce(entry_row->>'quantity', '') !~ '^[0-9]{1,10}$' then
       raise exception 'Admission import row is invalid' using errcode = '22023';
+    end if;
+    if (entry_row->>'quantity')::numeric > 2147483647 then
+      raise exception 'Admission import quantity is out of range' using errcode = '22023';
     end if;
     normalized_doctor_name := regexp_replace(entry_row->>'doctor_name', '^[[:space:]]+|[[:space:]]+$', '', 'g');
     if normalized_doctor_name is null or normalized_doctor_name = '' then

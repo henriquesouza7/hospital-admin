@@ -120,6 +120,7 @@ export async function listAdmissionEntries(
       .gte("entry_date", startDate)
       .lt("entry_date", endDate)
       .order("entry_date", { ascending: false })
+      .order("id", { ascending: true })
       .range(offset, offset + ADMISSION_ENTRIES_PAGE_SIZE - 1);
     if (doctorId) query = query.eq("doctor_id", doctorId);
     const { data, error } = await query;
