@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   from: vi.fn(),
   rangePage: vi.fn(),
+  singleResult: vi.fn(),
   appointmentPage: vi.fn(),
   dayIdBatch: vi.fn(),
   patientBatch: vi.fn(),
@@ -18,6 +19,7 @@ vi.mock("./access", () => ({
 }));
 
 import {
+  getSurgeryDay,
   listAllSurgeryDays,
   listDayAppointments,
   listSurgeryPatients,
@@ -44,6 +46,7 @@ describe("minor surgeries repository", () => {
         }),
         gte: vi.fn(() => query),
         eq: vi.fn(() => query),
+        maybeSingle: vi.fn(() => mocks.singleResult()),
         range: vi.fn((start: number, end: number) =>
           table === "surgery_appointments"
             ? mocks.appointmentPage(surgeryDayIds, start, end, [...orders])
@@ -60,6 +63,34 @@ describe("minor surgeries repository", () => {
       };
       return query;
     });
+  });
+
+  it("should_throw_when_day_query_fails", async () => {
+    mocks.singleResult.mockResolvedValue({
+      data: null,
+      error: { message: "synthetic database failure" },
+    });
+
+    await expect(getSurgeryDay(makeId(1))).rejects.toThrow(
+      "Não foi possível carregar o dia de cirurgia.",
+    );
+  });
+
+  it("should_return_null_when_day_does_not_exist", async () => {
+    mocks.singleResult.mockResolvedValue({ data: null, error: null });
+
+    await expect(getSurgeryDay(makeId(1))).resolves.toBeNull();
+  });
+
+  it("should_return_day_when_query_succeeds", async () => {
+    const day = {
+      id: makeId(1),
+      procedure_date: "2026-10-30",
+      capacity: 10,
+    };
+    mocks.singleResult.mockResolvedValue({ data: day, error: null });
+
+    await expect(getSurgeryDay(day.id)).resolves.toEqual(day);
   });
 
   it("should_include_second_page_waiting_entry_when_first_page_has_1000_transferred_rows", async () => {

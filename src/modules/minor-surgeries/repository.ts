@@ -213,7 +213,10 @@ export async function getSurgeryDay(id: string) {
     .select("id,procedure_date,capacity")
     .eq("id", id)
     .maybeSingle();
-  if (error || data === null || data === undefined) return null;
+  if (error) {
+    throw new Error("Não foi possível carregar o dia de cirurgia.");
+  }
+  if (data === null || data === undefined) return null;
   return daySchema.parse(data);
 }
 
