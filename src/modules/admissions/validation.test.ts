@@ -98,6 +98,27 @@ describe("admission entry and target validation", () => {
     ).toBe(false);
   });
 
+  it("should_reject_entry_dates_outside_supported_year_range", () => {
+    for (const entry_date of ["1899-12-31", "2101-01-01"]) {
+      expect(
+        entryCreateSchema.safeParse({
+          doctor_id: doctorId,
+          entry_date,
+          quantity: "1",
+        }).success,
+      ).toBe(false);
+    }
+    for (const entry_date of ["1900-01-01", "2100-12-31"]) {
+      expect(
+        entryCreateSchema.safeParse({
+          doctor_id: doctorId,
+          entry_date,
+          quantity: "1",
+        }).success,
+      ).toBe(true);
+    }
+  });
+
   it("should_validate_entry_update_identifier_and_quantity", () => {
     expect(
       entryUpdateSchema.safeParse({ id: entryId, quantity: "5" }).success,

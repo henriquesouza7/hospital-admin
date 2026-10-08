@@ -6,6 +6,8 @@ const mocks = vi.hoisted(() => ({
   rpc: vi.fn(),
   select: vi.fn(),
   order: vi.fn(),
+  gt: vi.fn(),
+  limit: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/require-admin", () => ({
@@ -28,6 +30,7 @@ import {
   importAdmissionEntries,
   listAdmissionEntries,
   listDoctors,
+  listAdmissionTargets,
   setDoctorActive,
   updateAdmissionEntry,
   updateAdmissionTarget,
@@ -47,8 +50,11 @@ describe("doctors repository", () => {
     vi.clearAllMocks();
     mocks.requireAdmin.mockResolvedValue({ id: "admin-user-id" });
     mocks.from.mockReturnValue({ select: mocks.select });
-    mocks.select.mockReturnValue({ order: mocks.order });
-    mocks.order.mockResolvedValue({ data: [doctor], error: null });
+    const query = { gt: mocks.gt, order: mocks.order, limit: mocks.limit };
+    mocks.gt.mockReturnValue(query);
+    mocks.select.mockReturnValue(query);
+    mocks.order.mockReturnValue(query);
+    mocks.limit.mockResolvedValue({ data: [doctor], error: null });
     mocks.rpc.mockResolvedValue({ data: doctor.id, error: null });
   });
 
@@ -59,13 +65,39 @@ describe("doctors repository", () => {
     expect(mocks.select).toHaveBeenCalledWith(
       "id,name,active,created_at,updated_at",
     );
-    expect(mocks.order).toHaveBeenCalledWith("name", { ascending: true });
+    expect(mocks.order).toHaveBeenCalledWith("id", { ascending: true });
+    expect(mocks.limit).toHaveBeenCalledWith(1000);
   });
 
   it("should_report_data_api_errors_when_listing_doctors", async () => {
-    mocks.order.mockResolvedValue({ data: null, error: { code: "500" } });
+    mocks.limit.mockResolvedValue({ data: null, error: { code: "500" } });
     await expect(listDoctors()).rejects.toThrow(
       "Não foi possível carregar a lista de médicos.",
+    );
+  });
+
+  it("should_cursor_paginate_doctors_beyond_the_data_api_limit", async () => {
+    const makeDoctor = (index: number) => ({
+      ...doctor,
+      id: `20000000-0000-4000-8000-${String(index + 2).padStart(12, "0")}`,
+    });
+    const lastDoctor = {
+      ...doctor,
+      id: "20000000-0000-4000-8000-999999999999",
+    };
+    mocks.limit
+      .mockResolvedValueOnce({
+        data: Array.from({ length: 1000 }, (_, index) => makeDoctor(index)),
+        error: null,
+      })
+      .mockResolvedValueOnce({ data: [lastDoctor], error: null });
+
+    const doctors = await listDoctors();
+
+    expect(doctors).toHaveLength(1001);
+    expect(mocks.gt).toHaveBeenCalledWith(
+      "id",
+      "20000000-0000-4000-8000-000000001001",
     );
   });
 
@@ -207,13 +239,20 @@ describe("doctors repository", () => {
     query.order = vi.fn().mockReturnValue(query);
     query.limit = limit;
     const select = vi.fn().mockReturnValue(query);
-    const doctorOrder = vi.fn().mockResolvedValue({
-      data: [{ id: doctor.id, name: doctor.name, active: true }],
+    const doctorQuery = {
+      gt: vi.fn(),
+      order: vi.fn(),
+      limit: vi.fn(),
+    };
+    doctorQuery.gt.mockReturnValue(doctorQuery);
+    doctorQuery.order.mockReturnValue(doctorQuery);
+    doctorQuery.limit.mockResolvedValue({
+      data: [doctor],
       error: null,
     });
     mocks.from.mockImplementation((table: string) =>
       table === "doctors"
-        ? { select: vi.fn().mockReturnValue({ order: doctorOrder }) }
+        ? { select: vi.fn().mockReturnValue(doctorQuery) }
         : { select },
     );
 
@@ -227,5 +266,44 @@ describe("doctors repository", () => {
       "20000000-0000-4000-8000-000000001000",
     );
     expect(limit).toHaveBeenNthCalledWith(2, 1000);
+  });
+
+  it("should_cursor_paginate_all_admission_targets", async () => {
+    const makeTarget = (index: number) => ({
+      id: `30000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+      period_type: "month",
+      reference_period: "2026-10-01",
+      target_quantity: 1,
+      created_at: "2026-10-07T12:00:00Z",
+      updated_at: "2026-10-07T12:00:00Z",
+    });
+    const limit = vi
+      .fn()
+      .mockResolvedValueOnce({
+        data: Array.from({ length: 1000 }, (_, index) => makeTarget(index)),
+        error: null,
+      })
+      .mockResolvedValueOnce({ data: [makeTarget(1000)], error: null });
+    const query = {
+      gte: vi.fn(),
+      lt: vi.fn(),
+      gt: vi.fn(),
+      order: vi.fn(),
+      limit,
+    };
+    query.gte.mockReturnValue(query);
+    query.lt.mockReturnValue(query);
+    query.gt.mockReturnValue(query);
+    query.order.mockReturnValue(query);
+    mocks.from.mockReturnValue({ select: vi.fn().mockReturnValue(query) });
+
+    const targets = await listAdmissionTargets("1900-01-01", "2101-01-01");
+
+    expect(targets).toHaveLength(1001);
+    expect(query.gt).toHaveBeenCalledWith(
+      "id",
+      "30000000-0000-4000-8000-000000001000",
+    );
+    expect(limit).toHaveBeenCalledTimes(2);
   });
 });

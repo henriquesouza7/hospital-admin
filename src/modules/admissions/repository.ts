@@ -17,16 +17,7 @@ const doctorsSchema = z.array(doctorSchema);
 
 export async function listDoctors(): Promise<Doctor[]> {
   await requireAdmin();
-  const { data, error } = await getNeonDataApiClient()
-    .from("doctors")
-    .select("id,name,active,created_at,updated_at")
-    .order("name", { ascending: true });
-
-  if (error || data === null || data === undefined) {
-    throw new Error("Não foi possível carregar a lista de médicos.");
-  }
-
-  return doctorsSchema.parse(data);
+  return listAllDoctors(getNeonDataApiClient());
 }
 
 export async function createDoctor(name: string): Promise<void> {
@@ -91,10 +82,7 @@ const targetRowsSchema = z.array(
     updated_at: z.iso.datetime({ offset: true }),
   }),
 );
-const doctorRowsSchema = z.array(
-  z.object({ id: z.string().uuid(), name: z.string(), active: z.boolean() }),
-);
-const ADMISSION_ENTRIES_PAGE_SIZE = 1_000;
+const DATA_API_PAGE_SIZE = 1_000;
 
 function rpcErrorCode(error: unknown): string | undefined {
   return typeof error === "object" &&
@@ -103,6 +91,39 @@ function rpcErrorCode(error: unknown): string | undefined {
     typeof error.code === "string"
     ? error.code
     : undefined;
+}
+
+async function listAllDoctors(
+  client: ReturnType<typeof getNeonDataApiClient>,
+): Promise<Doctor[]> {
+  const rawDoctors: unknown[] = [];
+  let cursor: string | undefined;
+  for (;;) {
+    let query = client
+      .from("doctors")
+      .select("id,name,active,created_at,updated_at");
+    if (cursor) query = query.gt("id", cursor);
+    const { data, error } = await query
+      .order("id", { ascending: true })
+      .limit(DATA_API_PAGE_SIZE);
+    if (error || data === null || data === undefined) {
+      throw new Error("Não foi possível carregar a lista de médicos.");
+    }
+    const page = doctorsSchema.parse(data);
+    rawDoctors.push(...page);
+    if (page.length < DATA_API_PAGE_SIZE) break;
+    const lastDoctor = page.at(-1);
+    if (!lastDoctor) {
+      throw new Error("Não foi possível continuar a lista de médicos.");
+    }
+    cursor = lastDoctor.id;
+  }
+  return doctorsSchema
+    .parse(rawDoctors)
+    .sort(
+      (a, b) =>
+        a.name.localeCompare(b.name, "pt-BR") || a.id.localeCompare(b.id),
+    );
 }
 
 export async function listAdmissionEntries(
@@ -124,14 +145,14 @@ export async function listAdmissionEntries(
     if (cursor) query = query.gt("id", cursor);
     const { data, error } = await query
       .order("id", { ascending: true })
-      .limit(ADMISSION_ENTRIES_PAGE_SIZE);
+      .limit(DATA_API_PAGE_SIZE);
     if (error || data === null || data === undefined) {
       throw new Error(
         "Não foi possível carregar os lançamentos de internações.",
       );
     }
     rawEntries.push(...data);
-    if (data.length < ADMISSION_ENTRIES_PAGE_SIZE) break;
+    if (data.length < DATA_API_PAGE_SIZE) break;
     const lastEntry = data.at(-1);
     if (!lastEntry || typeof lastEntry.id !== "string") {
       throw new Error(
@@ -140,15 +161,8 @@ export async function listAdmissionEntries(
     }
     cursor = lastEntry.id;
   }
-  const { data: doctorData, error: doctorError } = await client
-    .from("doctors")
-    .select("id,name,active")
-    .order("name", { ascending: true });
-  if (doctorError || doctorData === null || doctorData === undefined) {
-    throw new Error("Não foi possível carregar os lançamentos de internações.");
-  }
   const entries = entryRowsSchema.parse(rawEntries);
-  const doctors = doctorRowsSchema.parse(doctorData);
+  const doctors = await listAllDoctors(client);
   const doctorsById = new Map(doctors.map((doctor) => [doctor.id, doctor]));
   return entries
     .map((entry) => {
@@ -172,17 +186,40 @@ export async function listAdmissionTargets(
   endDate: string,
 ): Promise<AdmissionTarget[]> {
   await requireAdmin();
-  const { data, error } = await getNeonDataApiClient()
-    .from("admission_targets")
-    .select(
-      "id,period_type,reference_period,target_quantity,created_at,updated_at",
-    )
-    .gte("reference_period", startDate)
-    .lt("reference_period", endDate)
-    .order("reference_period", { ascending: false });
-  if (error || data === null || data === undefined)
-    throw new Error("Não foi possível carregar as metas de internações.");
-  return targetRowsSchema.parse(data);
+  const client = getNeonDataApiClient();
+  const rawTargets: unknown[] = [];
+  let cursor: string | undefined;
+  for (;;) {
+    let query = client
+      .from("admission_targets")
+      .select(
+        "id,period_type,reference_period,target_quantity,created_at,updated_at",
+      )
+      .gte("reference_period", startDate)
+      .lt("reference_period", endDate);
+    if (cursor) query = query.gt("id", cursor);
+    const { data, error } = await query
+      .order("id", { ascending: true })
+      .limit(DATA_API_PAGE_SIZE);
+    if (error || data === null || data === undefined) {
+      throw new Error("Não foi possível carregar as metas de internações.");
+    }
+    const page = targetRowsSchema.parse(data);
+    rawTargets.push(...page);
+    if (page.length < DATA_API_PAGE_SIZE) break;
+    const lastTarget = page.at(-1);
+    if (!lastTarget) {
+      throw new Error("Não foi possível continuar a lista de metas.");
+    }
+    cursor = lastTarget.id;
+  }
+  return targetRowsSchema
+    .parse(rawTargets)
+    .sort(
+      (a, b) =>
+        b.reference_period.localeCompare(a.reference_period) ||
+        a.id.localeCompare(b.id),
+    );
 }
 
 export async function createAdmissionEntry(input: {

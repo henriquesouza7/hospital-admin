@@ -50,6 +50,10 @@ const admissionQuantitySchema = z
 export const entryDateSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine(
+    (value) => value >= "1900-01-01" && value <= "2100-12-31",
+    "A data deve estar entre 01/01/1900 e 31/12/2100.",
+  )
   .refine((value) => {
     const [year, month, day] = value.split("-").map(Number);
     const date = new Date(Date.UTC(year, month - 1, day));
