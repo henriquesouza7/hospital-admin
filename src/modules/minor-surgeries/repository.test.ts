@@ -5,6 +5,9 @@ const mocks = vi.hoisted(() => ({
   rangePage: vi.fn(),
   singleResult: vi.fn(),
   appointmentPage: vi.fn(),
+  headCount: vi.fn(),
+  transferAppointmentBatch: vi.fn(),
+  destinationDayBatch: vi.fn(),
   dayIdBatch: vi.fn(),
   patientBatch: vi.fn(),
   rpc: vi.fn(),
@@ -37,12 +40,20 @@ describe("minor surgeries repository", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.requireMinorSurgeriesAdmin.mockResolvedValue(undefined);
+    mocks.headCount.mockResolvedValue({ count: 0, error: null });
+    mocks.transferAppointmentBatch.mockResolvedValue({ data: [], error: null });
+    mocks.destinationDayBatch.mockResolvedValue({ data: [], error: null });
+    mocks.rangePage.mockResolvedValue({ data: [], error: null });
     mocks.from.mockImplementation((table: string) => {
       const orders: Array<{ column: string; ascending: boolean }> = [];
       const filters: Array<[string, unknown]> = [];
       let surgeryDayIds: string[] = [];
+      let headCount = false;
       const query = {
-        select: vi.fn(() => query),
+        select: vi.fn((_columns?: string, options?: { head?: boolean }) => {
+          headCount = Boolean(options?.head);
+          return query;
+        }),
         order: vi.fn((column: string, options: { ascending: boolean }) => {
           orders.push({ column, ascending: options.ascending });
           return query;
@@ -50,6 +61,9 @@ describe("minor surgeries repository", () => {
         gte: vi.fn(() => query),
         eq: vi.fn((column: string, value: unknown) => {
           filters.push([column, value]);
+          if (table === "surgery_appointments" && column === "surgery_day_id") {
+            surgeryDayIds = [value as string];
+          }
           return query;
         }),
         ilike: vi.fn((column: string, value: string) => {
@@ -57,19 +71,52 @@ describe("minor surgeries repository", () => {
           return query;
         }),
         maybeSingle: vi.fn(() => mocks.singleResult()),
-        range: vi.fn((start: number, end: number) =>
-          table === "surgery_appointments"
-            ? mocks.appointmentPage(surgeryDayIds, start, end, [...orders])
-            : mocks.rangePage(table, start, end, [...orders], [...filters]),
-        ),
+        range: vi.fn((start: number, end: number) => {
+          if (table === "surgery_appointments") {
+            const sourceIds = filters.find(
+              ([column]) => column === "source_waitlist_id",
+            )?.[1];
+            return Array.isArray(sourceIds)
+              ? mocks.transferAppointmentBatch(sourceIds, start, end)
+              : mocks.appointmentPage(
+                  surgeryDayIds,
+                  start,
+                  end,
+                  [...orders],
+                  [...filters],
+                );
+          }
+          if (
+            table === "surgery_days" &&
+            filters.some(([column]) => column === "id")
+          ) {
+            const dayIds = filters.find(([column]) => column === "id")?.[1];
+            return mocks.destinationDayBatch(dayIds, start, end);
+          }
+          return mocks.rangePage(table, start, end, [...orders], [...filters]);
+        }),
         in: vi.fn((column: string, ids: string[]) => {
           if (table === "patients") return mocks.patientBatch(ids);
           if (table === "surgery_appointments" && column === "surgery_day_id") {
             surgeryDayIds = ids;
             mocks.dayIdBatch(ids);
           }
+          filters.push([column, ids]);
           return query;
         }),
+        then: (
+          onFulfilled: (value: unknown) => unknown,
+          onRejected?: (reason: unknown) => unknown,
+        ) =>
+          headCount
+            ? Promise.resolve(mocks.headCount([...filters])).then(
+                onFulfilled,
+                onRejected,
+              )
+            : Promise.reject(new Error("Unexpected direct query await.")).then(
+                onFulfilled,
+                onRejected,
+              ),
       };
       return query;
     });
@@ -232,6 +279,67 @@ describe("minor surgeries repository", () => {
     );
     expect(result.hasMoreTransferred).toBe(true);
     expect(result.transferPage).toBe(2);
+  });
+
+  it("should_resolve_the_destination_of_each_transferred_waitlist_entry", async () => {
+    const entry = {
+      id: makeId(9_001),
+      patient_id: makeId(9_002),
+      status: "transferred",
+      transferred_at: "2026-10-01T12:00:00Z",
+      created_at: "2026-09-30T12:00:00Z",
+    };
+    const appointment = {
+      id: makeId(9_003),
+      source_waitlist_id: entry.id,
+      surgery_day_id: makeId(9_004),
+    };
+    mocks.rangePage.mockImplementation(
+      async (
+        table: string,
+        start: number,
+        end: number,
+        _orders: unknown,
+        filters: Array<[string, unknown]>,
+      ) => ({
+        data:
+          table === "surgery_waitlist" &&
+          filters.some(([, value]) => value === "transferred")
+            ? [entry].slice(start, end + 1)
+            : [],
+        error: null,
+      }),
+    );
+    mocks.patientBatch.mockResolvedValue({
+      data: [{ id: entry.patient_id, name: "Pessoa sintética transferida" }],
+      error: null,
+    });
+    mocks.transferAppointmentBatch.mockResolvedValue({
+      data: [appointment],
+      error: null,
+    });
+    mocks.destinationDayBatch.mockResolvedValue({
+      data: [{ id: appointment.surgery_day_id, procedure_date: "2040-05-20" }],
+      error: null,
+    });
+
+    const result = await listSurgeryWaitlist();
+
+    expect(mocks.transferAppointmentBatch).toHaveBeenCalledWith(
+      [entry.id],
+      0,
+      49,
+    );
+    expect(mocks.destinationDayBatch).toHaveBeenCalledWith(
+      [appointment.surgery_day_id],
+      0,
+      0,
+    );
+    expect(result.transferred[0].transferDestination).toEqual({
+      appointment_id: appointment.id,
+      surgery_day_id: appointment.surgery_day_id,
+      procedure_date: "2040-05-20",
+    });
   });
 
   it("should_search_patients_in_bounded_pages_and_escape_like_wildcards", async () => {
@@ -490,10 +598,10 @@ describe("minor surgeries repository", () => {
     expect(result.hasMore).toBe(true);
   });
 
-  it("should_return_all_appointments_when_day_exceeds_page_size", async () => {
+  it("should_paginate_day_appointments_and_count_active_statuses", async () => {
     const patientId = makeId(60_001);
     const dayId = makeId(60_002);
-    const appointments = Array.from({ length: PAGE_SIZE + 1 }, (_, index) => ({
+    const appointments = Array.from({ length: 121 }, (_, index) => ({
       id: makeId(index + 60_100),
       surgery_day_id: dayId,
       patient_id: patientId,
@@ -503,8 +611,24 @@ describe("minor surgeries repository", () => {
       updated_at: "2026-10-01T12:00:00Z",
     }));
     mocks.appointmentPage.mockImplementation(
-      async (_dayIds: string[], start: number, end: number) => ({
-        data: appointments.slice(start, end + 1),
+      async (
+        _dayIds: string[],
+        start: number,
+        end: number,
+        _orders: unknown,
+        filters: Array<[string, unknown]>,
+      ) => ({
+        data: filters.some(([column]) => column === "status")
+          ? []
+          : appointments.slice(start, end + 1),
+        error: null,
+      }),
+    );
+    mocks.headCount.mockImplementation(
+      async (filters: Array<[string, unknown]>) => ({
+        count: filters.some(([, value]) => value === "awaiting_confirmation")
+          ? 2
+          : 3,
         error: null,
       }),
     );
@@ -513,18 +637,20 @@ describe("minor surgeries repository", () => {
       error: null,
     });
 
-    const result = await listDayAppointments(dayId);
+    const result = await listDayAppointments(dayId, 2);
 
-    expect(mocks.appointmentPage).toHaveBeenCalledTimes(2);
-    expect(
-      mocks.appointmentPage.mock.calls.map((call) => call.slice(1, 3)),
-    ).toEqual([
-      [0, 999],
-      [1000, 1999],
-    ]);
-    expect(result).toHaveLength(PAGE_SIZE + 1);
-    expect(result[PAGE_SIZE].patient.name).toBe(
+    expect(mocks.appointmentPage).toHaveBeenCalledOnce();
+    expect(mocks.appointmentPage.mock.calls[0].slice(1, 3)).toEqual([50, 100]);
+    expect(mocks.patientBatch).toHaveBeenCalledOnce();
+    expect(mocks.patientBatch).toHaveBeenCalledWith([patientId]);
+    expect(mocks.headCount).toHaveBeenCalledTimes(2);
+    expect(result.appointments).toHaveLength(50);
+    expect(result.appointments[0].patient.name).toBe(
       "Pessoa sintética do agendamento",
     );
+    expect(result.page).toBe(2);
+    expect(result.hasMore).toBe(true);
+    expect(result.awaitingConfirmation).toBe(2);
+    expect(result.confirmed).toBe(3);
   });
 });

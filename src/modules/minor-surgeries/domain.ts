@@ -38,6 +38,15 @@ export type SurgeryWaitlistEntry = Readonly<{
   patient: SurgeryPatient;
 }>;
 
+export type SurgeryTransferredWaitlistEntry = SurgeryWaitlistEntry &
+  Readonly<{
+    transferDestination: Readonly<{
+      appointment_id: string;
+      surgery_day_id: string;
+      procedure_date: string;
+    }> | null;
+  }>;
+
 export function isActiveAppointment(status: SurgeryAppointmentStatus) {
   return status !== "cancelled";
 }

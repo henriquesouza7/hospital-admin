@@ -7,6 +7,7 @@ import {
   type SurgeryAppointment,
   type SurgeryDaySummary,
   type SurgeryPatient,
+  type SurgeryTransferredWaitlistEntry,
   type SurgeryWaitlistEntry,
   summarizeSurgeryDay,
 } from "./domain";
@@ -49,12 +50,22 @@ const WAITLIST_HISTORY_PAGE_SIZE = 50;
 const AUDIT_PAGE_SIZE = 50;
 const PATIENT_SEARCH_PAGE_SIZE = 50;
 const HISTORICAL_DAYS_PAGE_SIZE = 50;
+const DAY_APPOINTMENTS_PAGE_SIZE = 50;
 const MIN_PATIENT_SEARCH_LENGTH = 3;
 const PATIENT_ID_BATCH_SIZE = 500;
 const SURGERY_DAY_ID_BATCH_SIZE = 500;
 const activeDayAppointmentSchema = z.object({
   surgery_day_id: z.string().uuid(),
   status: z.enum(["awaiting_confirmation", "confirmed"]),
+});
+const transferredAppointmentSchema = z.object({
+  id: z.string().uuid(),
+  source_waitlist_id: z.string().uuid(),
+  surgery_day_id: z.string().uuid(),
+});
+const destinationDaySchema = z.object({
+  id: z.string().uuid(),
+  procedure_date: z.iso.date(),
 });
 
 type QueryResult = { data: unknown; error: unknown };
@@ -263,36 +274,119 @@ export async function getSurgeryDay(id: string) {
 
 export async function listDayAppointments(
   dayId: string,
-): Promise<SurgeryAppointment[]> {
+  page = 1,
+): Promise<{
+  appointments: SurgeryAppointment[];
+  page: number;
+  hasMore: boolean;
+  awaitingConfirmation: number;
+  confirmed: number;
+}> {
   await requireMinorSurgeriesAdmin();
-  const appointments = await fetchAllPages(
-    async (offset) =>
-      await getNeonDataApiClient()
-        .from("surgery_appointments")
-        .select(
-          "id,surgery_day_id,patient_id,source_waitlist_id,status,created_at,updated_at",
-        )
-        .eq("surgery_day_id", dayId)
-        .order("created_at", { ascending: true })
-        .order("id", { ascending: true })
-        .range(offset, offset + PAGE_SIZE - 1),
-    z.array(appointmentSchema),
-  );
+  const safePage = Number.isSafeInteger(page) && page > 0 ? page : 1;
+  const offset = (safePage - 1) * DAY_APPOINTMENTS_PAGE_SIZE;
+  const end = offset + DAY_APPOINTMENTS_PAGE_SIZE;
+  const countStatus = async (status: "awaiting_confirmation" | "confirmed") => {
+    const { count, error } = await getNeonDataApiClient()
+      .from("surgery_appointments")
+      .select("id", { count: "exact", head: true })
+      .eq("surgery_day_id", dayId)
+      .eq("status", status);
+    if (error || typeof count !== "number") {
+      throw new Error("Não foi possível carregar a ocupação do dia.");
+    }
+    return count;
+  };
+  const appointmentRowsPromise: Promise<z.infer<typeof appointmentSchema>[]> =
+    Number.isSafeInteger(offset) && Number.isSafeInteger(end)
+      ? getNeonDataApiClient()
+          .from("surgery_appointments")
+          .select(
+            "id,surgery_day_id,patient_id,source_waitlist_id,status,created_at,updated_at",
+          )
+          .eq("surgery_day_id", dayId)
+          .order("created_at", { ascending: true })
+          .order("id", { ascending: true })
+          .range(offset, end)
+          .then((result: QueryResult) =>
+            ensureResult(result.data, result.error, z.array(appointmentSchema)),
+          )
+      : Promise.resolve([]);
+  const [rows, awaitingConfirmation, confirmed] = await Promise.all([
+    appointmentRowsPromise,
+    countStatus("awaiting_confirmation"),
+    countStatus("confirmed"),
+  ]);
+  const appointments = rows.slice(0, DAY_APPOINTMENTS_PAGE_SIZE);
   const patients = await listPatientsByIds(
     appointments.map((item) => item.patient_id),
   );
-  return appointments.map((appointment) => ({
-    ...appointment,
-    patient: patients.get(appointment.patient_id) ?? {
-      id: appointment.patient_id,
-      name: "Cadastro indisponível",
-    },
-  }));
+  return {
+    appointments: appointments.map((appointment) => ({
+      ...appointment,
+      patient: patients.get(appointment.patient_id) ?? {
+        id: appointment.patient_id,
+        name: "Cadastro indisponível",
+      },
+    })),
+    page: safePage,
+    hasMore: rows.length > DAY_APPOINTMENTS_PAGE_SIZE,
+    awaitingConfirmation,
+    confirmed,
+  };
+}
+
+async function listTransferDestinations(waitlistIds: readonly string[]) {
+  if (waitlistIds.length === 0) {
+    return new Map<
+      string,
+      SurgeryTransferredWaitlistEntry["transferDestination"]
+    >();
+  }
+
+  const client = getNeonDataApiClient();
+  const { data: appointmentData, error: appointmentError } = await client
+    .from("surgery_appointments")
+    .select("id,source_waitlist_id,surgery_day_id")
+    .in("source_waitlist_id", waitlistIds)
+    .range(0, WAITLIST_HISTORY_PAGE_SIZE - 1);
+  const appointments = ensureResult(
+    appointmentData,
+    appointmentError,
+    z.array(transferredAppointmentSchema),
+  );
+  const dayIds = [...new Set(appointments.map((item) => item.surgery_day_id))];
+  if (dayIds.length === 0) return new Map();
+
+  const { data: dayData, error: dayError } = await client
+    .from("surgery_days")
+    .select("id,procedure_date")
+    .in("id", dayIds)
+    .range(0, dayIds.length - 1);
+  const days = ensureResult(dayData, dayError, z.array(destinationDaySchema));
+  const dayById = new Map(days.map((day) => [day.id, day]));
+  return new Map(
+    appointments.flatMap((appointment) => {
+      const day = dayById.get(appointment.surgery_day_id);
+      return day
+        ? [
+            [
+              appointment.source_waitlist_id,
+              {
+                appointment_id: appointment.id,
+                surgery_day_id: day.id,
+                procedure_date: day.procedure_date,
+              },
+            ] as const,
+          ]
+        : [];
+    }),
+  );
 }
 
 export async function listSurgeryWaitlist(transferPage = 1): Promise<{
   waiting: SurgeryWaitlistEntry[];
-  transferred: SurgeryWaitlistEntry[];
+  transferred: SurgeryTransferredWaitlistEntry[];
   transferPage: number;
   hasMoreTransferred: boolean;
 }> {
@@ -329,9 +423,10 @@ export async function listSurgeryWaitlist(transferPage = 1): Promise<{
     transferredPage.length > WAITLIST_HISTORY_PAGE_SIZE;
   const transferred = transferredPage.slice(0, WAITLIST_HISTORY_PAGE_SIZE);
   const entries = [...waiting, ...transferred];
-  const patients = await listPatientsByIds(
-    entries.map((entry) => entry.patient_id),
-  );
+  const [patients, transferDestinations] = await Promise.all([
+    listPatientsByIds(entries.map((entry) => entry.patient_id)),
+    listTransferDestinations(transferred.map((entry) => entry.id)),
+  ]);
   const withPatients = (rows: typeof entries) =>
     rows.map((entry) => ({
       ...entry,
@@ -342,7 +437,10 @@ export async function listSurgeryWaitlist(transferPage = 1): Promise<{
     }));
   return {
     waiting: withPatients(waiting),
-    transferred: withPatients(transferred),
+    transferred: withPatients(transferred).map((entry) => ({
+      ...entry,
+      transferDestination: transferDestinations.get(entry.id) ?? null,
+    })),
     transferPage: safeTransferPage,
     hasMoreTransferred,
   };

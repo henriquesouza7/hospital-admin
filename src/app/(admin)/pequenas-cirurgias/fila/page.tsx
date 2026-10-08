@@ -20,6 +20,13 @@ function parseTransferPage(value: string | string[] | undefined) {
   return Number.isSafeInteger(page) && page > 0 ? page : 1;
 }
 
+function dateLabel(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "long",
+    timeZone: "UTC",
+  }).format(new Date(`${value}T12:00:00Z`));
+}
+
 export default async function SurgeryWaitlistPage({
   searchParams,
 }: {
@@ -140,6 +147,20 @@ export default async function SurgeryWaitlistPage({
                       ? formatOperationalTimestamp(entry.transferred_at)
                       : "Horário não disponível"}
                   </p>
+                  {entry.transferDestination ? (
+                    <Link
+                      href={`/pequenas-cirurgias/dias/${entry.transferDestination.surgery_day_id}#appointment-${entry.transferDestination.appointment_id}`}
+                      className="mt-2 inline-flex text-sm font-medium text-primary underline-offset-4 hover:underline"
+                    >
+                      Destino:{" "}
+                      {dateLabel(entry.transferDestination.procedure_date)}
+                      {" · Abrir agendamento"}
+                    </Link>
+                  ) : (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Agendamento de destino não encontrado.
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <ArrowRightLeft
