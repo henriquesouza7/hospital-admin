@@ -1,6 +1,7 @@
 import { ProductionIndicatorDashboard } from "@/modules/production/indicators/dashboard";
 import { loadProductionIndicatorSource } from "@/modules/production/repository";
 import { parseProductionIndicatorFilters } from "@/modules/production/indicators/validation";
+import { normalizeProductionSource } from "@/modules/production/indicators/domain";
 
 type ProductionIndicatorsPageProps = Readonly<{
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -14,7 +15,12 @@ export default async function ProductionIndicatorsPage({
   let filters = parsed.filters;
   let filterError = parsed.error;
   const sources = [
-    ...new Set(source.entries.map((entry) => entry.source)),
+    ...new Map(
+      source.entries.map((entry) => [
+        normalizeProductionSource(entry.source),
+        entry.source,
+      ]),
+    ).values(),
   ].sort((left, right) => left.localeCompare(right, "pt-BR"));
 
   if (
@@ -38,7 +44,14 @@ export default async function ProductionIndicatorsPage({
     filterError ??= "O procedimento não pertence à categoria selecionada.";
     filters = { ...filters, procedureId: "" };
   }
-  if (filters.source && !sources.includes(filters.source)) {
+  if (
+    filters.source &&
+    !sources.some(
+      (sourceName) =>
+        normalizeProductionSource(sourceName) ===
+        normalizeProductionSource(filters.source),
+    )
+  ) {
     filterError ??= "A origem selecionada não possui registros disponíveis.";
     filters = { ...filters, source: "" };
   }

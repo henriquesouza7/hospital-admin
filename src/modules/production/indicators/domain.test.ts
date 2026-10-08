@@ -185,11 +185,78 @@ describe("production indicator calculations", () => {
       quantity: 10,
       recordCount: 1,
     });
-    expect(result.variations).toHaveLength(2);
+    expect(result.variations).toHaveLength(1);
     expect(result.variations[0]).toMatchObject({
       competence: "2026-04",
       previousQuantity: 7,
       variation: 3,
+    });
+  });
+
+  it("should_limit_variation_rows_to_the_selected_range_with_a_previous_baseline", () => {
+    const result = buildProductionIndicatorData(
+      [
+        entry("1", { reference_period: "2026-02-01", quantity: "5" }),
+        entry("2", { reference_period: "2026-03-01", quantity: "8" }),
+        entry("3", { reference_period: "2026-04-01", quantity: "12" }),
+        entry("4", { reference_period: "2026-05-01", quantity: "99" }),
+      ],
+      filters({ mode: "intervalo", from: "2026-03", to: "2026-04" }),
+    );
+
+    expect(result.variations.map((row) => row.competence)).toEqual([
+      "2026-04",
+      "2026-03",
+    ]);
+    expect(result.variations).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          competence: "2026-03",
+          previousCompetence: "2026-02",
+          previousQuantity: 5,
+          variation: 3,
+        }),
+        expect.objectContaining({
+          competence: "2026-04",
+          previousCompetence: "2026-03",
+          previousQuantity: 8,
+          variation: 4,
+        }),
+      ]),
+    );
+  });
+
+  it("should_group_source_case_variants_as_the_same_indicator_dimension", () => {
+    const result = buildProductionIndicatorData(
+      [
+        entry("1", {
+          source: "manual",
+          reference_period: "2026-03-01",
+          quantity: "8",
+        }),
+        entry("2", {
+          source: "Manual",
+          reference_period: "2026-04-01",
+          quantity: "12",
+        }),
+      ],
+      filters({ source: "MANUAL" }),
+    );
+
+    expect(result.periodEntries).toHaveLength(1);
+    expect(result.monthlyEvolution).toHaveLength(1);
+    expect(result.comparisons.monthOverMonth).toHaveLength(1);
+    expect(result.comparisons.monthOverMonth[0]).toMatchObject({
+      currentQuantity: 12,
+      previousQuantity: 8,
+      currentRecordCount: 1,
+      previousRecordCount: 1,
+    });
+    expect(result.variations).toHaveLength(1);
+    expect(result.variations[0]).toMatchObject({
+      competence: "2026-04",
+      previousQuantity: 8,
+      variation: 4,
     });
   });
 

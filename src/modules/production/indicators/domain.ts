@@ -106,6 +106,10 @@ function getSelectedRange(
   return { from: filters.from, to: filters.to };
 }
 
+export function normalizeProductionSource(source: string): string {
+  return source.trim().toLowerCase();
+}
+
 function matchesDimensions(
   entry: ProductionIndicatorEntry,
   filters: ProductionIndicatorFilters,
@@ -114,7 +118,9 @@ function matchesDimensions(
   return (
     (!filters.categoryId || entry.category_id === filters.categoryId) &&
     (!procedureId || entry.procedure_id === procedureId) &&
-    (!filters.source || entry.source === filters.source)
+    (!filters.source ||
+      normalizeProductionSource(entry.source) ===
+        normalizeProductionSource(filters.source))
   );
 }
 
@@ -141,7 +147,7 @@ function buildVolumes(
     const key = JSON.stringify([
       entry.procedure_id,
       entry.counting_unit,
-      entry.source,
+      normalizeProductionSource(entry.source),
     ]);
     const current = volumes.get(key);
     volumes.set(key, {
@@ -214,7 +220,8 @@ export function buildProductionMonthlyEvolution(
     for (const entry of dimensionEntries) {
       if (
         entry.counting_unit !== volume.countingUnit ||
-        entry.source !== volume.source
+        normalizeProductionSource(entry.source) !==
+          normalizeProductionSource(volume.source)
       ) {
         continue;
       }
@@ -263,19 +270,24 @@ function compareWindows(
   });
   const keys = new Map<string, { source: string; unit: string }>();
   for (const entry of [...currentEntries, ...previousEntries]) {
-    const key = JSON.stringify([entry.source, entry.counting_unit]);
+    const key = JSON.stringify([
+      normalizeProductionSource(entry.source),
+      entry.counting_unit,
+    ]);
     keys.set(key, { source: entry.source, unit: entry.counting_unit });
   }
   return [...keys.entries()]
     .map(([key, dimensions]) => {
       const current = currentEntries.filter(
         (entry) =>
-          entry.source === dimensions.source &&
+          normalizeProductionSource(entry.source) ===
+            normalizeProductionSource(dimensions.source) &&
           entry.counting_unit === dimensions.unit,
       );
       const previous = previousEntries.filter(
         (entry) =>
-          entry.source === dimensions.source &&
+          normalizeProductionSource(entry.source) ===
+            normalizeProductionSource(dimensions.source) &&
           entry.counting_unit === dimensions.unit,
       );
       return {
@@ -372,26 +384,30 @@ export function buildProductionHistoryVariations(
   filters: ProductionIndicatorFilters,
 ): ProductionVariation[] {
   if (!filters.procedureId) return [];
-  const volumes = buildVolumes(
-    uniqueEntries(entries).filter((entry) =>
-      matchesDimensions(entry, filters, filters.procedureId),
-    ),
-  );
+  const { from, to } = getSelectedRange(filters);
+  const selectedEntries = filterProductionEntries(entries, filters);
+  const volumes = buildVolumes(selectedEntries);
   const result: ProductionVariation[] = [];
   for (const volume of volumes) {
     const series = uniqueEntries(entries)
       .filter(
         (entry) =>
           entry.procedure_id === volume.procedureId &&
-          entry.source === volume.source &&
+          normalizeProductionSource(entry.source) ===
+            normalizeProductionSource(volume.source) &&
           entry.counting_unit === volume.countingUnit,
       )
       .sort((left, right) =>
         left.reference_period.localeCompare(right.reference_period),
       );
-    let previous: ProductionIndicatorEntry | undefined;
-    let previousQuantity: number | null = null;
-    for (const entry of series) {
+    const baseline = series
+      .filter((entry) => entry.reference_period.slice(0, 7) < from)
+      .at(-1);
+    let previous: ProductionIndicatorEntry | undefined = baseline;
+    for (const entry of series.filter((row) => {
+      const month = row.reference_period.slice(0, 7);
+      return month >= from && month <= to;
+    })) {
       const quantity = Number(entry.quantity);
       result.push({
         key: `${volume.key}:${entry.reference_period}`,
@@ -402,12 +418,11 @@ export function buildProductionHistoryVariations(
         countingUnit: entry.counting_unit,
         source: entry.source,
         quantity,
-        previousQuantity,
+        previousQuantity: previous ? Number(previous.quantity) : null,
         variation:
-          previousQuantity === null ? null : quantity - previousQuantity,
+          previous === undefined ? null : quantity - Number(previous.quantity),
       });
       previous = entry;
-      previousQuantity = quantity;
     }
   }
   return result.sort((left, right) =>
