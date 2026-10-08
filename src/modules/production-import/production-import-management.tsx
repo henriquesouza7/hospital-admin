@@ -450,6 +450,9 @@ export function ProductionImportHistory({
   const procedureById = new Map(
     procedures.map((procedure) => [procedure.id, procedure]),
   );
+  const importPeriodById = new Map(
+    imports.map((item) => [item.id, item.reference_period.slice(0, 7)]),
+  );
 
   return (
     <section className="space-y-4" aria-labelledby="sus-import-history-title">
@@ -487,6 +490,10 @@ export function ProductionImportHistory({
                     {procedure?.name ?? first.procedure_name_snapshot}
                   </span>
                   <span>{sourceTypeLabels[first.source_type]}</span>
+                  <span>
+                    Competência:{" "}
+                    {importPeriodById.get(first.import_id) ?? "indisponível"}
+                  </span>
                   <span>
                     Existente na importação:{" "}
                     {first.existing_quantity_snapshot ?? "indisponível"}{" "}

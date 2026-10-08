@@ -57,6 +57,15 @@ describe("production SUS CSV import", () => {
     expect(containsPatientColumns(["telefone do paciente"])).toBe(true);
   });
 
+  it("should_reject_slash_separated_patient_identifier_headers", () => {
+    for (const header of ["CPF/CNS", "Telefone/Celular", "email/contato"]) {
+      expect(containsPatientColumns(["procedimento", header])).toBe(true);
+      expect(() =>
+        parseSusCsv(`procedimento;${header}\nExame;valor`, ";"),
+      ).toThrow(/identificação de pacientes/);
+    }
+  });
+
   it("should_allow_procedure_and_exam_name_headers_without_patient_identifiers", () => {
     expect(containsPatientColumns(["nome_procedimento", "nome do exame"])).toBe(
       false,

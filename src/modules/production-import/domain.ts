@@ -60,7 +60,7 @@ function normalizeHeader(header: string): string {
     .replace(/[\u0300-\u036f]/g, "")
     .trim()
     .toLocaleLowerCase("pt-BR")
-    .replace(/[._-]+/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
     .replace(/\s+/g, " ");
 }
 
