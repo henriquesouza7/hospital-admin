@@ -408,10 +408,13 @@ export function ProductionImportHistory({
                   <span>
                     Existente na importação:{" "}
                     {first.existing_quantity_snapshot ?? "indisponível"}{" "}
-                    {procedure?.counting_unit}
+                    {first.existing_counting_unit_snapshot ??
+                      "unidade não preservada"}
                   </span>
                   <span>
-                    Importado: {importedQuantity} {procedure?.counting_unit}
+                    Importado: {importedQuantity}{" "}
+                    {first.imported_counting_unit_snapshot ??
+                      "unidade indisponível"}
                   </span>
                   <span>{rows.length} linha(s) de origem</span>
                 </div>

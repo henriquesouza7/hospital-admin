@@ -97,6 +97,12 @@ procedimentos. A migration incremental
 mudança administrativa real, preservando timestamps e evitando eventos de
 auditoria duplicados.
 
+A migration `20261008110000_preserve_sus_counting_unit.sql` registra, em cada
+linha importada, as unidades de contagem capturadas na confirmação e no
+lançamento conflitante. A reconciliação não substitui o volume quando a unidade
+importada diverge da unidade histórica do lançamento; nesse caso, o operador
+deve manter o lançamento ou importar novamente após revisar o cadastro.
+
 Nomes de categorias são únicos após normalização de espaços externos e caixa;
 nomes de procedimentos têm a mesma regra dentro da categoria. Lançamentos têm
 unicidade por procedimento, competência e fonte normalizada. As três tabelas

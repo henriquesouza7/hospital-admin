@@ -29,6 +29,8 @@ const importRowSchema = z.object({
   quantity: z.union([z.string(), z.number()]).transform(String),
   procedure_id: z.string().uuid(),
   production_entry_id: z.string().uuid().nullable(),
+  imported_counting_unit_snapshot: z.string().nullable(),
+  existing_counting_unit_snapshot: z.string().nullable(),
   existing_quantity_snapshot: z
     .union([z.string(), z.number()])
     .nullable()
@@ -84,7 +86,7 @@ export async function listPendingProductionImportRows() {
     const { data, error } = await getNeonDataApiClient()
       .from("production_import_rows")
       .select(
-        "id,import_id,source_row_number,external_code,procedure_name_snapshot,source_type,quantity,procedure_id,production_entry_id,existing_quantity_snapshot,status",
+        "id,import_id,source_row_number,external_code,procedure_name_snapshot,source_type,quantity,procedure_id,production_entry_id,imported_counting_unit_snapshot,existing_counting_unit_snapshot,existing_quantity_snapshot,status",
       )
       .eq("status", "pending_reconciliation")
       .order("import_id", { ascending: true })
@@ -154,6 +156,11 @@ export async function reconcileProductionSusImport(input: {
   if (error?.code === "40001") {
     throw new Error(
       "O lançamento mudou desde a importação. Recarregue a página e confira o lançamento antes de decidir a reconciliação.",
+    );
+  }
+  if (error?.code === "23514") {
+    throw new Error(
+      "A unidade do procedimento mudou desde a importação. Preserve o lançamento existente e importe o relatório novamente.",
     );
   }
   if (error || data !== true)

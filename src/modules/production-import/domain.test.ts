@@ -45,6 +45,14 @@ describe("production SUS CSV import", () => {
     expect(containsPatientColumns(["telefone do paciente"])).toBe(true);
   });
 
+  it("should_allow_procedure_and_exam_name_headers_without_patient_identifiers", () => {
+    expect(containsPatientColumns(["nome_procedimento", "nome do exame"])).toBe(
+      false,
+    );
+    expect(containsPatientColumns(["nome"])).toBe(true);
+    expect(containsPatientColumns(["nome do paciente"])).toBe(true);
+  });
+
   it("should_reject_malformed_csv_when_quotes_are_unclosed", () => {
     expect(() => parseSusCsv('codigo;procedimento\n1;"Teste', ";")).toThrow(
       /aspa não fechada/,
