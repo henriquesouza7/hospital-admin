@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   createSurgeryAppointment: vi.fn(),
   updateSurgeryAppointmentStatus: vi.fn(),
   createSurgeryWaitlistEntry: vi.fn(),
+  searchSurgeryPatients: vi.fn(),
   transferSurgeryWaitlistEntry: vi.fn(),
   updateSurgeryPatient: vi.fn(),
 }));
@@ -24,6 +25,7 @@ vi.mock("./repository", () => ({
   createSurgeryAppointment: mocks.createSurgeryAppointment,
   updateSurgeryAppointmentStatus: mocks.updateSurgeryAppointmentStatus,
   createSurgeryWaitlistEntry: mocks.createSurgeryWaitlistEntry,
+  searchSurgeryPatients: mocks.searchSurgeryPatients,
   transferSurgeryWaitlistEntry: mocks.transferSurgeryWaitlistEntry,
   updateSurgeryPatient: mocks.updateSurgeryPatient,
 }));
@@ -31,6 +33,7 @@ vi.mock("./repository", () => ({
 import {
   createSurgeryDayAction,
   initialMinorSurgeryActionState,
+  searchSurgeryPatientsAction,
   updateSurgeryDayCapacityAction,
 } from "./actions";
 
@@ -67,5 +70,26 @@ describe("minor surgeries actions", () => {
     await expect(
       createSurgeryDayAction(initialMinorSurgeryActionState, formData),
     ).rejects.toBe(redirectError);
+  });
+
+  it("should_return_only_the_bounded_patient_search_result", async () => {
+    const patients = [
+      {
+        id: "f9a52c88-2973-4c38-8542-d7ce03122cc8",
+        name: "Pessoa sintética",
+      },
+    ];
+    mocks.searchSurgeryPatients.mockResolvedValue({
+      patients,
+      offset: 0,
+      hasMore: true,
+    });
+
+    await expect(searchSurgeryPatientsAction("Pessoa", 0)).resolves.toEqual({
+      ok: true,
+      patients,
+      hasMore: true,
+    });
+    expect(mocks.searchSurgeryPatients).toHaveBeenCalledWith("Pessoa", 0);
   });
 });
