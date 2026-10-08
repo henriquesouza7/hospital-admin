@@ -66,6 +66,7 @@ const aggregatePatientCountHeaderPatterns = [
 
 function normalizeHeader(header: string): string {
   return header
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
     .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
