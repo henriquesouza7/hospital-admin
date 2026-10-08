@@ -39,8 +39,9 @@ export type ProductionImportRow = Readonly<{
 
 const patientIdentifierHeaderPatterns = [
   /(?:^|\s)(?:paciente|patient)(?:\s|$)/,
-  /^nome(?: completo)?$/,
-  /(?:^|\s)nome(?: completo)?\s+(?:(?:do|da|de)\s+)?(?:paciente|patient)(?:\s|$)/,
+  /^nome(?: completo| social)?$/,
+  /(?:^|\s)nome(?: completo| social)?\s+(?:(?:do|da|de)\s+)?(?:paciente|patient)(?:\s|$)/,
+  /(?:^|\s)nome\s+(?:(?:da|de)\s+)?(?:mae|mother)(?:\s|$)/,
   /(?:^|\s)full\s+name(?:\s|$)/,
   /(?:^|\s)(?:cpf|cns|ssn)(?:\s|$)/,
   /(?:^|\s)(?:e mail|email|correio eletronico)(?:\s|$)/,
@@ -48,7 +49,7 @@ const patientIdentifierHeaderPatterns = [
   /(?:^|\s)(?:cartao sus|cartao nacional de saude)(?:\s|$)/,
   /(?:^|\s)(?:prontuario|medical record)(?:\s|$)/,
   /(?:^|\s)(?:nascimento|birth date|date of birth)(?:\s|$)/,
-  /(?:^|\s)(?:telefone|celular|phone)(?:\s|$)/,
+  /(?:^|\s)(?:telefone|celular|fone|phone|whatsapp|wpp)(?:\s|$)/,
   /(?:^|\s)(?:endereco|address)(?:\s|$)/,
 ];
 
