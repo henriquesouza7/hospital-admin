@@ -47,8 +47,8 @@
 - [x] Procedimentos e categorias
 - [x] Lançamentos
 - [ ] Dashboards
-- [ ] Importador SUS
-- [ ] Reconciliação de importações
+- [x] Importador SUS
+- [x] Reconciliação de importações
 
 ## Fase 6 — Pequenas Cirurgias
 - [ ] Dias de cirurgia

@@ -36,8 +36,8 @@ Subáreas: Farmácia, Laboratório e Feira.
 - Registrar quantidade por procedimento específico e competência.
 - Agrupar procedimentos por categoria.
 - Ex.: hemograma, glicemia, raio-X de tórax, raio-X de pé, ECG, atendimentos.
-- Importar relatórios do sistema SUS.
-- Reconhecer procedimentos por código/nome.
+- Importar relatórios administrativos do SUS em CSV com prévia e conferência.
+- Associar procedimento por código/nome com seleção manual no catálogo existente.
 - Evitar dupla importação.
 - Comparar mês/mês e ano/ano.
 
