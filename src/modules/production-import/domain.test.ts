@@ -73,6 +73,15 @@ describe("production SUS CSV import", () => {
     }
   });
 
+  it("should_reject_punctuated_patient_identifier_acronyms", () => {
+    for (const header of ["C.P.F.", "C.N.S.", "R.G."]) {
+      expect(containsPatientColumns(["procedimento", header])).toBe(true);
+      expect(() =>
+        parseSusCsv(`procedimento;${header}\nExame;valor`, ";"),
+      ).toThrow(/identificação de pacientes/);
+    }
+  });
+
   it("should_allow_aggregate_patient_count_headers", () => {
     const aggregateHeaders = [
       "quantidade_pacientes",

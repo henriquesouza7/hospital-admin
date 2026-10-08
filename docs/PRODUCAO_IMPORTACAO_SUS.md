@@ -56,12 +56,14 @@ o lançamento existente, preserva a unidade histórica e dispara auditoria. As
 decisões e as linhas de origem permanecem no histórico; não há exclusão física.
 Cada pendência aponta para o lançamento capturado na confirmação. Se esse
 lançamento tiver mudado desde a captura, a interface exibe seu estado atual.
-A opção de manter bloqueia por ID esse lançamento atual, finaliza a pendência
-sem sobrescrevê-lo e audita tanto a identidade/quantidade capturadas quanto o
-estado mantido. A substituição é bloqueada quando identidade, quantidade ou
-unidade diferem da captura. Assim, uma edição de competência, procedimento ou
-classificação não deixa o grupo pendente sem resolução e não faz a RPC procurar
-nem alterar outro lançamento semelhante.
+Ao decidir, a tela envia o ID, quantidade, procedimento, competência, origem e
+unidade que exibiu. A RPC bloqueia a linha e compara esse retrato antes de
+gravar: se outro administrador a alterar depois do carregamento da página, a
+decisão falha e a tela precisa ser recarregada. Se a alteração já estava
+visível, manter preserva o lançamento atual e audita os estados capturado e
+mantido. A substituição continua bloqueada quando identidade, quantidade ou
+unidade diferem da captura. Uma edição de competência, procedimento ou
+classificação não faz a RPC procurar nem alterar outro lançamento semelhante.
 
 As tabelas de importação têm leitura administrativa por RLS e sem DML direto
 para `authenticated`. As RPCs `SECURITY DEFINER` validam `public.is_admin()`,

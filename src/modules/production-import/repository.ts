@@ -182,6 +182,12 @@ export async function reconcileProductionSusImport(input: {
   procedure_id: string;
   source_type: "apresentado" | "aprovado" | "realizado";
   resolution: "keep_existing" | "replace_with_import";
+  expected_entry_id: string;
+  expected_quantity: number;
+  expected_procedure_id: string;
+  expected_reference_period: string;
+  expected_source: string;
+  expected_counting_unit: string;
 }) {
   await requireProductionAdmin();
   const { data, error } = await getNeonDataApiClient().rpc(
@@ -191,11 +197,17 @@ export async function reconcileProductionSusImport(input: {
       p_procedure_id: input.procedure_id,
       p_source_type: input.source_type,
       p_resolution: input.resolution,
+      p_expected_entry_id: input.expected_entry_id,
+      p_expected_quantity: input.expected_quantity,
+      p_expected_procedure_id: input.expected_procedure_id,
+      p_expected_reference_period: input.expected_reference_period,
+      p_expected_source: input.expected_source,
+      p_expected_counting_unit: input.expected_counting_unit,
     },
   );
   if (error?.code === "40001") {
     throw new Error(
-      "O lançamento mudou desde a importação. Recarregue a página e confira o lançamento antes de decidir a reconciliação.",
+      "O lançamento mudou depois de ser exibido. Recarregue a página e confira o estado atual antes de decidir a reconciliação.",
     );
   }
   if (error?.code === "23514") {

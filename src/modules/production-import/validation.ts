@@ -28,6 +28,16 @@ export const productionImportReconciliationSchema = z.object({
   procedure_id: z.string().uuid(),
   source_type: z.enum(["apresentado", "aprovado", "realizado"]),
   resolution: z.enum(["keep_existing", "replace_with_import"]),
+  expected_entry_id: z.string().uuid(),
+  expected_quantity: z
+    .string()
+    .regex(/^\d{1,10}$/)
+    .refine((value) => Number(value) < 10_000_000_000)
+    .transform(Number),
+  expected_procedure_id: z.string().uuid(),
+  expected_reference_period: z.iso.date(),
+  expected_source: z.string().min(1).max(80),
+  expected_counting_unit: z.string().min(1).max(80),
 });
 
 export function parseProductionImportPeriod(value: string): string {

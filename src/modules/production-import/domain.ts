@@ -46,6 +46,7 @@ const patientIdentifierHeaderPatterns = [
   /(?:^|\s)(?:father|mother|parent)\s+name(?:\s|$)/,
   /(?:^|\s)full\s+name(?:\s|$)/,
   /(?:^|\s)(?:cpf|cns|ssn)(?:\s|$)/,
+  /(?:^|\s)(?:c\s+p\s+f|c\s+n\s+s|r\s+g)(?:\s|$)/,
   /(?:^|\s)(?:e mail|email|correio eletronico)(?:\s|$)/,
   /(?:^|\s)(?:rg|registro geral|carteira de identidade)(?:\s|$)/,
   /(?:^|\s)(?:cartao sus|cartao nacional de saude)(?:\s|$)/,

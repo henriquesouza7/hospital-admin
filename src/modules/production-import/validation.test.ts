@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   parseProductionImportPeriod,
   productionImportConfirmationSchema,
+  productionImportReconciliationSchema,
 } from "./validation";
 
 describe("production import validation", () => {
@@ -33,5 +34,31 @@ describe("production import validation", () => {
         previewToken: "signed",
       }).success,
     ).toBe(true);
+  });
+
+  it("should_require_the_displayed_entry_snapshot_when_reconciling", () => {
+    const base = {
+      import_id: "00000000-0000-4000-8000-000000000001",
+      procedure_id: "00000000-0000-4000-8000-000000000002",
+      source_type: "realizado",
+      resolution: "keep_existing",
+      expected_entry_id: "00000000-0000-4000-8000-000000000003",
+      expected_quantity: "10",
+      expected_procedure_id: "00000000-0000-4000-8000-000000000002",
+      expected_reference_period: "2026-04-01",
+      expected_source: "SUS: realizado",
+      expected_counting_unit: "exames",
+    };
+
+    expect(productionImportReconciliationSchema.safeParse(base)).toMatchObject({
+      success: true,
+      data: { expected_quantity: 10 },
+    });
+    expect(
+      productionImportReconciliationSchema.safeParse({
+        ...base,
+        expected_quantity: "",
+      }).success,
+    ).toBe(false);
   });
 });

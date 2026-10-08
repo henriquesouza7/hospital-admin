@@ -198,6 +198,12 @@ export async function reconcileProductionSusImportAction(
     procedure_id: value(formData, "procedure_id"),
     source_type: value(formData, "source_type"),
     resolution: value(formData, "resolution"),
+    expected_entry_id: value(formData, "expected_entry_id"),
+    expected_quantity: value(formData, "expected_quantity"),
+    expected_procedure_id: value(formData, "expected_procedure_id"),
+    expected_reference_period: value(formData, "expected_reference_period"),
+    expected_source: value(formData, "expected_source"),
+    expected_counting_unit: value(formData, "expected_counting_unit"),
   });
   if (!parsed.success) redirect("/producao/importacoes?erro=reconciliacao");
   try {

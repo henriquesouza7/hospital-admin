@@ -126,6 +126,18 @@ export function ProductionSusImportForm({
     return formData;
   }
 
+  function handleFileChange(file: File | null) {
+    setSelectedFile(file);
+    setState(initialProductionImportActionState);
+    setDelimiter(";");
+    setProcedureColumn("");
+    setQuantityColumn("");
+    setSourceColumn("");
+    setCodeColumn("");
+    setMappings({ previewToken: "", values: {} });
+    setPreviewContext(null);
+  }
+
   function handlePreview(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = buildFormData(event.currentTarget);
@@ -176,8 +188,9 @@ export function ProductionSusImportForm({
               type="file"
               accept=".csv,text/csv"
               required
+              disabled={pending}
               onChange={(event) =>
-                setSelectedFile(event.target.files?.[0] ?? null)
+                handleFileChange(event.target.files?.[0] ?? null)
               }
               className={fieldClassName}
             />
@@ -584,6 +597,36 @@ export function ProductionImportHistory({
                             type="hidden"
                             name="resolution"
                             value={resolution}
+                          />
+                          <input
+                            type="hidden"
+                            name="expected_entry_id"
+                            value={currentEntry?.id ?? ""}
+                          />
+                          <input
+                            type="hidden"
+                            name="expected_quantity"
+                            value={currentEntry?.quantity ?? ""}
+                          />
+                          <input
+                            type="hidden"
+                            name="expected_procedure_id"
+                            value={currentEntry?.procedure_id ?? ""}
+                          />
+                          <input
+                            type="hidden"
+                            name="expected_reference_period"
+                            value={currentEntry?.reference_period ?? ""}
+                          />
+                          <input
+                            type="hidden"
+                            name="expected_source"
+                            value={currentEntry?.source ?? ""}
+                          />
+                          <input
+                            type="hidden"
+                            name="expected_counting_unit"
+                            value={currentEntry?.counting_unit ?? ""}
                           />
                           <Button
                             type="submit"
