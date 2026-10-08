@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { ProductionIndicatorEntry } from "../repository";
-import { buildProductionIndicatorData } from "./domain";
+import {
+  buildProductionIndicatorData,
+  findProductionSourceOption,
+} from "./domain";
 import type { ProductionIndicatorFilters } from "./validation";
 
 const procedureA = "00000000-0000-4000-8000-000000000001";
@@ -45,6 +48,15 @@ function filters(
 }
 
 describe("production indicator calculations", () => {
+  it("should_canonicalize_selected_source_when_case_differs", () => {
+    expect(
+      findProductionSourceOption(["manual", "SUS: realizado"], "MANUAL"),
+    ).toBe("manual");
+    expect(
+      findProductionSourceOption(["manual"], "inexistente"),
+    ).toBeUndefined();
+  });
+
   it("should_filter_records_by_competence_procedure_category_and_source", () => {
     const result = buildProductionIndicatorData(
       [

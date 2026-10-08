@@ -110,6 +110,16 @@ export function normalizeProductionSource(source: string): string {
   return source.trim().toLowerCase();
 }
 
+export function findProductionSourceOption(
+  sources: readonly string[],
+  selected: string,
+): string | undefined {
+  const normalizedSelected = normalizeProductionSource(selected);
+  return sources.find(
+    (source) => normalizeProductionSource(source) === normalizedSelected,
+  );
+}
+
 function matchesDimensions(
   entry: ProductionIndicatorEntry,
   filters: ProductionIndicatorFilters,
