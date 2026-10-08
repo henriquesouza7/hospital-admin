@@ -40,6 +40,7 @@ export type ProductionImportRow = Readonly<{
 const patientIdentifierHeaderPatterns = [
   /(?:^|\s)(?:paciente|patient)(?:\s|$)/,
   /^nome(?: completo| social)?$/,
+  /^name$/,
   /(?:^|\s)nome(?: completo| social)?\s+(?:(?:do|da|de)\s+)?(?:paciente|patient)(?:\s|$)/,
   /(?:^|\s)nome\s+(?:(?:da|de)\s+)?(?:mae|mother)(?:\s|$)/,
   /(?:^|\s)nome\s+(?:(?:do|da|de)\s+)?(?:pai|father)(?:\s|$)/,
@@ -57,9 +58,10 @@ const patientIdentifierHeaderPatterns = [
   /(?:^|\s)(?:endereco|address)(?:\s|$)/,
 ];
 const aggregatePatientCountHeaderPatterns = [
-  /^(?:quantidade|qtd|total|numero|count|number)(?:\s+(?:de|of))?\s+(?:paciente|patient)s?$/,
+  /^(?:quantidade|qtd|total|count)(?:\s+(?:de|of))?\s+(?:paciente|patient)s?$/,
+  /^(?:numero|number)(?:\s+(?:de|of))?\s+(?:pacientes|patients)$/,
   /^(?:paciente|patient)\s+count$/,
-  /^(?:(?:quantidade|qtd|total|numero|count|number)(?:\s+(?:de|of))?\s+)?(?:paciente|patient)s?\s+(?:atendid[oa]s?|aprovad[oa]s?|served)$/,
+  /^(?:(?:quantidade|qtd|total|numero|count|number)(?:\s+(?:de|of))?\s+)?(?:pacientes|patients)\s+(?:atendid[oa]s?|aprovad[oa]s?|served)$/,
 ];
 
 function normalizeHeader(header: string): string {

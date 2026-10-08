@@ -57,6 +57,14 @@ describe("production SUS CSV import", () => {
     expect(containsPatientColumns(["fone", "quantidade"])).toBe(true);
     expect(containsPatientColumns(["whatsapp", "quantidade"])).toBe(true);
     expect(containsPatientColumns(["numero_prontuario"])).toBe(true);
+    expect(containsPatientColumns(["numero_paciente"])).toBe(true);
+    expect(containsPatientColumns(["número de paciente"])).toBe(true);
+    expect(containsPatientColumns(["name"])).toBe(true);
+    for (const header of ["numero_paciente", "número de paciente", "name"]) {
+      expect(() =>
+        parseSusCsv(`procedimento;${header}\nExame;valor`, ";"),
+      ).toThrow(/identificação de pacientes/);
+    }
     expect(containsPatientColumns(["telefone do paciente"])).toBe(true);
     expect(containsPatientColumns(["dt_nasc"])).toBe(true);
     expect(containsPatientColumns(["data_nasc"])).toBe(true);
@@ -110,6 +118,9 @@ describe("production SUS CSV import", () => {
     expect(containsPatientColumns(["full_name", "quantidade"])).toBe(true);
     expect(containsPatientColumns(["nome do paciente"])).toBe(true);
     expect(containsPatientColumns(["nome completo do paciente"])).toBe(true);
+    expect(containsPatientColumns(["procedure_name", "quantidade"])).toBe(
+      false,
+    );
   });
 
   it("should_reject_malformed_csv_when_quotes_are_unclosed", () => {
