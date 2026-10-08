@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   requireAdmin: vi.fn(),
   listAdmissionEntries: vi.fn(),
+  listAdmissionEntriesForExport: vi.fn(),
   listAdmissionTargets: vi.fn(),
   loadIndicatorsSource: vi.fn(),
   listProductionEntries: vi.fn(),
@@ -17,6 +18,7 @@ vi.mock("@/lib/auth/require-admin", () => ({
 }));
 vi.mock("@/modules/admissions/repository", () => ({
   listAdmissionEntries: mocks.listAdmissionEntries,
+  listAdmissionEntriesForExport: mocks.listAdmissionEntriesForExport,
   listAdmissionTargets: mocks.listAdmissionTargets,
 }));
 vi.mock("@/modules/finance/indicators/repository", () => ({
@@ -73,6 +75,50 @@ beforeEach(() => {
 });
 
 describe("administrative exports", () => {
+  it("should_bound_admission_export_before_building_csv", async () => {
+    mocks.listAdmissionEntriesForExport.mockResolvedValue(
+      Array.from({ length: 10_001 }, () => ({
+        entry_date: "2026-10-08",
+        doctor_name: "Médico sintético",
+        quantity: 1,
+      })),
+    );
+
+    const response = await GET(
+      new Request(
+        "http://localhost/api/exportacoes?tipo=internacoes&inicio=2026-10&fim=2026-10",
+      ),
+    );
+
+    expect(response.status).toBe(413);
+    expect(mocks.listAdmissionEntriesForExport).toHaveBeenCalledWith(
+      "2026-10-01",
+      "2026-11-01",
+      10_001,
+    );
+  });
+
+  it("should_accept_exactly_maximum_production_data_rows", async () => {
+    mocks.listProductionEntries.mockResolvedValue(
+      Array.from({ length: 10_000 }, () => ({
+        reference_period: "2026-10-01",
+        category_name: "Categoria sintética",
+        procedure_name: "Procedimento sintético",
+        quantity: "1.000",
+        counting_unit: "atendimentos",
+        source: "manual",
+      })),
+    );
+
+    const response = await GET(
+      new Request(
+        "http://localhost/api/exportacoes?tipo=producao&inicio=2026-10&fim=2026-10",
+      ),
+    );
+
+    expect(response.status).toBe(200);
+  });
+
   it("should_bound_purchase_export_and_skip_unneeded_products", async () => {
     mocks.loadIndicatorsSource.mockResolvedValue({
       purchases: Array.from({ length: 10_001 }, () => ({})),

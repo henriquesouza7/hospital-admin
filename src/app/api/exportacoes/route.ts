@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import {
-  listAdmissionEntries,
+  listAdmissionEntriesForExport,
   listAdmissionTargets,
 } from "@/modules/admissions/repository";
 import { loadIndicatorsSource } from "@/modules/finance/indicators/repository";
@@ -60,7 +60,7 @@ function responseCsv(
   through: string,
   rows: readonly (readonly unknown[])[],
 ) {
-  if (rows.length > MAX_ROWS) {
+  if (rows.length - 1 > MAX_ROWS) {
     return NextResponse.json(
       {
         error: `A extração ultrapassa o limite de ${MAX_ROWS.toLocaleString("pt-BR")} linhas.`,
@@ -195,7 +195,22 @@ export async function GET(request: Request) {
         ]);
       }
       case "internacoes": {
-        const entries = await listAdmissionEntries(firstDay, afterLastDay);
+        const entries = await listAdmissionEntriesForExport(
+          firstDay,
+          afterLastDay,
+          MAX_ROWS + 1,
+        );
+        if (entries.length > MAX_ROWS) {
+          return NextResponse.json(
+            {
+              error:
+                "A extração ultrapassa o limite de " +
+                MAX_ROWS.toLocaleString("pt-BR") +
+                " linhas.",
+            },
+            { status: 413 },
+          );
+        }
         return responseCsv(exportType, from, through, [
           ["Data", "Médico responsável", "Internações registradas"],
           ...entries

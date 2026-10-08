@@ -67,6 +67,23 @@ describe("administrative audit repository", () => {
     expect(mocks.from).not.toHaveBeenCalled();
   });
 
+  it("should_use_an_exclusive_end_date_filter", async () => {
+    await listAdministrativeAudit({
+      from: null,
+      through: "2026-11-01T00:00:00.000-03:00",
+      module: "todos",
+      entityType: null,
+      action: null,
+      actorId: null,
+      page: 1,
+    });
+
+    expect(mocks.lt).toHaveBeenCalledWith(
+      "created_at",
+      "2026-11-01T00:00:00.000-03:00",
+    );
+  });
+
   it("should_stop_pagination_and_report_limit_when_max_page_has_more_rows", async () => {
     mocks.range.mockResolvedValue({
       data: Array.from({ length: 51 }, (_, index) => ({

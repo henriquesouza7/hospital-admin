@@ -68,11 +68,8 @@ export async function loadIndicatorsSource(
       ? Number.POSITIVE_INFINITY
       : Math.max(0, Math.floor(options.maxPurchaseRows));
   for (const sector of ["farmacia", "laboratorio"] as const) {
-    for (
-      let offset = 0;
-      offset < purchaseLimit - purchases.length;
-      offset += PAGE_SIZE
-    ) {
+    let offset = 0;
+    while (purchases.length < purchaseLimit) {
       const pageSize = Math.min(PAGE_SIZE, purchaseLimit - purchases.length);
       const { data, error } = await getNeonDataApiClient()
         .from("purchase_order_items")
@@ -102,6 +99,7 @@ export async function loadIndicatorsSource(
         })),
       );
       if (items.length < pageSize) break;
+      offset += pageSize;
     }
     if (purchases.length >= purchaseLimit) break;
   }

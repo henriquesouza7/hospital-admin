@@ -107,4 +107,10 @@ describe("administrative overview aggregations", () => {
   it("should_format_zero_currency_when_no_expenses_exist", () => {
     expect(formatCurrency(BigInt(0))).toBe("R$ 0,00");
   });
+
+  it("should_preserve_bigint_cents_when_formatting_large_totals", () => {
+    expect(formatCurrency(BigInt("9007199254740993"))).toBe(
+      "R$ 90.071.992.547.409,93",
+    );
+  });
 });

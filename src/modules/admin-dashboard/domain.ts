@@ -1,3 +1,5 @@
+import { formatCurrency as formatBigIntCurrency } from "../finance/pharmacy/format";
+
 export function monthName(month: number): string {
   return new Intl.DateTimeFormat("pt-BR", { month: "short", timeZone: "UTC" })
     .format(new Date(Date.UTC(2020, month - 1, 1)))
@@ -5,10 +7,7 @@ export function monthName(month: number): string {
 }
 
 export function formatCurrency(cents: bigint): string {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(Number(cents) / 100);
+  return formatBigIntCurrency(cents);
 }
 
 export function formatInteger(value: number): string {

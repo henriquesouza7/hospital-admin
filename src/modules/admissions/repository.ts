@@ -72,6 +72,13 @@ const entryRowsSchema = z.array(
     updated_at: z.iso.datetime({ offset: true }),
   }),
 );
+const admissionExportRowsSchema = z.array(
+  z.object({
+    entry_date: z.iso.date(),
+    quantity: quantitySchema,
+    doctor: z.object({ name: z.string().min(1) }),
+  }),
+);
 const targetRowsSchema = z.array(
   z.object({
     id: z.string().uuid(),
@@ -159,6 +166,33 @@ export async function listAdmissionEntries(
       (a, b) =>
         b.entry_date.localeCompare(a.entry_date) || a.id.localeCompare(b.id),
     );
+}
+
+export async function listAdmissionEntriesForExport(
+  startDate: string,
+  endDate: string,
+  maxRows: number,
+) {
+  await requireAdmin();
+  if (!Number.isSafeInteger(maxRows) || maxRows < 1 || maxRows > 10_001) {
+    throw new Error("O limite de linhas da exportação é inválido.");
+  }
+  const { data, error } = await getNeonDataApiClient()
+    .from("admission_entries")
+    .select("entry_date,quantity,doctor:doctors!inner(name)")
+    .gte("entry_date", startDate)
+    .lt("entry_date", endDate)
+    .order("entry_date", { ascending: false })
+    .order("doctor_id", { ascending: true })
+    .range(0, maxRows - 1);
+  if (error || data === null || data === undefined) {
+    throw new Error("Não foi possível carregar os lançamentos da exportação.");
+  }
+  return admissionExportRowsSchema.parse(data).map((entry) => ({
+    entry_date: entry.entry_date,
+    doctor_name: entry.doctor.name,
+    quantity: entry.quantity,
+  }));
 }
 
 export async function listAdmissionTargets(

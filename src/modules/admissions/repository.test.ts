@@ -29,6 +29,7 @@ import {
   createDoctor,
   importAdmissionEntries,
   listAdmissionEntries,
+  listAdmissionEntriesForExport,
   listDoctors,
   listAdmissionTargets,
   setDoctorActive,
@@ -205,6 +206,48 @@ describe("doctors repository", () => {
         { entry_date: "2026-10-07", doctor_name: "Dra. Teste B", quantity: 4 },
       ],
     });
+  });
+
+  it("should_bound_admission_export_rows_and_join_doctor_names_in_one_query", async () => {
+    const query = {
+      gte: vi.fn(),
+      lt: vi.fn(),
+      order: vi.fn(),
+      range: vi.fn().mockResolvedValue({
+        data: [
+          {
+            entry_date: "2026-10-07",
+            quantity: 3,
+            doctor: { name: doctor.name },
+          },
+        ],
+        error: null,
+      }),
+    };
+    query.gte.mockReturnValue(query);
+    query.lt.mockReturnValue(query);
+    query.order.mockReturnValue(query);
+    const select = vi.fn().mockReturnValue(query);
+    mocks.from.mockReturnValue({ select });
+
+    await expect(
+      listAdmissionEntriesForExport("2026-10-01", "2026-11-01", 10_001),
+    ).resolves.toEqual([
+      { entry_date: "2026-10-07", doctor_name: doctor.name, quantity: 3 },
+    ]);
+
+    expect(mocks.from).toHaveBeenCalledWith("admission_entries");
+    expect(select).toHaveBeenCalledWith(
+      "entry_date,quantity,doctor:doctors!inner(name)",
+    );
+    expect(query.order).toHaveBeenNthCalledWith(1, "entry_date", {
+      ascending: false,
+    });
+    expect(query.order).toHaveBeenNthCalledWith(2, "doctor_id", {
+      ascending: true,
+    });
+    expect(query.range).toHaveBeenCalledWith(0, 10_000);
+    expect(mocks.requireAdmin).toHaveBeenCalledOnce();
   });
 
   it("should_read_all_admission_entries_in_one_database_snapshot", async () => {
