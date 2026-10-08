@@ -5,11 +5,11 @@ const mocks = vi.hoisted(() => ({
   listAdmissionEntries: vi.fn(),
   listAdmissionEntriesForExport: vi.fn(),
   listAdmissionTargets: vi.fn(),
+  listMonthlyExpenseTotals: vi.fn(),
   loadIndicatorsSource: vi.fn(),
   listProductionEntries: vi.fn(),
   listUpcomingSurgeryDays: vi.fn(),
   listSurgeryWaitlist: vi.fn(),
-  buildIndicatorsData: vi.fn(),
   buildCsv: vi.fn(),
 }));
 
@@ -22,10 +22,8 @@ vi.mock("@/modules/admissions/repository", () => ({
   listAdmissionTargets: mocks.listAdmissionTargets,
 }));
 vi.mock("@/modules/finance/indicators/repository", () => ({
+  listMonthlyExpenseTotals: mocks.listMonthlyExpenseTotals,
   loadIndicatorsSource: mocks.loadIndicatorsSource,
-}));
-vi.mock("@/modules/finance/indicators/domain", () => ({
-  buildIndicatorsData: mocks.buildIndicatorsData,
 }));
 vi.mock("@/modules/audit/domain", () => ({
   buildCsv: (rows: readonly (readonly unknown[])[]) =>
@@ -75,6 +73,28 @@ beforeEach(() => {
 });
 
 describe("administrative exports", () => {
+  it("should_export_expense_totals_without_number_precision_loss", async () => {
+    mocks.listMonthlyExpenseTotals.mockResolvedValue([
+      {
+        competence: "2026-10-01",
+        pharmacy_total: "90071992547409.93",
+        laboratory_total: "0.00",
+        fair_total: "0.00",
+      },
+    ]);
+
+    const response = await GET(
+      new Request(
+        "http://localhost/api/exportacoes?tipo=gastos&inicio=2026-10&fim=2026-10",
+      ),
+    );
+    const csv = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(csv).toContain('"90071992547409,93"');
+    expect(mocks.loadIndicatorsSource).not.toHaveBeenCalled();
+  });
+
   it("should_bound_admission_export_before_building_csv", async () => {
     mocks.listAdmissionEntriesForExport.mockResolvedValue(
       Array.from({ length: 10_001 }, () => ({

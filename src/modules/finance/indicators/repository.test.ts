@@ -2,18 +2,19 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   from: vi.fn(),
+  rpc: vi.fn(),
   requireFinanceAdmin: vi.fn(),
 }));
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/neon/data-api", () => ({
-  getNeonDataApiClient: () => ({ from: mocks.from }),
+  getNeonDataApiClient: () => ({ from: mocks.from, rpc: mocks.rpc }),
 }));
 vi.mock("@/modules/finance/pharmacy/access", () => ({
   requireFinanceAdmin: mocks.requireFinanceAdmin,
 }));
 
-import { loadIndicatorsSource } from "./repository";
+import { listMonthlyExpenseTotals, loadIndicatorsSource } from "./repository";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -21,6 +22,36 @@ beforeEach(() => {
 });
 
 describe("financial indicators repository", () => {
+  it("should_get_monthly_expense_totals_from_the_database", async () => {
+    mocks.rpc.mockResolvedValue({
+      data: [
+        {
+          competence: "2026-10-01",
+          pharmacy_total: "123.45",
+          laboratory_total: "67.89",
+          fair_total: "10.00",
+        },
+      ],
+      error: null,
+    });
+
+    await expect(
+      listMonthlyExpenseTotals("2026-10", "2026-10"),
+    ).resolves.toEqual([
+      {
+        competence: "2026-10-01",
+        pharmacy_total: "123.45",
+        laboratory_total: "67.89",
+        fair_total: "10.00",
+      },
+    ]);
+    expect(mocks.rpc).toHaveBeenCalledWith("list_monthly_expense_totals", {
+      p_start: "2026-10-01",
+      p_through_exclusive: "2026-11-01",
+    });
+    expect(mocks.requireFinanceAdmin).toHaveBeenCalledOnce();
+  });
+
   it("should_page_through_the_global_purchase_limit_without_truncating", async () => {
     const items = Array.from({ length: 1_001 }, (_, index) => {
       const id =

@@ -4,8 +4,10 @@ import {
   listAdmissionEntriesForExport,
   listAdmissionTargets,
 } from "@/modules/admissions/repository";
-import { loadIndicatorsSource } from "@/modules/finance/indicators/repository";
-import { buildIndicatorsData } from "@/modules/finance/indicators/domain";
+import {
+  listMonthlyExpenseTotals,
+  loadIndicatorsSource,
+} from "@/modules/finance/indicators/repository";
 import { listProductionEntries } from "@/modules/production/repository";
 import {
   listUpcomingSurgeryDays,
@@ -43,7 +45,21 @@ function nextMonthDate(value: string) {
 }
 
 function money(cents: bigint) {
-  return (Number(cents) / 100).toFixed(2).replace(".", ",");
+  const negative = cents < 0;
+  const absolute = negative ? -cents : cents;
+  const whole = new Intl.NumberFormat("pt-BR", {
+    useGrouping: false,
+  }).format(absolute / BigInt(100));
+  const fraction = (absolute % BigInt(100)).toString().padStart(2, "0");
+  return `${negative ? "-" : ""}${whole},${fraction}`;
+}
+
+function amountToCents(value: string) {
+  const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(value);
+  if (!match) throw new Error("Valor monetário inválido recebido do banco.");
+  return (
+    BigInt(match[1]) * BigInt(100) + BigInt((match[2] ?? "").padEnd(2, "0"))
+  );
 }
 
 function decimalForCsv(value: string | number) {
@@ -116,12 +132,7 @@ export async function GET(request: Request) {
   try {
     switch (exportType) {
       case "gastos": {
-        const source = await loadIndicatorsSource(from, through);
-        const data = buildIndicatorsData(
-          { inicio: from, fim: through, setor: "todos" },
-          source.purchases,
-          source.fairExpenses,
-        );
+        const monthly = await listMonthlyExpenseTotals(from, through);
         return responseCsv(exportType, from, through, [
           [
             "Competência",
@@ -130,13 +141,18 @@ export async function GET(request: Request) {
             "Feira (R$)",
             "Total (R$)",
           ],
-          ...data.monthly.map((item) => [
-            item.month,
-            money(item.pharmacyCents),
-            money(item.laboratoryCents),
-            money(item.fairCents),
-            money(item.totalCents),
-          ]),
+          ...monthly.map((item) => {
+            const pharmacy = amountToCents(item.pharmacy_total);
+            const laboratory = amountToCents(item.laboratory_total);
+            const fair = amountToCents(item.fair_total);
+            return [
+              item.competence.slice(0, 7),
+              money(pharmacy),
+              money(laboratory),
+              money(fair),
+              money(pharmacy + laboratory + fair),
+            ];
+          }),
         ]);
       }
       case "compras": {

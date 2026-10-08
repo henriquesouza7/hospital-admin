@@ -31,6 +31,14 @@ const fairSchema = z.array(
     total_amount: numeric,
   }),
 );
+const monthlyTotalsSchema = z.array(
+  z.object({
+    competence: z.iso.date(),
+    pharmacy_total: numeric,
+    laboratory_total: numeric,
+    fair_total: numeric,
+  }),
+);
 const productSchema = z.array(
   z.object({
     id: z.string().uuid(),
@@ -135,4 +143,21 @@ export async function loadIndicatorsSource(
     ),
     products,
   };
+}
+
+export async function listMonthlyExpenseTotals(
+  startMonth: string,
+  endMonth: string,
+) {
+  await requireFinanceAdmin();
+  const from = `${startMonth}-01`;
+  const [endYear, endMonthNumber] = endMonth.split("-").map(Number);
+  const throughExclusive = new Date(Date.UTC(endYear, endMonthNumber, 1))
+    .toISOString()
+    .slice(0, 10);
+  const { data, error } = await getNeonDataApiClient().rpc(
+    "list_monthly_expense_totals",
+    { p_start: from, p_through_exclusive: throughExclusive },
+  );
+  return assertData(data, error, monthlyTotalsSchema);
 }
