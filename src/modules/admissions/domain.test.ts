@@ -5,6 +5,15 @@ import {
   type AdmissionTarget,
 } from "./domain";
 import { getAdmissionMonthStatusLabel } from "./admission-dashboard-chart";
+import { addMonthsClamped } from "./period";
+
+describe("admissions period dates", () => {
+  it("should_clamp_two_year_period_end_to_february_when_start_is_leap_day", () => {
+    expect(
+      addMonthsClamped(new Date("2028-02-29T00:00:00Z"), 24).toISOString(),
+    ).toBe("2030-02-28T00:00:00.000Z");
+  });
+});
 
 const entries: AdmissionEntry[] = [
   {

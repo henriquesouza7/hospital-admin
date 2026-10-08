@@ -20,7 +20,10 @@ export function currencyChartScale(amounts: readonly bigint[]): bigint {
 }
 
 export function currencyChartValue(cents: bigint, scale: bigint): number {
-  return Number(cents / scale);
+  const whole = cents / scale;
+  const remainder = cents % scale;
+  const fractional = (remainder * BigInt(1_000_000)) / scale;
+  return Number(whole) + Number(fractional) / 1_000_000;
 }
 
 export type IndicatorPurchase = Readonly<{

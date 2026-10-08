@@ -11,7 +11,11 @@ import { KpiCard } from "@/components/kpi-card";
 import { PageHeader } from "@/components/page-header";
 import { SectionHeader } from "@/components/section-header";
 import { StatusBadge } from "@/components/status-badge";
-import { parseYearMonth, saoPauloToday } from "@/modules/admissions/period";
+import {
+  addMonthsClamped,
+  parseYearMonth,
+  saoPauloToday,
+} from "@/modules/admissions/period";
 import { summarizeAdmissions } from "@/modules/admissions/domain";
 import {
   listAdmissionEntries,
@@ -53,8 +57,7 @@ export default async function Home({ searchParams }: HomeProps) {
   const competence = `${period.year}-${String(period.month).padStart(2, "0")}`;
   const today = saoPauloToday();
   const todayDate = today.toISOString().slice(0, 10);
-  const surgeryThrough = new Date(`${todayDate}T00:00:00Z`);
-  surgeryThrough.setUTCFullYear(surgeryThrough.getUTCFullYear() + 2);
+  const surgeryThrough = addMonthsClamped(today, 24);
   const [
     admissionEntries,
     targets,

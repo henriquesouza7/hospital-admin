@@ -27,7 +27,12 @@ describe("financial chart precision", () => {
 
     expect(cents).toBe(BigInt("9007199254740993"));
     expect(scale).toBe(BigInt(10_000_000));
-    expect(currencyChartValue(cents, scale)).toBe(900_719_925);
+    expect(currencyChartValue(cents, scale)).toBeCloseTo(900_719_925.474099);
+  });
+
+  it("should_preserve_fractional_scaled_chart_values_when_amount_is_below_scale", () => {
+    expect(currencyChartValue(BigInt(99), BigInt(100))).toBe(0.99);
+    expect(currencyChartValue(BigInt(1099), BigInt(100))).toBe(10.99);
   });
 });
 
