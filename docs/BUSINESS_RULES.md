@@ -36,6 +36,11 @@
 - Procedimentos diferentes não devem ser somados como se fossem equivalentes.
 - Produção apresentada, aprovada e realizada devem permanecer distintas quando a fonte fornecer essas categorias.
 - Reimportação da mesma competência deve detectar dados existentes.
+- A primeira entrega registra volumes administrativos agregados; não armazena nem solicita identificadores ou dados individualizados de pacientes.
+- A competência é mensal e persistida no primeiro dia do mês. A quantidade é inteira e não negativa, inclusive zero quando o fechamento do período exigir registrar ausência de ocorrências.
+- Cada lançamento é único por procedimento, competência e fonte normalizada. Uma nova origem pode ser registrada separadamente; a mesma combinação deve ser corrigida pela edição do registro existente.
+- Categorias e procedimentos são inativados, nunca excluídos pelo fluxo administrativo. Para inativar uma categoria, seus procedimentos ativos precisam ser inativados antes; procedimentos inativos continuam associados ao histórico.
+- Cadastros e correções administrativas registram ator autenticado e valores anteriores/novos em `audit_logs`.
 
 ## Pequenas Cirurgias
 - Datas são criadas manualmente.

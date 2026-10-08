@@ -66,18 +66,48 @@ derivam `actor_id` de `auth.user_id()` e registram em `audit_logs` somente
 criação e mudanças efetivas, preservando valores anterior e novo. O fluxo não
 remove médicos fisicamente.
 
+A migration incremental `20261007183000_validate_doctor_whitespace.sql` alinha a constraint e as RPCs de criação/edição para remover espaços POSIX nas extremidades do nome, mantendo a validação de comprimento entre 1 e 160 caracteres.
+
 ## Produção
 - procedure_categories
 - procedures
 - production_entries
 - production_imports
 
-Campos importantes em production_entries:
-- procedure_id
-- reference_period
-- quantity
-- source
-- source_status quando aplicável
+`db/migrations/20261007184500_create_production_module.sql` cria as três tabelas
+da primeira entrega. `procedure_categories` mantém nome, status e timestamps;
+`procedures` referencia a categoria e exige unidade de contagem; `production_entries`
+guarda o procedimento, competência mensal (normalizada para o primeiro dia),
+quantidade inteira não negativa, fonte e timestamps. Não há dados de pacientes
+nem tabela de importação nesta etapa. A migration incremental
+`20261007185000_harden_production_data_integrity.sql` preserva a unidade de
+contagem de cada lançamento e endurece a normalização das RPCs e constraints;
+ela também permite corrigir um procedimento mantendo sua categoria atual
+inativa e serializa mudanças concorrentes de estado entre categorias e
+procedimentos. A migration incremental
+`20261007185500_skip_production_noop_updates.sql` evita executar updates sem
+mudança administrativa real, preservando timestamps e evitando eventos de
+auditoria duplicados.
+
+Nomes de categorias são únicos após normalização de espaços externos e caixa;
+nomes de procedimentos têm a mesma regra dentro da categoria. Lançamentos têm
+unicidade por procedimento, competência e fonte normalizada. As três tabelas
+usam foreign keys restritivas, índices para catálogo e histórico, RLS com leitura
+somente para administradores autenticados e sem escrita direta pelo papel
+`authenticated`. RPCs `SECURITY DEFINER` validam a role admin e os dados antes
+de cada mutação. O helper `public.is_admin()` consulta o papel da identidade
+Neon Auth autenticada. Triggers atualizam timestamps e escrevem criação, edição,
+ativação e inativação em `audit_logs`, incluindo os estados anterior e novo;
+`actor_id` é obtido por `auth.user_id()`.
+
+As RPCs administrativas são `create_procedure_category`,
+`update_procedure_category`, `set_procedure_category_active`,
+`create_production_procedure`, `update_production_procedure`,
+`set_production_procedure_active`, `create_production_entry` e
+`update_production_entry`. Não há exclusão física nesta entrega. Uma categoria
+com procedimento ativo não pode ser inativada, e novos lançamentos exigem
+procedimento e categoria ativos. Registros históricos podem continuar ligados
+a procedimentos inativados.
 
 ## Pequenas Cirurgias
 - patients
