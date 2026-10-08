@@ -189,14 +189,27 @@ export async function GET(request: Request) {
         ]);
       }
       case "metas": {
-        const targets = await listAdmissionTargets(firstDay, afterLastDay);
+        const firstYear = Number(from.slice(0, 4));
+        const lastYear = Number(through.slice(0, 4));
+        const targets = await listAdmissionTargets(
+          String(firstYear) + "-01-01",
+          String(lastYear + 1) + "-01-01",
+        );
         return responseCsv(exportType, from, through, [
           ["Tipo de período", "Competência", "Meta de internações"],
-          ...targets.map((target) => [
-            target.period_type === "month" ? "Mensal" : "Anual",
-            target.reference_period,
-            target.target_quantity,
-          ]),
+          ...targets
+            .filter((target) =>
+              target.period_type === "year"
+                ? target.reference_period.slice(0, 4) >= String(firstYear) &&
+                  target.reference_period.slice(0, 4) <= String(lastYear)
+                : target.reference_period >= firstDay &&
+                  target.reference_period < afterLastDay,
+            )
+            .map((target) => [
+              target.period_type === "month" ? "Mensal" : "Anual",
+              target.reference_period,
+              target.target_quantity,
+            ]),
         ]);
       }
       case "producao": {

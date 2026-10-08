@@ -20,6 +20,7 @@ vi.mock("@/lib/neon/data-api", () => ({
   getNeonDataApiClient: () => ({ from: mocks.from }),
 }));
 
+import { AUDIT_MAX_PAGE } from "./domain";
 import { listAdministrativeAudit } from "./repository";
 
 describe("administrative audit repository", () => {
@@ -66,6 +67,42 @@ describe("administrative audit repository", () => {
     expect(mocks.from).not.toHaveBeenCalled();
   });
 
+  it("should_stop_pagination_and_report_limit_when_max_page_has_more_rows", async () => {
+    mocks.range.mockResolvedValue({
+      data: Array.from({ length: 51 }, (_, index) => ({
+        id: String(index + 1),
+        actor_id: "admin",
+        entity_type: "doctor",
+        entity_id: null,
+        action: "updated",
+        payload: {},
+        created_at: "2026-10-08T12:00:00Z",
+      })),
+      error: null,
+    });
+
+    const result = await listAdministrativeAudit({
+      from: null,
+      through: null,
+      module: "todos",
+      entityType: null,
+      action: null,
+      actorId: null,
+      page: AUDIT_MAX_PAGE,
+    });
+
+    expect(result.events).toHaveLength(50);
+    expect(result).toMatchObject({
+      page: AUDIT_MAX_PAGE,
+      hasMore: false,
+      limitReached: true,
+    });
+    expect(mocks.range).toHaveBeenCalledWith(
+      (AUDIT_MAX_PAGE - 1) * 50,
+      AUDIT_MAX_PAGE * 50,
+    );
+  });
+
   it("should_apply_module_filters_and_stable_pagination_for_admins", async () => {
     await expect(
       listAdministrativeAudit({
@@ -77,7 +114,12 @@ describe("administrative audit repository", () => {
         actorId: "admin",
         page: 2,
       }),
-    ).resolves.toEqual({ events: [], page: 2, hasMore: false });
+    ).resolves.toEqual({
+      events: [],
+      page: 2,
+      hasMore: false,
+      limitReached: false,
+    });
     expect(mocks.from).toHaveBeenCalledWith("audit_logs");
     expect(mocks.order).toHaveBeenNthCalledWith(1, "created_at", {
       ascending: false,

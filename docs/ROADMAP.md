@@ -70,7 +70,9 @@ Em 08/10/2026, os fluxos da Fase 6 continuam sem homologação autenticada no ba
 - [ ] Homologação
 
 Dashboard geral, consulta de auditoria, exportações e novos testes automatizados
-estão no PR #25. A migration incremental da leitura administrativa da auditoria
-foi aplicada em transação e conferida somente no branch Neon isolado de
-demonstração em 08/10/2026. Os itens permanecem abertos até os gates do HEAD
-final, a revisão sem P1/P2 e os fluxos autenticados serem concluídos.
+estão no PR #25. A migration 20261008200000 foi aplicada somente no branch Neon
+isolado de demonstração em 08/10/2026, mas a revisão identificou que a política
+legada de leitura própria continua permissiva. A migration incremental
+20261008210000 remove essa política e aguarda aplicação autorizada no mesmo
+branch. Os itens permanecem abertos até a validação dessa política, os gates do
+HEAD final, revisão sem P1/P2 e fluxos autenticados.

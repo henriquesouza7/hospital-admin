@@ -17,11 +17,14 @@ import {
   listAdmissionEntries,
   listAdmissionTargets,
 } from "@/modules/admissions/repository";
+import { MonthlyEvolutionCharts } from "@/modules/production/indicators/indicator-charts";
+import { buildProductionIndicatorData } from "@/modules/production/indicators/domain";
 import { buildIndicatorsData } from "@/modules/finance/indicators/domain";
 import { loadIndicatorsSource } from "@/modules/finance/indicators/repository";
 import { AdmissionDashboardChart } from "@/modules/admissions/admission-dashboard-chart";
 import { MonthlyChart } from "@/modules/finance/indicators/monthly-chart";
 import { loadProductionIndicatorSource } from "@/modules/production/repository";
+import { listProductionImports } from "@/modules/production-import/repository";
 import {
   listSurgeryWaitlist,
   listUpcomingSurgeryDays,
@@ -53,6 +56,7 @@ export default async function Home({ searchParams }: HomeProps) {
     targets,
     financeSource,
     productionSource,
+    productionImports,
     surgeryDays,
     waitlist,
   ] = await Promise.all([
@@ -60,6 +64,7 @@ export default async function Home({ searchParams }: HomeProps) {
     listAdmissionTargets(startDate, endDate),
     loadIndicatorsSource(`${period.year}-01`, `${period.year}-12`),
     loadProductionIndicatorSource(),
+    listProductionImports(3),
     listUpcomingSurgeryDays(),
     listSurgeryWaitlist(1),
   ]);
@@ -87,6 +92,19 @@ export default async function Home({ searchParams }: HomeProps) {
     period.year,
     period.month,
   );
+  const selectedProcedure = production[0];
+  const productionHistory = selectedProcedure
+    ? buildProductionIndicatorData(productionSource.entries, {
+        mode: "intervalo",
+        competence,
+        from: `${period.year}-01`,
+        to: competence,
+        year: String(period.year),
+        categoryId: "",
+        procedureId: selectedProcedure.procedureId,
+        source: "",
+      }).monthlyEvolution
+    : [];
   const surgery = summarizeSurgeryDays(surgeryDays);
   const available = Math.max(0, surgery.capacity - surgery.occupied);
   const money = (value: bigint) => Number(value) / 100;
@@ -232,6 +250,27 @@ export default async function Home({ searchParams }: HomeProps) {
         </ChartCard>
       </section>
 
+      <section className="space-y-4" aria-label="Resumo financeiro por área">
+        <SectionHeader
+          title={`Despesas por área · ${periodLabel}`}
+          description="Totais derivados dos mesmos registros financeiros apresentados na evolução mensal."
+        />
+        <div className="grid gap-3 sm:grid-cols-3">
+          {[
+            { label: "Farmácia", value: selectedMonth?.pharmacyCents },
+            { label: "Laboratório", value: selectedMonth?.laboratoryCents },
+            { label: "Feira", value: selectedMonth?.fairCents },
+          ].map((item) => (
+            <div key={item.label} className="rounded-xl border bg-card p-4">
+              <p className="text-sm text-muted-foreground">{item.label}</p>
+              <p className="mt-1 text-xl font-semibold">
+                {formatCurrency(item.value ?? BigInt(0))}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <section className="grid gap-4 xl:grid-cols-2">
         <div className="rounded-xl border bg-card p-5 shadow-sm sm:p-6">
           <SectionHeader
@@ -265,6 +304,28 @@ export default async function Home({ searchParams }: HomeProps) {
                 </tbody>
               </table>
             </div>
+          )}
+        </div>
+        <div className="rounded-xl border bg-card p-5 shadow-sm sm:p-6">
+          <SectionHeader
+            title="Evolução da produção"
+            description={
+              selectedProcedure
+                ? `Histórico de ${selectedProcedure.name}; cada origem e unidade forma uma série própria.`
+                : `Sem procedimento com registro em ${periodLabel}.`
+            }
+          />
+          {selectedProcedure ? (
+            <div className="mt-4">
+              <MonthlyEvolutionCharts
+                series={productionHistory}
+                procedureName={selectedProcedure.name}
+              />
+            </div>
+          ) : (
+            <p className="mt-4 text-sm text-muted-foreground">
+              A evolução aparecerá quando houver lançamentos nesta competência.
+            </p>
           )}
         </div>
         <div className="rounded-xl border bg-card p-5 shadow-sm sm:p-6">
@@ -325,6 +386,54 @@ export default async function Home({ searchParams }: HomeProps) {
             </p>
           )}
         </div>
+      </section>
+
+      <section className="rounded-xl border bg-card p-5 shadow-sm sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <SectionHeader
+            title="Importações SUS recentes"
+            description="Competência, volume e estado das últimas importações administrativas."
+          />
+          <Link
+            className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+            href="/producao/importacoes"
+          >
+            Abrir importações
+          </Link>
+        </div>
+        {productionImports.length === 0 ? (
+          <p className="mt-4 text-sm text-muted-foreground">
+            Nenhuma importação registrada.
+          </p>
+        ) : (
+          <ul className="mt-4 divide-y">
+            {productionImports.slice(0, 3).map((item) => (
+              <li
+                key={item.id}
+                className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm"
+              >
+                <div>
+                  <p className="font-medium">
+                    Competência{" "}
+                    {monthName(Number(item.reference_period.slice(5, 7)))}{" "}
+                    {item.reference_period.slice(0, 4)}
+                  </p>
+                  <p className="text-muted-foreground">
+                    {formatInteger(item.row_count)} linhas ·{" "}
+                    {formatInteger(item.imported_group_count)} grupos importados
+                  </p>
+                </div>
+                <span className="rounded-full border px-2.5 py-1 text-xs font-medium">
+                  {item.status === "pending_reconciliation"
+                    ? `${formatInteger(item.pending_group_count)} grupos pendentes`
+                    : item.status === "reconciled"
+                      ? "Reconciliada"
+                      : "Confirmada"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <nav

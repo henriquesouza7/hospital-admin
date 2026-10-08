@@ -56,6 +56,7 @@ describe("administrative overview aggregations", () => {
     expect(result).toEqual([
       {
         id: '["b","atendimento","manual"]',
+        procedureId: "b",
         name: "Consulta",
         unit: "atendimento",
         source: "manual",
@@ -63,6 +64,7 @@ describe("administrative overview aggregations", () => {
       },
       {
         id: '["a","exame","aprovado"]',
+        procedureId: "a",
         name: "Hemograma",
         unit: "exame",
         source: "aprovado",
@@ -70,6 +72,7 @@ describe("administrative overview aggregations", () => {
       },
       {
         id: '["a","exame","realizado"]',
+        procedureId: "a",
         name: "Hemograma",
         unit: "exame",
         source: "realizado",

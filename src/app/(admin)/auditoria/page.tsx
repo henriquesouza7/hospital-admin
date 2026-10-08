@@ -211,6 +211,12 @@ export default async function AuditPage({ searchParams }: Props) {
             </Link>
           ) : null}
         </div>
+        {result.limitReached ? (
+          <p className="mt-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
+            O limite de 10.000 eventos foi atingido. Refine o período, módulo,
+            ação ou ator para consultar registros mais antigos.
+          </p>
+        ) : null}
       </section>
     </div>
   );

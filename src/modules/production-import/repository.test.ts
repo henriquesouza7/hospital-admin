@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   listPendingProductionImportRows,
+  listProductionImports,
   reconcileProductionSusImport,
 } from "./repository";
 
@@ -22,6 +23,41 @@ beforeEach(() => {
 });
 
 describe("production import repository", () => {
+  it("should_limit_recent_import_listing_in_the_database_query", async () => {
+    const rows = [1, 2, 3].map((index) => ({
+      id: [
+        "00000000-0000-4000-8000-000000000001",
+        "00000000-0000-4000-8000-000000000002",
+        "00000000-0000-4000-8000-000000000003",
+      ][index - 1],
+      file_sha256: "a".repeat(64),
+      reference_period: "2026-10-01",
+      row_count: 1,
+      imported_group_count: 1,
+      pending_group_count: 0,
+      status: "confirmed",
+      actor_id: "admin",
+      created_at: "2026-10-08T12:00:00Z",
+    }));
+    const range = vi.fn();
+    from.mockReturnValue({
+      select: () => ({
+        order: () => ({
+          order: () => ({
+            range: (start: number, end: number) => {
+              range(start, end);
+              return Promise.resolve({ data: rows, error: null });
+            },
+          }),
+        }),
+      }),
+    });
+
+    await expect(listProductionImports(3)).resolves.toHaveLength(3);
+
+    expect(range).toHaveBeenCalledWith(0, 2);
+  });
+
   it("should_send_the_displayed_entry_snapshot_for_reconciliation", async () => {
     rpc.mockResolvedValue({ data: true, error: null });
     const input = {

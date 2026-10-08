@@ -32,7 +32,13 @@ export function getProductionForMonth(
   const competence = `${year}-${String(month).padStart(2, "0")}`;
   const grouped = new Map<
     string,
-    { name: string; unit: string; source: string; quantity: number }
+    {
+      procedureId: string;
+      name: string;
+      unit: string;
+      source: string;
+      quantity: number;
+    }
   >();
   for (const entry of entries) {
     if (entry.reference_period.slice(0, 7) !== competence) continue;
@@ -45,6 +51,7 @@ export function getProductionForMonth(
     if (current) current.quantity += Number(entry.quantity);
     else
       grouped.set(key, {
+        procedureId: entry.procedure_id,
         name: entry.procedure_name,
         unit: entry.counting_unit,
         source: entry.source,

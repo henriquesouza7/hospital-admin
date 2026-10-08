@@ -41,7 +41,7 @@ export async function listAdministrativeAudit(filters: AuditFilters) {
     filters.entityType &&
     !entityTypesForModule(filters.module).includes(filters.entityType)
   ) {
-    return { events: [], page, hasMore: false };
+    return { events: [], page, hasMore: false, limitReached: false };
   }
   let query = getNeonDataApiClient()
     .from("audit_logs")
@@ -56,7 +56,8 @@ export async function listAdministrativeAudit(filters: AuditFilters) {
   if (filters.entityType) query = query.eq("entity_type", filters.entityType);
   else if (filters.module !== "todos") {
     const entities = entityTypesForModule(filters.module);
-    if (entities.length === 0) return { events: [], page, hasMore: false };
+    if (entities.length === 0)
+      return { events: [], page, hasMore: false, limitReached: false };
     query = query.in("entity_type", [...entities]);
   }
 
@@ -65,9 +66,11 @@ export async function listAdministrativeAudit(filters: AuditFilters) {
     throw new Error("Não foi possível carregar a auditoria administrativa.");
   }
   const rows = z.array(rowSchema).parse(data);
+  const hasMore = rows.length > AUDIT_PAGE_SIZE;
   return {
     events: rows.slice(0, AUDIT_PAGE_SIZE),
     page,
-    hasMore: rows.length > AUDIT_PAGE_SIZE,
+    hasMore: page < AUDIT_MAX_PAGE && hasMore,
+    limitReached: page === AUDIT_MAX_PAGE && hasMore,
   };
 }
