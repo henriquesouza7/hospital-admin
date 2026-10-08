@@ -13,6 +13,7 @@ import {
   listSurgeryPatients,
   listSurgeryWaitlist,
 } from "@/modules/minor-surgeries/repository";
+import { formatOperationalTimestamp } from "@/modules/minor-surgeries/date-time";
 
 export default async function SurgeryWaitlistPage() {
   const [entries, patients, days] = await Promise.all([
@@ -74,10 +75,7 @@ export default async function SurgeryWaitlistPage() {
                       <p className="font-semibold">{entry.patient.name}</p>
                       <p className="mt-1 text-xs text-muted-foreground">
                         Entrada em{" "}
-                        {new Intl.DateTimeFormat("pt-BR", {
-                          dateStyle: "short",
-                          timeStyle: "short",
-                        }).format(new Date(entry.created_at))}
+                        {formatOperationalTimestamp(entry.created_at)}
                       </p>
                       <div className="mt-3">
                         <UpdatePatientNameForm patient={entry.patient} />
@@ -125,9 +123,7 @@ export default async function SurgeryWaitlistPage() {
                   <p className="font-medium">{entry.patient.name}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     Entrada em{" "}
-                    {new Intl.DateTimeFormat("pt-BR", {
-                      dateStyle: "short",
-                    }).format(new Date(entry.created_at))}
+                    {formatOperationalTimestamp(entry.created_at, "date")}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">

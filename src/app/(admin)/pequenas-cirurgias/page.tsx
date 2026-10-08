@@ -16,6 +16,7 @@ import {
   listMinorSurgeryAudit,
   listUpcomingSurgeryDays,
 } from "@/modules/minor-surgeries/repository";
+import { formatOperationalTimestamp } from "@/modules/minor-surgeries/date-time";
 
 function dateLabel(value: string) {
   return new Intl.DateTimeFormat("pt-BR", {
@@ -190,10 +191,7 @@ export default async function MinorSurgeriesPage() {
                   className="text-xs text-muted-foreground"
                   dateTime={event.created_at}
                 >
-                  {new Intl.DateTimeFormat("pt-BR", {
-                    dateStyle: "short",
-                    timeStyle: "short",
-                  }).format(new Date(event.created_at))}
+                  {formatOperationalTimestamp(event.created_at)}
                 </time>
               </li>
             ))}
