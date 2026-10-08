@@ -45,7 +45,7 @@ export function AdmissionsDashboardView({
       >
         <Link
           className={buttonVariants({ size: "sm", variant: "outline" })}
-          href="/internacoes/lancamentos"
+          href={`/internacoes/lancamentos?year=${dashboard.year}&month=${selectedMonth}`}
         >
           Lançamentos
         </Link>
