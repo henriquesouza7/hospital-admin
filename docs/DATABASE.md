@@ -78,8 +78,16 @@ A migration incremental `20261007183000_validate_doctor_whitespace.sql` alinha a
 da primeira entrega. `procedure_categories` mantém nome, status e timestamps;
 `procedures` referencia a categoria e exige unidade de contagem; `production_entries`
 guarda o procedimento, competência mensal (normalizada para o primeiro dia),
-quantidade inteira não negativa, fonte e timestamps. Não há dados de pacientes
-nem tabela de importação nesta etapa. A migration incremental
+quantidade inteira não negativa, fonte e timestamps. Não há dados individuais
+de pacientes. A migration `20261008100000_add_production_sus_imports.sql`
+cria `production_imports` e `production_import_rows` para registrar hash,
+competência, decisão de vínculo manual, quantidades originais por linha e
+resultado de reconciliação, sem armazenar o CSV bruto. As tabelas têm RLS para
+leitura administrativa e não permitem DML direto ao papel `authenticated`.
+As RPCs `confirm_production_sus_import` e `reconcile_production_sus_import`
+validam o administrador, persistem a importação e aplicam/reconciliam grupos
+em transação. A confirmação impede arquivo duplicado pelo SHA-256 e envia
+conflitos à reconciliação em vez de somar um lançamento existente. A migration incremental
 `20261007185000_harden_production_data_integrity.sql` preserva a unidade de
 contagem de cada lançamento e endurece a normalização das RPCs e constraints;
 ela também permite corrigir um procedimento mantendo sua categoria atual
