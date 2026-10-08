@@ -40,6 +40,9 @@ function PatientSelector() {
   const [hasMore, setHasMore] = useState(false);
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
+  const normalizedQuery = query.trim();
+  const queryIsTooShort =
+    normalizedQuery.length > 0 && normalizedQuery.length < 3;
 
   function search(offset: number) {
     setError("");
@@ -82,7 +85,7 @@ function PatientSelector() {
           <button
             type="button"
             className={`${buttonClass} shrink-0`}
-            disabled={pending}
+            disabled={pending || queryIsTooShort}
             onClick={() => search(0)}
           >
             {pending ? "Buscando…" : "Buscar"}
@@ -120,7 +123,9 @@ function PatientSelector() {
           </>
         ) : (
           <p className="text-xs text-muted-foreground" role="status">
-            Busque pelo nome para selecionar um cadastro existente.
+            {queryIsTooShort
+              ? "Digite ao menos 3 caracteres para buscar pelo nome."
+              : "Digite ao menos 3 caracteres para buscar ou deixe em branco para percorrer os cadastros."}
           </p>
         )}
         {error ? (

@@ -48,6 +48,8 @@ const PAGE_SIZE = 1000;
 const WAITLIST_HISTORY_PAGE_SIZE = 50;
 const AUDIT_PAGE_SIZE = 50;
 const PATIENT_SEARCH_PAGE_SIZE = 50;
+const HISTORICAL_DAYS_PAGE_SIZE = 50;
+const MIN_PATIENT_SEARCH_LENGTH = 3;
 const PATIENT_ID_BATCH_SIZE = 500;
 const SURGERY_DAY_ID_BATCH_SIZE = 500;
 const activeDayAppointmentSchema = z.object({
@@ -145,20 +147,24 @@ export async function searchSurgeryPatients(query: string, offset: number) {
   await requireMinorSurgeriesAdmin();
   const searchTerm =
     typeof query === "string" ? query.trim().slice(0, 160) : "";
+  if (searchTerm.length > 0 && searchTerm.length < MIN_PATIENT_SEARCH_LENGTH) {
+    throw new Error("Digite ao menos 3 caracteres para buscar cadastros.");
+  }
   const safeOffset = Number.isSafeInteger(offset) && offset >= 0 ? offset : 0;
   const end = safeOffset + PATIENT_SEARCH_PAGE_SIZE;
   if (!Number.isSafeInteger(end))
     return { patients: [], offset: safeOffset, hasMore: false };
 
-  let request = getNeonDataApiClient().from("patients").select("id,name");
+  let request = getNeonDataApiClient()
+    .from("patients")
+    .select("id,name")
+    .order("name", { ascending: true })
+    .order("id", { ascending: true });
   if (searchTerm) {
     const escapedTerm = searchTerm.replace(/[\\%_]/g, "\\$&");
     request = request.ilike("name", `%${escapedTerm}%`);
   }
-  const { data, error } = await request
-    .order("name", { ascending: true })
-    .order("id", { ascending: true })
-    .range(safeOffset, end);
+  const { data, error } = await request.range(safeOffset, end);
   const rows = ensureResult(data, error, z.array(patientSchema));
   return {
     patients: rows.slice(0, PATIENT_SEARCH_PAGE_SIZE),
@@ -196,32 +202,49 @@ export async function listUpcomingSurgeryDays(): Promise<SurgeryDaySummary[]> {
   );
 }
 
-export async function listAllSurgeryDays(): Promise<SurgeryDaySummary[]> {
+export async function listSurgeryDaysPage(
+  page = 1,
+): Promise<{ days: SurgeryDaySummary[]; page: number; hasMore: boolean }> {
   await requireMinorSurgeriesAdmin();
-  const days = await fetchAllPages(
-    async (offset) =>
-      await getNeonDataApiClient()
-        .from("surgery_days")
-        .select("id,procedure_date,capacity")
-        .order("procedure_date", { ascending: false })
-        .order("id", { ascending: true })
-        .range(offset, offset + PAGE_SIZE - 1),
-    z.array(daySchema),
-  );
-  if (days.length === 0) return [];
+  const safePage = Number.isSafeInteger(page) && page > 0 ? page : 1;
+  const offset = (safePage - 1) * HISTORICAL_DAYS_PAGE_SIZE;
+  const end = offset + HISTORICAL_DAYS_PAGE_SIZE;
+  if (!Number.isSafeInteger(offset) || !Number.isSafeInteger(end)) {
+    return { days: [], page: safePage, hasMore: false };
+  }
+
+  const { data, error } = await getNeonDataApiClient()
+    .from("surgery_days")
+    .select("id,procedure_date,capacity")
+    .order("procedure_date", { ascending: false })
+    .order("id", { ascending: true })
+    .range(offset, end);
+  const rows = ensureResult(data, error, z.array(daySchema));
+  const days = rows.slice(0, HISTORICAL_DAYS_PAGE_SIZE);
+  if (days.length === 0) {
+    return {
+      days: [],
+      page: safePage,
+      hasMore: false,
+    };
+  }
 
   const appointments = await listActiveAppointmentsByDayIds(
     days.map((day) => day.id),
   );
 
-  return days.map((day) =>
-    summarizeSurgeryDay(
-      day,
-      appointments.filter(
-        (appointment) => appointment.surgery_day_id === day.id,
+  return {
+    days: days.map((day) =>
+      summarizeSurgeryDay(
+        day,
+        appointments.filter(
+          (appointment) => appointment.surgery_day_id === day.id,
+        ),
       ),
     ),
-  );
+    page: safePage,
+    hasMore: rows.length > HISTORICAL_DAYS_PAGE_SIZE,
+  };
 }
 
 export async function getSurgeryDay(id: string) {

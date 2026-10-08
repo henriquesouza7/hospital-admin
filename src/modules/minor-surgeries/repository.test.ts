@@ -21,8 +21,8 @@ vi.mock("./access", () => ({
 
 import {
   getSurgeryDay,
-  listAllSurgeryDays,
   listDayAppointments,
+  listSurgeryDaysPage,
   listMinorSurgeryAudit,
   listSurgeryWaitlist,
   listUpcomingSurgeryDays,
@@ -284,6 +284,15 @@ describe("minor surgeries repository", () => {
     expect(result.hasMore).toBe(false);
   });
 
+  it("should_reject_patient_search_terms_shorter_than_three_characters", async () => {
+    await expect(searchSurgeryPatients(" An ", 0)).rejects.toThrow(
+      "Digite ao menos 3 caracteres para buscar cadastros.",
+    );
+
+    expect(mocks.requireMinorSurgeriesAdmin).toHaveBeenCalledOnce();
+    expect(mocks.from).not.toHaveBeenCalled();
+  });
+
   it("should_query_unique_patient_ids_when_waitlist_repeats_a_patient", async () => {
     const patientId = makeId(30_001);
     mocks.rangePage.mockImplementation(
@@ -418,10 +427,10 @@ describe("minor surgeries repository", () => {
     expect(result[PAGE_SIZE].occupied).toBe(0);
   });
 
-  it("should_return_all_days_when_historical_catalog_exceeds_page_size", async () => {
-    const days = Array.from({ length: PAGE_SIZE + 1 }, (_, index) => ({
+  it("should_load_a_bounded_historical_day_page_and_only_its_appointments", async () => {
+    const days = Array.from({ length: 51 }, (_, index) => ({
       id: makeId(index + 50_001),
-      procedure_date: new Date(Date.UTC(2040, 0, PAGE_SIZE + 1 - index))
+      procedure_date: new Date(Date.UTC(2040, 0, 51 - index))
         .toISOString()
         .slice(0, 10),
       capacity: 10,
@@ -434,24 +443,51 @@ describe("minor surgeries repository", () => {
     );
     mocks.appointmentPage.mockResolvedValue({ data: [], error: null });
 
-    const result = await listAllSurgeryDays();
+    const result = await listSurgeryDaysPage();
 
-    expect(mocks.rangePage).toHaveBeenCalledTimes(2);
-    expect(mocks.rangePage.mock.calls.map((call) => call.slice(1, 3))).toEqual([
-      [0, 999],
-      [1000, 1999],
+    expect(mocks.rangePage).toHaveBeenCalledOnce();
+    expect(mocks.rangePage.mock.calls[0].slice(1, 3)).toEqual([0, 50]);
+    expect(mocks.rangePage.mock.calls[0][3]).toEqual([
+      { column: "procedure_date", ascending: false },
+      { column: "id", ascending: true },
     ]);
-    expect(mocks.rangePage.mock.calls.map((call) => call[3])).toEqual([
-      [
-        { column: "procedure_date", ascending: false },
-        { column: "id", ascending: true },
-      ],
-      [
-        { column: "procedure_date", ascending: false },
-        { column: "id", ascending: true },
-      ],
-    ]);
-    expect(result).toHaveLength(PAGE_SIZE + 1);
+    expect(mocks.dayIdBatch).toHaveBeenCalledOnce();
+    expect(mocks.dayIdBatch.mock.calls[0][0]).toEqual(
+      days.slice(0, 50).map((day) => day.id),
+    );
+    expect(result.days).toHaveLength(50);
+    expect(result.days[0].id).toBe(days[0].id);
+    expect(result.page).toBe(1);
+    expect(result.hasMore).toBe(true);
+  });
+
+  it("should_load_the_requested_historical_day_page", async () => {
+    const days = Array.from({ length: 101 }, (_, index) => ({
+      id: makeId(index + 51_001),
+      procedure_date: new Date(Date.UTC(2040, 0, 101 - index))
+        .toISOString()
+        .slice(0, 10),
+      capacity: 10,
+    }));
+    mocks.rangePage.mockImplementation(
+      async (table: string, start: number, end: number) => ({
+        data: table === "surgery_days" ? days.slice(start, end + 1) : [],
+        error: null,
+      }),
+    );
+    mocks.appointmentPage.mockResolvedValue({ data: [], error: null });
+
+    const result = await listSurgeryDaysPage(2);
+
+    expect(mocks.rangePage.mock.calls[0].slice(1, 3)).toEqual([50, 100]);
+    expect(mocks.dayIdBatch).toHaveBeenCalledOnce();
+    expect(mocks.dayIdBatch.mock.calls[0][0]).toEqual(
+      days.slice(50, 100).map((day) => day.id),
+    );
+    expect(result.days).toHaveLength(50);
+    expect(result.days[0].id).toBe(days[50].id);
+    expect(result.page).toBe(2);
+    expect(result.hasMore).toBe(true);
   });
 
   it("should_return_all_appointments_when_day_exceeds_page_size", async () => {

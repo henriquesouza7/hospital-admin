@@ -1,10 +1,21 @@
 import Link from "next/link";
-import { ArrowLeft, CalendarDays } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { SectionHeader } from "@/components/section-header";
 import { StatusBadge } from "@/components/status-badge";
 import { availableCapacity } from "@/modules/minor-surgeries/domain";
-import { listAllSurgeryDays } from "@/modules/minor-surgeries/repository";
+import { listSurgeryDaysPage } from "@/modules/minor-surgeries/repository";
+
+function parsePage(value: string | string[] | undefined) {
+  if (typeof value !== "string" || !/^\d+$/.test(value)) return 1;
+  const page = Number(value);
+  return Number.isSafeInteger(page) && page > 0 ? page : 1;
+}
 
 function dateLabel(value: string) {
   return new Intl.DateTimeFormat("pt-BR", {
@@ -13,8 +24,13 @@ function dateLabel(value: string) {
   }).format(new Date(`${value}T12:00:00Z`));
 }
 
-export default async function SurgeryDaysPage() {
-  const days = await listAllSurgeryDays();
+export default async function SurgeryDaysPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string | string[] }>;
+}) {
+  const requestedPage = parsePage((await searchParams).page);
+  const { days, page, hasMore } = await listSurgeryDaysPage(requestedPage);
 
   return (
     <div className="space-y-8">
@@ -35,11 +51,13 @@ export default async function SurgeryDaysPage() {
       <section className="space-y-4">
         <SectionHeader
           title="Todas as datas"
-          description={`${days.length} dia(s) cadastrado(s), do mais recente para o mais antigo.`}
+          description={`Exibindo até 50 dias por página, do mais recente para o mais antigo. Página ${page}.`}
         />
         {days.length === 0 ? (
           <div className="rounded-xl border border-dashed bg-card p-8 text-center text-sm text-muted-foreground">
-            Nenhum dia de cirurgia cadastrado.
+            {page === 1
+              ? "Nenhum dia de cirurgia cadastrado."
+              : "Nenhuma data encontrada nesta página."}
           </div>
         ) : (
           <div className="overflow-x-auto rounded-xl border bg-card">
@@ -92,6 +110,38 @@ export default async function SurgeryDaysPage() {
             </table>
           </div>
         )}
+        {days.length > 0 || page > 1 ? (
+          <nav
+            aria-label="Paginação do histórico de datas"
+            className="flex items-center justify-between gap-4"
+          >
+            {page > 1 ? (
+              <Link
+                href={`/pequenas-cirurgias/dias?page=${page - 1}`}
+                rel="prev"
+                className="inline-flex h-9 items-center gap-2 rounded-md border px-3 text-sm font-medium hover:bg-muted"
+              >
+                <ChevronLeft aria-hidden="true" className="size-4" />
+                Datas mais recentes
+              </Link>
+            ) : (
+              <span />
+            )}
+            <span className="text-sm text-muted-foreground">Página {page}</span>
+            {hasMore ? (
+              <Link
+                href={`/pequenas-cirurgias/dias?page=${page + 1}`}
+                rel="next"
+                className="inline-flex h-9 items-center gap-2 rounded-md border px-3 text-sm font-medium hover:bg-muted"
+              >
+                Datas mais antigas
+                <ChevronRight aria-hidden="true" className="size-4" />
+              </Link>
+            ) : (
+              <span />
+            )}
+          </nav>
+        ) : null}
       </section>
     </div>
   );
