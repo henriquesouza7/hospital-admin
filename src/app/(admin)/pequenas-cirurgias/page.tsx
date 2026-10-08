@@ -42,14 +42,72 @@ function auditDetail(event: {
   action: string;
   payload: Record<string, unknown>;
 }) {
-  if (event.entity_type !== "surgery_patient" || event.action !== "updated")
-    return null;
-  const name = event.payload.name;
-  if (typeof name !== "object" || name === null || Array.isArray(name))
-    return null;
-  if (!("old" in name) || !("new" in name)) return null;
-  if (typeof name.old !== "string" || typeof name.new !== "string") return null;
-  return `Nome: ${name.old} → ${name.new}`;
+  const previousCapacity = event.payload.previous_capacity;
+  const capacity = event.payload.capacity;
+  if (
+    event.entity_type === "surgery_day" &&
+    event.action === "capacity_changed" &&
+    typeof previousCapacity === "number" &&
+    typeof capacity === "number"
+  ) {
+    return `Capacidade: ${previousCapacity} → ${capacity}`;
+  }
+  if (
+    event.entity_type === "surgery_day" &&
+    event.action === "created" &&
+    typeof capacity === "number"
+  ) {
+    return `Capacidade inicial: ${capacity}`;
+  }
+
+  if (event.entity_type === "surgery_patient" && event.action === "updated") {
+    const name = event.payload.name;
+    if (
+      typeof name === "object" &&
+      name !== null &&
+      !Array.isArray(name) &&
+      "old" in name &&
+      "new" in name &&
+      typeof name.old === "string" &&
+      typeof name.new === "string"
+    ) {
+      return `Nome: ${name.old} → ${name.new}`;
+    }
+  }
+
+  const statusLabels: Record<string, string> = {
+    awaiting_confirmation: "Aguardando confirmação",
+    confirmed: "Confirmado",
+    cancelled: "Cancelado",
+  };
+  const statusLabel = (value: unknown) =>
+    typeof value === "string" ? (statusLabels[value] ?? value) : null;
+
+  if (
+    event.entity_type === "surgery_appointment" &&
+    event.action === "created"
+  ) {
+    const status = statusLabel(event.payload.status);
+    return status ? `Status inicial: ${status}` : null;
+  }
+  if (
+    event.entity_type === "surgery_appointment" &&
+    (event.action === "status_changed" || event.action === "cancelled")
+  ) {
+    const previousStatus = statusLabel(event.payload.previous_status);
+    const nextStatus = statusLabel(event.payload.status);
+    return previousStatus && nextStatus
+      ? `Status: ${previousStatus} → ${nextStatus}`
+      : null;
+  }
+  if (
+    event.entity_type === "surgery_waitlist" &&
+    event.action === "transferred"
+  ) {
+    const status = statusLabel(event.payload.status);
+    return status ? `Agendamento: ${status}` : "Agendamento: Confirmado";
+  }
+  return null;
 }
 
 function parseAuditPage(value: string | string[] | undefined) {
@@ -208,7 +266,7 @@ export default async function MinorSurgeriesPage({
               >
                 <div>
                   <p className="text-sm font-medium">
-                    {auditLabel(event.action)}
+                    {auditLabel(event.action)} · {event.subject}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {event.entity_type.replaceAll("_", " ")}

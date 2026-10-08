@@ -111,14 +111,14 @@ a procedimentos inativados.
 
 ## Pequenas Cirurgias
 - Migration incremental: `20261007190000_create_minor_surgeries.sql`.
-- Correções incrementais: `20261008034000_secure_minor_surgery_audit_and_lock_status.sql`, `20261008034200_paginate_minor_surgery_audit.sql` e `20261008041000_attribute_minor_surgery_audit_and_index_transfers.sql`.
+- Correções incrementais: `20261008034000_secure_minor_surgery_audit_and_lock_status.sql`, `20261008034200_paginate_minor_surgery_audit.sql`, `20261008041000_attribute_minor_surgery_audit_and_index_transfers.sql` e `20261008043000_describe_minor_surgery_audit_events.sql`.
 - `patients`: UUID e nome (único dado de identificação administrativa coletado), mais timestamps. Não inclui CPF, contato, diagnóstico ou campos clínicos.
 - `surgery_days`: data única por dia e capacidade positiva, com padrão 10.
 - `surgery_appointments`: vínculo com dia e pessoa, status `awaiting_confirmation`, `confirmed` ou `cancelled`, e vínculo opcional `source_waitlist_id` único para preservar a origem da transferência.
 - `surgery_waitlist`: vínculo com a pessoa, status `waiting` ou `transferred` e timestamp de transferência. A fila não referencia um dia enquanto aguarda.
 - Chaves estrangeiras usam `ON DELETE RESTRICT`; índices parciais impedem duplicar agendamento ativo da mesma pessoa/data e entrada ativa repetida na fila. Não há exclusão física no fluxo normal.
 - As quatro tabelas têm RLS. `authenticated` recebe somente `SELECT`, condicionado a `public.is_admin()`; escrita ocorre nas RPCs `SECURITY DEFINER`, com `search_path=pg_catalog`, execução revogada de `PUBLIC` e concedida a `authenticated`.
-- A policy geral de `audit_logs` continua limitada ao próprio ator. A RPC `list_minor_surgery_audit(p_offset)` verifica admin no banco e expõe somente eventos de pequenas cirurgias, ordenados por `created_at, id` decrescentes e paginados para manter a policy compartilhada restrita. O histórico resolve o nome do ator a partir de `neon_auth."user"`, com o ID como fallback.
+- A policy geral de `audit_logs` continua limitada ao próprio ator. A RPC `list_minor_surgery_audit(p_offset)` verifica admin no banco e expõe somente eventos de pequenas cirurgias, ordenados por `created_at, id` decrescentes, paginados e identificados com ator e assunto. O histórico resolve nomes de atores e registros relacionados sob a verificação de admin, com IDs como fallback; um índice parcial atende filtro e ordenação da auditoria.
 - Alterações reais de nome do paciente preservam os valores anterior e novo em `audit_logs`; atualizar para o mesmo nome não gera evento. Agendamentos e fila continuam referenciando `patient_id`, sem snapshot duplicado do nome nesta etapa.
 - As RPCs criam/atualizam data, capacidade e nome administrativo, criam agendamento, alteram status, inserem na fila e transferem da fila. Todas verificam admin no banco, validam entradas e escrevem em `audit_logs` com `actor_id = auth.user_id()`.
 - Criação de agendamento, mudança de status, ajuste de capacidade e transferência bloqueiam `surgery_days` antes de bloquear agendamentos ou contar ocupações, mantendo ordem de lock consistente e serializando operações concorrentes.
