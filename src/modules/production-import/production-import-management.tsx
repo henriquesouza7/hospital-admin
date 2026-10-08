@@ -1,14 +1,18 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { type FormEvent, useMemo, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import type { ProductionProcedure } from "@/modules/production/domain";
+import type { ProductionCsvColumns } from "./domain";
 import {
   confirmProductionSusImportAction,
   previewProductionSusCsvAction,
   reconcileProductionSusImportAction,
 } from "./actions";
-import { initialProductionImportActionState } from "./action-state";
+import {
+  initialProductionImportActionState,
+  type ProductionImportActionState,
+} from "./action-state";
 import type { PendingProductionImportRow } from "./repository";
 
 const sourceTypeLabels = {
@@ -67,10 +71,13 @@ export function ProductionSusImportForm({
   procedures: readonly ProductionProcedure[];
   defaultPeriod: string;
 }) {
-  const [state, action, pending] = useActionState(
-    previewProductionSusCsvAction,
+  const [state, setState] = useState<ProductionImportActionState>(
     initialProductionImportActionState,
   );
+  const [pending, startTransition] = useTransition();
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [period, setPeriod] = useState(defaultPeriod);
+  const [delimiter, setDelimiter] = useState<";" | ",">(";");
   const [procedureColumn, setProcedureColumn] = useState<number | "">("");
   const [quantityColumn, setQuantityColumn] = useState<number | "">("");
   const [sourceColumn, setSourceColumn] = useState<number | "">("");
@@ -79,6 +86,12 @@ export function ProductionSusImportForm({
     previewToken: string;
     values: Record<string, string>;
   }>({ previewToken: "", values: {} });
+  const [previewContext, setPreviewContext] = useState<{
+    file: File;
+    period: string;
+    delimiter: ";" | ",";
+    columns: ProductionCsvColumns;
+  } | null>(null);
   const columns = useMemo(() => {
     if (procedureColumn === "" || quantityColumn === "" || sourceColumn === "")
       return null;
@@ -94,6 +107,46 @@ export function ProductionSusImportForm({
     state.previewToken && mappings.previewToken === state.previewToken
       ? mappings.values
       : {};
+  const isPreviewCurrent = Boolean(
+    state.status === "preview" &&
+    state.previewToken &&
+    selectedFile &&
+    previewContext !== null &&
+    previewContext?.file === selectedFile &&
+    previewContext.period === period &&
+    previewContext.delimiter === delimiter &&
+    JSON.stringify(previewContext.columns) === JSON.stringify(columns),
+  );
+
+  function buildFormData(form: HTMLFormElement) {
+    const formData = new FormData(form);
+    if (selectedFile) formData.set("csv", selectedFile);
+    formData.set("reference_period", period);
+    formData.set("delimiter", delimiter);
+    return formData;
+  }
+
+  function handlePreview(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formData = buildFormData(event.currentTarget);
+    startTransition(async () => {
+      const nextState = await previewProductionSusCsvAction(state, formData);
+      setState(nextState);
+      if (nextState.status === "preview" && columns && selectedFile) {
+        setPreviewContext({ file: selectedFile, period, delimiter, columns });
+      }
+    });
+  }
+
+  function handleConfirm(form: HTMLFormElement | null) {
+    if (!form?.reportValidity() || !selectedFile || !isPreviewCurrent) return;
+    const formData = buildFormData(form);
+    formData.set("preview_token", state.previewToken ?? "");
+    formData.set("mappings", JSON.stringify(previewMappings));
+    startTransition(async () => {
+      await confirmProductionSusImportAction(formData);
+    });
+  }
 
   return (
     <section
@@ -111,7 +164,7 @@ export function ProductionSusImportForm({
         </p>
       </div>
 
-      <form action={action} className="mt-6 space-y-5">
+      <form onSubmit={handlePreview} className="mt-6 space-y-5">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div className="space-y-2">
             <label htmlFor="sus-csv" className="text-sm font-medium">
@@ -123,8 +176,16 @@ export function ProductionSusImportForm({
               type="file"
               accept=".csv,text/csv"
               required
+              onChange={(event) =>
+                setSelectedFile(event.target.files?.[0] ?? null)
+              }
               className={fieldClassName}
             />
+            {selectedFile && (
+              <p className="text-xs text-muted-foreground" role="status">
+                Arquivo selecionado: {selectedFile.name}
+              </p>
+            )}
             <p className="text-xs text-muted-foreground">
               UTF-8, até 2 MB, 500 linhas e 40 colunas.
             </p>
@@ -140,7 +201,8 @@ export function ProductionSusImportForm({
               id="sus-reference-period"
               name="reference_period"
               type="month"
-              defaultValue={defaultPeriod}
+              value={period}
+              onChange={(event) => setPeriod(event.target.value)}
               required
               className={fieldClassName}
             />
@@ -152,7 +214,10 @@ export function ProductionSusImportForm({
             <select
               id="sus-delimiter"
               name="delimiter"
-              defaultValue=";"
+              value={delimiter}
+              onChange={(event) =>
+                setDelimiter(event.target.value === "," ? "," : ";")
+              }
               className={fieldClassName}
             >
               <option value=";">Ponto e vírgula (;)</option>
@@ -225,6 +290,15 @@ export function ProductionSusImportForm({
           state.previewToken &&
           columns && (
             <div className="space-y-4">
+              {!isPreviewCurrent && (
+                <p
+                  className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900"
+                  role="status"
+                >
+                  O arquivo, a competência, o separador ou o mapeamento mudou.
+                  Gere uma nova prévia antes de confirmar.
+                </p>
+              )}
               <input
                 type="hidden"
                 name="columns"
@@ -305,12 +379,15 @@ export function ProductionSusImportForm({
                 value={JSON.stringify(previewMappings)}
               />
               <Button
-                type="submit"
-                formAction={confirmProductionSusImportAction}
+                type="button"
+                onClick={(event) => handleConfirm(event.currentTarget.form)}
                 disabled={
+                  !isPreviewCurrent ||
+                  pending ||
                   state.groups.some(
                     (group) => !previewMappings[group.mappingKey],
-                  ) || activeProcedures.length === 0
+                  ) ||
+                  activeProcedures.length === 0
                 }
               >
                 Confirmar importação

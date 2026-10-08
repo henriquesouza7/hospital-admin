@@ -39,8 +39,9 @@ export type ProductionImportRow = Readonly<{
 
 const patientIdentifierHeaderPatterns = [
   /(?:^|\s)(?:paciente|patient)(?:\s|$)/,
-  /^nome$/,
-  /(?:^|\s)nome\s+(?:(?:do|da|de)\s+)?(?:paciente|patient)(?:\s|$)/,
+  /^nome(?: completo)?$/,
+  /(?:^|\s)nome(?: completo)?\s+(?:(?:do|da|de)\s+)?(?:paciente|patient)(?:\s|$)/,
+  /(?:^|\s)full\s+name(?:\s|$)/,
   /(?:^|\s)(?:cpf|cns|ssn)(?:\s|$)/,
   /(?:^|\s)(?:cartao sus|cartao nacional de saude)(?:\s|$)/,
   /(?:^|\s)(?:prontuario|medical record)(?:\s|$)/,

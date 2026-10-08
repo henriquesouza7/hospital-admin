@@ -50,7 +50,10 @@ describe("production SUS CSV import", () => {
       false,
     );
     expect(containsPatientColumns(["nome"])).toBe(true);
+    expect(containsPatientColumns(["nome completo"])).toBe(true);
+    expect(containsPatientColumns(["full_name", "quantidade"])).toBe(true);
     expect(containsPatientColumns(["nome do paciente"])).toBe(true);
+    expect(containsPatientColumns(["nome completo do paciente"])).toBe(true);
   });
 
   it("should_reject_malformed_csv_when_quotes_are_unclosed", () => {
