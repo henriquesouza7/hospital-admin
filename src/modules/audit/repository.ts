@@ -6,9 +6,9 @@ import { requireAdmin } from "@/lib/auth/require-admin";
 import {
   AUDIT_MAX_PAGE,
   AUDIT_PAGE_SIZE,
-  buildAuditSnapshotFilter,
+  buildAuditCursorFilter,
   entityTypesForModule,
-  type AuditSnapshot,
+  type AuditCursor,
   type AuditModule,
 } from "./domain";
 
@@ -32,24 +32,35 @@ export type AuditFilters = Readonly<{
   action: string | null;
   actorId: string | null;
   page: number;
-  snapshotAt: string | null;
-  snapshotId: string | null;
+  cursor: AuditCursor | null;
+  cursorHistory: readonly AuditCursor[];
 }>;
 
 export async function listAdministrativeAudit(filters: AuditFilters) {
   await requireAdmin();
-  const maxSnapshotId = BigInt("9223372036854775807");
-  const validSnapshot =
-    filters.snapshotAt !== null &&
-    filters.snapshotId !== null &&
-    z.iso.datetime({ offset: true }).safeParse(filters.snapshotAt).success &&
-    /^(?:0|[1-9]\d*)$/.test(filters.snapshotId) &&
-    BigInt(filters.snapshotId) <= maxSnapshotId;
+  const maxCursorId = BigInt("9223372036854775807");
+  const isValidCursor = (cursor: AuditCursor | null) =>
+    cursor !== null &&
+    z.iso.datetime({ offset: true }).safeParse(cursor.createdAt).success &&
+    cursor.id.length <= 19 &&
+    /^(?:0|[1-9]\d*)$/.test(cursor.id) &&
+    BigInt(cursor.id) <= maxCursorId;
+  const validCursor = isValidCursor(filters.cursor) ? filters.cursor : null;
+  const expectedHistoryLength = filters.page === 1 ? 0 : filters.page - 2;
+  const validHistory =
+    filters.cursorHistory.length === expectedHistoryLength &&
+    filters.cursorHistory.length < AUDIT_MAX_PAGE &&
+    filters.cursorHistory.every(isValidCursor);
+  const validNavigation =
+    filters.page <= AUDIT_MAX_PAGE &&
+    ((filters.page === 1 && filters.cursor === null && validHistory) ||
+      (filters.page > 1 && validCursor !== null && validHistory));
   const page = Math.min(
-    Math.max(validSnapshot || filters.page === 1 ? filters.page : 1, 1),
+    Math.max(validNavigation ? filters.page : 1, 1),
     AUDIT_MAX_PAGE,
   );
-  const offset = (page - 1) * AUDIT_PAGE_SIZE;
+  const cursor = page === 1 ? null : validCursor;
+  const cursorHistory = page === 1 ? [] : filters.cursorHistory;
   if (
     filters.module !== "todos" &&
     filters.entityType &&
@@ -60,7 +71,9 @@ export async function listAdministrativeAudit(filters: AuditFilters) {
       page,
       hasMore: false,
       limitReached: false,
-      snapshot: null,
+      cursor,
+      cursorHistory,
+      nextCursor: null,
     };
   }
   let query = getNeonDataApiClient()
@@ -71,13 +84,8 @@ export async function listAdministrativeAudit(filters: AuditFilters) {
 
   if (filters.from) query = query.gte("created_at", filters.from);
   if (filters.through) query = query.lt("created_at", filters.through);
-  if (validSnapshot) {
-    query = query.or(
-      buildAuditSnapshotFilter({
-        createdAt: filters.snapshotAt!,
-        id: filters.snapshotId!,
-      }),
-    );
+  if (cursor) {
+    query = query.or(buildAuditCursorFilter(cursor));
   }
   if (filters.actorId) query = query.eq("actor_id", filters.actorId);
   if (filters.action) query = query.eq("action", filters.action);
@@ -90,27 +98,31 @@ export async function listAdministrativeAudit(filters: AuditFilters) {
         page,
         hasMore: false,
         limitReached: false,
-        snapshot: null,
+        cursor,
+        cursorHistory,
+        nextCursor: null,
       };
     query = query.in("entity_type", [...entities]);
   }
 
-  const { data, error } = await query.range(offset, offset + AUDIT_PAGE_SIZE);
+  const { data, error } = await query.range(0, AUDIT_PAGE_SIZE);
   if (error || data === null || data === undefined) {
     throw new Error("Não foi possível carregar a auditoria administrativa.");
   }
   const rows = z.array(rowSchema).parse(data);
   const hasMore = rows.length > AUDIT_PAGE_SIZE;
-  const snapshot: AuditSnapshot | null = validSnapshot
-    ? { createdAt: filters.snapshotAt!, id: filters.snapshotId! }
-    : rows[0]
-      ? { createdAt: rows[0].created_at, id: rows[0].id }
-      : null;
+  const events = rows.slice(0, AUDIT_PAGE_SIZE);
+  const lastEvent = events.at(-1);
   return {
-    events: rows.slice(0, AUDIT_PAGE_SIZE),
+    events,
     page,
     hasMore: page < AUDIT_MAX_PAGE && hasMore,
     limitReached: page === AUDIT_MAX_PAGE && hasMore,
-    snapshot,
+    cursor,
+    cursorHistory,
+    nextCursor:
+      hasMore && lastEvent
+        ? { createdAt: lastEvent.created_at, id: lastEvent.id }
+        : null,
   };
 }

@@ -5,6 +5,7 @@ import {
   auditModules,
   buildAuditPageHref,
   moduleForEntity,
+  parseAuditCursorHistory,
   parseAuditDate,
   type AuditModule,
 } from "@/modules/audit/domain";
@@ -42,6 +43,10 @@ export default async function AuditPage({ searchParams }: Props) {
       ? (rawModule as AuditModule)
       : "todos";
   const rawPage = Number(one(search.page));
+  const requestedPage =
+    Number.isSafeInteger(rawPage) && rawPage > 0 ? rawPage : 1;
+  const cursorAt = one(search.cursor_at);
+  const cursorId = one(search.cursor_id);
   const filters: AuditFilters = {
     from: parseAuditDate(one(search.from)),
     through: parseAuditDate(one(search.through), true),
@@ -49,9 +54,13 @@ export default async function AuditPage({ searchParams }: Props) {
     entityType: one(search.entity)?.slice(0, 80) || null,
     action: one(search.action)?.slice(0, 80) || null,
     actorId: one(search.actor)?.slice(0, 160) || null,
-    page: Number.isSafeInteger(rawPage) && rawPage > 0 ? rawPage : 1,
-    snapshotAt: one(search.snapshot_at),
-    snapshotId: one(search.snapshot_id),
+    page: requestedPage,
+    cursor:
+      cursorAt !== null && cursorId !== null
+        ? { createdAt: cursorAt, id: cursorId }
+        : null,
+    cursorHistory:
+      parseAuditCursorHistory(one(search.cursor_history), requestedPage) ?? [],
   };
   const result = await listAdministrativeAudit(filters);
   return (
@@ -198,7 +207,8 @@ export default async function AuditPage({ searchParams }: Props) {
               href={buildAuditPageHref(
                 search,
                 result.page - 1,
-                result.snapshot,
+                result.cursorHistory.at(-1) ?? null,
+                result.cursorHistory.slice(0, -1),
               )}
             >
               Eventos mais recentes
@@ -215,7 +225,10 @@ export default async function AuditPage({ searchParams }: Props) {
               href={buildAuditPageHref(
                 search,
                 result.page + 1,
-                result.snapshot,
+                result.nextCursor,
+                result.page > 1 && result.cursor
+                  ? [...result.cursorHistory, result.cursor]
+                  : result.cursorHistory,
               )}
             >
               Eventos anteriores

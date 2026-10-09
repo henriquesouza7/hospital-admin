@@ -1,31 +1,72 @@
 export const AUDIT_PAGE_SIZE = 50;
 export const AUDIT_MAX_PAGE = 200;
 
-export type AuditSnapshot = Readonly<{
+export type AuditCursor = Readonly<{
   createdAt: string;
   id: string;
 }>;
 
-export function buildAuditSnapshotFilter(snapshot: AuditSnapshot): string {
-  return `created_at.lt.${snapshot.createdAt},and(created_at.eq.${snapshot.createdAt},id.lte.${snapshot.id})`;
+export function buildAuditCursorFilter(cursor: AuditCursor): string {
+  return `created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`;
+}
+
+export function parseAuditCursorHistory(
+  value: string | null,
+  page: number,
+): AuditCursor[] | null {
+  const expectedHistoryLength = page === 1 ? 0 : page - 2;
+  if (expectedHistoryLength === 0 && !value) return [];
+  if (!value || value.length > AUDIT_MAX_PAGE * 64) return null;
+
+  const cursors = value.split("~").map((entry) => {
+    const separator = entry.lastIndexOf("|");
+    if (separator < 1) return null;
+    return {
+      createdAt: entry.slice(0, separator),
+      id: entry.slice(separator + 1),
+    };
+  });
+
+  if (
+    cursors.length !== expectedHistoryLength ||
+    cursors.some((cursor) => cursor === null)
+  ) {
+    return null;
+  }
+  return cursors as AuditCursor[];
 }
 
 export function buildAuditPageHref(
   search: Record<string, string | string[] | undefined>,
   page: number,
-  snapshot: AuditSnapshot | null,
+  cursor: AuditCursor | null,
+  cursorHistory: readonly AuditCursor[],
 ): string {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(search)) {
     const normalized = Array.isArray(value)
       ? (value[0] ?? null)
       : (value ?? null);
-    if (normalized && key !== "page") params.set(key, normalized);
+    if (
+      normalized &&
+      key !== "page" &&
+      key !== "cursor_at" &&
+      key !== "cursor_id" &&
+      key !== "cursor_history"
+    ) {
+      params.set(key, normalized);
+    }
   }
   params.set("page", String(page));
-  if (snapshot) {
-    params.set("snapshot_at", snapshot.createdAt);
-    params.set("snapshot_id", snapshot.id);
+  if (cursor) {
+    params.set("cursor_at", cursor.createdAt);
+    params.set("cursor_id", cursor.id);
+  }
+  if (cursorHistory.length > 0) {
+    params.set(
+      "cursor_history",
+      cursorHistory.map(({ createdAt, id }) => `${createdAt}|${id}`).join("~"),
+    );
   }
   return `/auditoria?${params.toString()}`;
 }

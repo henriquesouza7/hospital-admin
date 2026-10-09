@@ -65,8 +65,8 @@ describe("administrative audit repository", () => {
         action: null,
         actorId: null,
         page: 1,
-        snapshotAt: null,
-        snapshotId: null,
+        cursor: null,
+        cursorHistory: [],
       }),
     ).rejects.toThrow("blocked");
     expect(mocks.from).not.toHaveBeenCalled();
@@ -81,8 +81,8 @@ describe("administrative audit repository", () => {
       action: null,
       actorId: null,
       page: 1,
-      snapshotAt: null,
-      snapshotId: null,
+      cursor: null,
+      cursorHistory: [],
     });
 
     expect(mocks.lt).toHaveBeenCalledWith(
@@ -113,8 +113,11 @@ describe("administrative audit repository", () => {
       action: null,
       actorId: null,
       page: AUDIT_MAX_PAGE,
-      snapshotAt: "2026-10-08T12:00:00Z",
-      snapshotId: "10000",
+      cursor: { createdAt: "2026-10-08T12:00:00Z", id: "10000" },
+      cursorHistory: Array.from({ length: 198 }, () => ({
+        createdAt: "2026-10-08T12:00:00Z",
+        id: "10000",
+      })),
     });
 
     expect(result.events).toHaveLength(50);
@@ -122,12 +125,11 @@ describe("administrative audit repository", () => {
       page: AUDIT_MAX_PAGE,
       hasMore: false,
       limitReached: true,
-      snapshot: { createdAt: "2026-10-08T12:00:00Z", id: "10000" },
+      cursor: { createdAt: "2026-10-08T12:00:00Z", id: "10000" },
+      cursorHistory: expect.any(Array),
+      nextCursor: { createdAt: "2026-10-08T12:00:00Z", id: "50" },
     });
-    expect(mocks.range).toHaveBeenCalledWith(
-      (AUDIT_MAX_PAGE - 1) * 50,
-      AUDIT_MAX_PAGE * 50,
-    );
+    expect(mocks.range).toHaveBeenCalledWith(0, 50);
   });
 
   it("should_apply_module_filters_and_stable_pagination_for_admins", async () => {
@@ -140,15 +142,17 @@ describe("administrative audit repository", () => {
         action: "updated",
         actorId: "admin",
         page: 2,
-        snapshotAt: "2026-11-01T00:00:00.000Z",
-        snapshotId: "100",
+        cursor: { createdAt: "2026-11-01T00:00:00.000Z", id: "100" },
+        cursorHistory: [],
       }),
     ).resolves.toEqual({
       events: [],
       page: 2,
       hasMore: false,
       limitReached: false,
-      snapshot: { createdAt: "2026-11-01T00:00:00.000Z", id: "100" },
+      cursor: { createdAt: "2026-11-01T00:00:00.000Z", id: "100" },
+      cursorHistory: [],
+      nextCursor: null,
     });
     expect(mocks.from).toHaveBeenCalledWith("audit_logs");
     expect(mocks.order).toHaveBeenNthCalledWith(1, "created_at", {
@@ -167,10 +171,13 @@ describe("administrative audit repository", () => {
       "admission_target",
       "admission_import",
     ]);
-    expect(mocks.range).toHaveBeenCalledWith(50, 100);
+    expect(mocks.or).toHaveBeenCalledWith(
+      "created_at.lt.2026-11-01T00:00:00.000Z,and(created_at.eq.2026-11-01T00:00:00.000Z,id.lt.100)",
+    );
+    expect(mocks.range).toHaveBeenCalledWith(0, 50);
   });
 
-  it("should_anchor_later_pages_to_the_first_page_snapshot", async () => {
+  it("should_anchor_later_pages_to_the_last_displayed_cursor", async () => {
     await listAdministrativeAudit({
       from: null,
       through: null,
@@ -179,17 +186,17 @@ describe("administrative audit repository", () => {
       action: null,
       actorId: null,
       page: 2,
-      snapshotAt: "2026-10-09T10:00:00.123Z",
-      snapshotId: "42",
+      cursor: { createdAt: "2026-10-09T10:00:00.123Z", id: "42" },
+      cursorHistory: [],
     });
 
     expect(mocks.or).toHaveBeenCalledWith(
-      "created_at.lt.2026-10-09T10:00:00.123Z,and(created_at.eq.2026-10-09T10:00:00.123Z,id.lte.42)",
+      "created_at.lt.2026-10-09T10:00:00.123Z,and(created_at.eq.2026-10-09T10:00:00.123Z,id.lt.42)",
     );
-    expect(mocks.range).toHaveBeenCalledWith(50, 100);
+    expect(mocks.range).toHaveBeenCalledWith(0, 50);
   });
 
-  it("should_capture_the_newest_row_as_the_first_page_snapshot", async () => {
+  it("should_return_no_next_cursor_when_the_first_page_is_complete", async () => {
     mocks.range.mockResolvedValue({
       data: [
         {
@@ -213,37 +220,48 @@ describe("administrative audit repository", () => {
       action: null,
       actorId: null,
       page: 1,
-      snapshotAt: null,
-      snapshotId: null,
+      cursor: null,
+      cursorHistory: [],
     });
 
-    expect(result.snapshot).toEqual({
-      createdAt: "2026-10-09T10:00:00.123Z",
-      id: "42",
-    });
+    expect(result.nextCursor).toBeNull();
   });
 
-  it("should_not_repeat_rows_when_a_new_audit_event_is_inserted_between_pages", async () => {
+  it("should_not_skip_or_repeat_rows_when_a_late_commit_has_an_older_timestamp", async () => {
     const createdAt = "2026-10-09T10:00:00.123Z";
-    const makeEvent = (id: number) => ({
+    const makeEvent = (id: number, eventCreatedAt = createdAt) => ({
       id: String(id),
       actor_id: "admin",
       entity_type: "doctor",
       entity_id: String(id),
       action: "updated",
       payload: {},
-      created_at: createdAt,
+      created_at: eventCreatedAt,
     });
     const persistedRows = Array.from({ length: 60 }, (_, index) =>
       makeEvent(60 - index),
     );
 
-    mocks.range.mockImplementation(async (start: number, end: number) => {
-      const hasSnapshotFilter = mocks.or.mock.calls.length > 0;
+    mocks.range.mockImplementation(async (_start: number, end: number) => {
+      const cursorFilter = mocks.or.mock.calls.at(-1)?.[0] as
+        string | undefined;
+      const cursor = cursorFilter?.match(
+        /^created_at\.lt\.(.+),and\(created_at\.eq\.(.+),id\.lt\.(\d+)\)$/,
+      );
       const rows = persistedRows
-        .filter((row) => !hasSnapshotFilter || BigInt(row.id) <= BigInt(60))
-        .sort((left, right) => Number(BigInt(right.id) - BigInt(left.id)));
-      return { data: rows.slice(start, end + 1), error: null };
+        .filter((row) =>
+          cursor
+            ? row.created_at < cursor[1] ||
+              (row.created_at === cursor[2] &&
+                BigInt(row.id) < BigInt(cursor[3]))
+            : true,
+        )
+        .sort((left, right) =>
+          left.created_at === right.created_at
+            ? Number(BigInt(right.id) - BigInt(left.id))
+            : right.created_at.localeCompare(left.created_at),
+        );
+      return { data: rows.slice(0, end + 1), error: null };
     });
 
     const firstPage = await listAdministrativeAudit({
@@ -254,14 +272,14 @@ describe("administrative audit repository", () => {
       action: null,
       actorId: null,
       page: 1,
-      snapshotAt: null,
-      snapshotId: null,
+      cursor: null,
+      cursorHistory: [],
     });
     expect(firstPage.events).toHaveLength(50);
     expect(firstPage.hasMore).toBe(true);
-    expect(firstPage.snapshot).toEqual({ createdAt, id: "60" });
+    expect(firstPage.nextCursor).toEqual({ createdAt, id: "11" });
 
-    persistedRows.unshift(makeEvent(61));
+    persistedRows.push(makeEvent(61, "2026-10-09T09:59:59.999Z"));
     const nextPage = await listAdministrativeAudit({
       from: null,
       through: null,
@@ -270,23 +288,24 @@ describe("administrative audit repository", () => {
       action: null,
       actorId: null,
       page: 2,
-      snapshotAt: firstPage.snapshot?.createdAt ?? null,
-      snapshotId: firstPage.snapshot?.id ?? null,
+      cursor: firstPage.nextCursor,
+      cursorHistory: [],
     });
 
     const firstPageIds = new Set(firstPage.events.map((event) => event.id));
-    expect(nextPage.events.map((event) => event.id)).toEqual(
-      Array.from({ length: 10 }, (_, index) => String(10 - index)),
-    );
+    expect(nextPage.events.map((event) => event.id)).toEqual([
+      ...Array.from({ length: 10 }, (_, index) => String(10 - index)),
+      "61",
+    ]);
     expect(nextPage.events.some((event) => firstPageIds.has(event.id))).toBe(
       false,
     );
     expect(mocks.or).toHaveBeenCalledWith(
-      "created_at.lt.2026-10-09T10:00:00.123Z,and(created_at.eq.2026-10-09T10:00:00.123Z,id.lte.60)",
+      "created_at.lt.2026-10-09T10:00:00.123Z,and(created_at.eq.2026-10-09T10:00:00.123Z,id.lt.11)",
     );
   });
 
-  it("should_restart_at_page_one_when_the_snapshot_is_missing", async () => {
+  it("should_restart_at_page_one_when_the_cursor_is_missing", async () => {
     const result = await listAdministrativeAudit({
       from: null,
       through: null,
@@ -295,8 +314,8 @@ describe("administrative audit repository", () => {
       action: null,
       actorId: null,
       page: 2,
-      snapshotAt: null,
-      snapshotId: null,
+      cursor: null,
+      cursorHistory: [],
     });
 
     expect(result.page).toBe(1);
