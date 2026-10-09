@@ -62,6 +62,20 @@ function assertData<T>(data: unknown, error: unknown, schema: z.ZodType<T>): T {
   return schema.parse(data);
 }
 
+export class MonthlyExpenseTotalsRpcUnavailableError extends Error {
+  constructor() {
+    super("A RPC de totais financeiros exatos não está instalada.");
+    this.name = "MonthlyExpenseTotalsRpcUnavailableError";
+  }
+}
+
+function isMissingExactTotalsRpc(error: unknown) {
+  if (typeof error !== "object" || error === null || !("code" in error)) {
+    return false;
+  }
+  return error.code === "PGRST202" || error.code === "42883";
+}
+
 export async function loadIndicatorsSource(
   startMonth: string,
   endMonth: string,
@@ -190,5 +204,8 @@ export async function listMonthlyExpenseTotals(
     "list_monthly_expense_totals_exact",
     { p_start: from, p_through_exclusive: throughExclusive },
   );
+  if (isMissingExactTotalsRpc(error)) {
+    throw new MonthlyExpenseTotalsRpcUnavailableError();
+  }
   return assertData(data, error, monthlyTotalsSchema);
 }

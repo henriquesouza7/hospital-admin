@@ -15,7 +15,11 @@ vi.mock("@/modules/finance/pharmacy/access", () => ({
   requireFinanceAdmin: mocks.requireFinanceAdmin,
 }));
 
-import { listMonthlyExpenseTotals, loadIndicatorsSource } from "./repository";
+import {
+  listMonthlyExpenseTotals,
+  loadIndicatorsSource,
+  MonthlyExpenseTotalsRpcUnavailableError,
+} from "./repository";
 import { amountToCents } from "./domain";
 
 beforeEach(() => {
@@ -116,6 +120,20 @@ describe("financial indicators repository", () => {
     await expect(
       listMonthlyExpenseTotals("2026-10", "2026-10"),
     ).rejects.toThrow();
+  });
+
+  it("should_identify_when_the_exact_totals_rpc_is_not_installed", async () => {
+    mocks.rpc.mockResolvedValue({
+      data: null,
+      error: {
+        code: "PGRST202",
+        message: "Missing function from the schema cache",
+      },
+    });
+
+    await expect(
+      listMonthlyExpenseTotals("2026-10", "2026-10"),
+    ).rejects.toBeInstanceOf(MonthlyExpenseTotalsRpcUnavailableError);
   });
 
   it("should_use_one_snapshot_rpc_for_capped_purchase_exports", async () => {

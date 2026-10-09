@@ -23,7 +23,10 @@ import {
 } from "@/modules/admissions/repository";
 import { MonthlyEvolutionCharts } from "@/modules/production/indicators/indicator-charts";
 import { buildProductionIndicatorData } from "@/modules/production/indicators/domain";
-import { listMonthlyExpenseTotals } from "@/modules/finance/indicators/repository";
+import {
+  listMonthlyExpenseTotals,
+  MonthlyExpenseTotalsRpcUnavailableError,
+} from "@/modules/finance/indicators/repository";
 import {
   amountToCents,
   currencyChartScale,
@@ -58,6 +61,13 @@ export default async function Home({ searchParams }: HomeProps) {
   const today = saoPauloToday();
   const todayDate = today.toISOString().slice(0, 10);
   const surgeryThrough = addMonthsClamped(today, 24);
+  const financeRowsPromise = listMonthlyExpenseTotals(
+    `${period.year}-01`,
+    `${period.year}-12`,
+  ).catch((error: unknown) => {
+    if (error instanceof MonthlyExpenseTotalsRpcUnavailableError) return null;
+    throw error;
+  });
   const [
     admissionTotals,
     targets,
@@ -68,7 +78,7 @@ export default async function Home({ searchParams }: HomeProps) {
   ] = await Promise.all([
     getAdmissionDashboardTotals(startDate, endDate),
     listAdmissionTargets(startDate, endDate),
-    listMonthlyExpenseTotals(`${period.year}-01`, `${period.year}-12`),
+    financeRowsPromise,
     loadProductionIndicatorSource({
       from: `${period.year}-01`,
       to: `${period.year}-12`,
@@ -76,6 +86,7 @@ export default async function Home({ searchParams }: HomeProps) {
     listProductionImports(3),
     getSurgerySummary(todayDate, surgeryThrough.toISOString().slice(0, 10), 5),
   ]);
+  const financeUnavailable = financeRows === null;
   const admissions = summarizeAdmissionTotals(
     admissionTotals,
     targets,
@@ -83,7 +94,7 @@ export default async function Home({ searchParams }: HomeProps) {
     period.month,
     today,
   );
-  const finance = financeRows.map((row) => {
+  const finance = (financeRows ?? []).map((row) => {
     const pharmacyCents = amountToCents(row.pharmacy_total);
     const laboratoryCents = amountToCents(row.laboratory_total);
     const fairCents = amountToCents(row.fair_total);
@@ -194,8 +205,16 @@ export default async function Home({ searchParams }: HomeProps) {
           <KpiCard
             icon={CircleDollarSign}
             label="Gastos registrados"
-            value={formatCurrency(selectedMonth?.totalCents ?? BigInt(0))}
-            detail={`${selectedMonth?.pharmacyItemCount ?? 0} itens de Farmácia · ${selectedMonth?.laboratoryItemCount ?? 0} de Laboratório`}
+            value={
+              financeUnavailable
+                ? "Indisponível"
+                : formatCurrency(selectedMonth?.totalCents ?? BigInt(0))
+            }
+            detail={
+              financeUnavailable
+                ? "Migration de totais exatos pendente neste ambiente"
+                : `${selectedMonth?.pharmacyItemCount ?? 0} itens de Farmácia · ${selectedMonth?.laboratoryItemCount ?? 0} de Laboratório`
+            }
           />
           <KpiCard
             icon={CalendarDays}
@@ -228,23 +247,33 @@ export default async function Home({ searchParams }: HomeProps) {
           description="Farmácia, Laboratório e Feira conforme registros persistidos; valores sem registros ficam em zero."
           badge="R$"
         >
-          <MonthlyChart
-            points={finance.map((item) => ({
-              month: item.month,
-              label: monthName(Number(item.month.slice(5, 7))),
-              pharmacy: currencyChartValue(item.pharmacyCents, chartScale),
-              pharmacyExact: formatCurrency(item.pharmacyCents),
-              laboratory: currencyChartValue(item.laboratoryCents, chartScale),
-              laboratoryExact: formatCurrency(item.laboratoryCents),
-              fair: currencyChartValue(item.fairCents, chartScale),
-              fairExact: formatCurrency(item.fairCents),
-              total: currencyChartValue(item.totalCents, chartScale),
-              totalExact: formatCurrency(item.totalCents),
-              hasRecords: item.hasRecords,
-            }))}
-            scale={chartScale.toString()}
-          />
-          {!selectedMonth?.hasRecords ? (
+          {financeUnavailable ? (
+            <p role="status" className="text-sm text-muted-foreground">
+              Os totais financeiros exatos aguardam a migration 20261009020000
+              neste ambiente. Os demais indicadores continuam disponíveis.
+            </p>
+          ) : (
+            <MonthlyChart
+              points={finance.map((item) => ({
+                month: item.month,
+                label: monthName(Number(item.month.slice(5, 7))),
+                pharmacy: currencyChartValue(item.pharmacyCents, chartScale),
+                pharmacyExact: formatCurrency(item.pharmacyCents),
+                laboratory: currencyChartValue(
+                  item.laboratoryCents,
+                  chartScale,
+                ),
+                laboratoryExact: formatCurrency(item.laboratoryCents),
+                fair: currencyChartValue(item.fairCents, chartScale),
+                fairExact: formatCurrency(item.fairCents),
+                total: currencyChartValue(item.totalCents, chartScale),
+                totalExact: formatCurrency(item.totalCents),
+                hasRecords: item.hasRecords,
+              }))}
+              scale={chartScale.toString()}
+            />
+          )}
+          {!financeUnavailable && !selectedMonth?.hasRecords ? (
             <p className="text-sm text-muted-foreground">
               Nenhuma despesa registrada em {periodLabel}.
             </p>
@@ -281,20 +310,27 @@ export default async function Home({ searchParams }: HomeProps) {
           title={`Despesas por área · ${periodLabel}`}
           description="Totais derivados dos mesmos registros financeiros apresentados na evolução mensal."
         />
-        <div className="grid gap-3 sm:grid-cols-3">
-          {[
-            { label: "Farmácia", value: selectedMonth?.pharmacyCents },
-            { label: "Laboratório", value: selectedMonth?.laboratoryCents },
-            { label: "Feira", value: selectedMonth?.fairCents },
-          ].map((item) => (
-            <div key={item.label} className="rounded-xl border bg-card p-4">
-              <p className="text-sm text-muted-foreground">{item.label}</p>
-              <p className="mt-1 text-xl font-semibold">
-                {formatCurrency(item.value ?? BigInt(0))}
-              </p>
-            </div>
-          ))}
-        </div>
+        {financeUnavailable ? (
+          <p role="status" className="text-sm text-muted-foreground">
+            Totais indisponíveis até a instalação autorizada da migration
+            20261009020000 neste ambiente.
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[
+              { label: "Farmácia", value: selectedMonth?.pharmacyCents },
+              { label: "Laboratório", value: selectedMonth?.laboratoryCents },
+              { label: "Feira", value: selectedMonth?.fairCents },
+            ].map((item) => (
+              <div key={item.label} className="rounded-xl border bg-card p-4">
+                <p className="text-sm text-muted-foreground">{item.label}</p>
+                <p className="mt-1 text-xl font-semibold">
+                  {formatCurrency(item.value ?? BigInt(0))}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="grid gap-4 xl:grid-cols-2">

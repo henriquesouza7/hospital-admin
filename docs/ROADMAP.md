@@ -70,14 +70,13 @@ Em 08/10/2026, os fluxos da Fase 6 continuam sem homologação autenticada no ba
 - [ ] Homologação
 
 Dashboard geral, consulta de auditoria, exportações e smokes E2E autenticados
-estão no PR #25. As quatro migrations de consolidação foram aplicadas no Neon
-demo `floral-breeze-18394345`, branch `br-misty-recipe-b8muzwtd`; consultas
-read-only confirmaram a política administrativa única da auditoria, RLS nas
-tabelas examinadas, privilégios das RPCs agregadoras e o índice de ordenação.
-O HEAD `0add2be` passou os gates locais e recebeu revisão sem problemas graves;
-26 discussões estão resolvidas. O HEAD atual `0fbd497` inclui smokes
-autenticados preparados, passou os gates locais e aguarda nova revisão. O PR
-continua sem merge.
+estão no PR #25. Sete migrations do ciclo de consolidação (cinco de 08/10 e
+duas de 09/10) foram confirmadas no Neon demo `floral-breeze-18394345`, branch
+`br-misty-recipe-b8muzwtd`; consultas read-only confirmaram objetos e
+privilégios descritos em `DEMO_2026-10-09.md`. A migration incremental
+`20261009020000_preserve_exact_financial_export_totals.sql` permanece pendente
+de autorização e implantação; até lá, o dashboard identifica os totais
+financeiros como indisponíveis nesse ambiente. O PR #25 continua sem merge.
 
 Fase 7 permanece aberta até executar os quatro smokes autenticados com uma
 sessão real, testar RLS/RPCs usando atores autenticados, validar persistência e
