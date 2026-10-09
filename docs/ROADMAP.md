@@ -93,10 +93,11 @@ negócio continuam vazios e nenhum dado sintético foi inserido.
 Em 09/10/2026, a correção do token circular `--font-sans` foi verificada no
 navegador deste worktree: login, recuperação e redefinição sem token computam
 Geist; login e recuperação não têm overflow em 390 px ou 1440 px, e o foco de
-teclado no email é visível. O `.env.local` deste worktree não define
-`APP_BASE_URL`; o fallback gera callback para `:3000` mesmo em outra porta, então
-o link pode voltar ao endereço errado. Neon Auth tem SMTP compartilhado e
-`allow_localhost=true`; como essa opção permite localhost sem whitelist, não foi
-confirmado que a diferença de origem cause o erro capturado. O envio e a
-redefinição reais, assim como as páginas administrativas, continuam sem
-homologação autenticada.
+teclado no email é visível. A porta 3002 estava em uso por outro worktree; este
+worktree foi iniciado em `localhost:3003` com `APP_BASE_URL` configurada apenas
+no `.env.local` ignorado pelo Git. A rota protegida redirecionou para `/login`,
+sem sessão administrativa. Neon Auth demo tem SMTP compartilhado e
+`allow_localhost=true`. O operador autorizou uma solicitação de recuperação, mas
+nenhuma foi enviada: o formulário ficou aberto para o operador digitar o email
+sem registrá-lo em logs ou neste documento. Status HTTP, código técnico, entrega,
+redefinição com token e novo login seguem pendentes.
