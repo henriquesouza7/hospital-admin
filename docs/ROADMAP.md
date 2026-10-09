@@ -84,3 +84,12 @@ auditoria ponta a ponta, inspecionar downloads e terminar homologação visual e
 1440 px e 390 px. A preparação atual não cria uma sessão: sem um estado
 administrativo existente, os smokes autenticados são ignorados. Os dados de
 negócio continuam vazios e nenhum dado sintético foi inserido.
+
+Em 09/10/2026, a correção do token circular `--font-sans` foi verificada no
+navegador deste worktree: login, recuperação e redefinição sem token computam
+Geist; login e recuperação não têm overflow em 390 px ou 1440 px, e o foco de
+teclado no email é visível. A captura com erro de recuperação não foi reproduzida
+contra este HEAD: não foi enviado email e não se obteve status/código do Neon
+Auth; a origem local exata precisa ser definida em `APP_BASE_URL` quando a porta
+for diferente de 3000. O fluxo real de recuperação e as páginas administrativas
+continuam sem homologação autenticada.
