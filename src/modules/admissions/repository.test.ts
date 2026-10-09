@@ -212,32 +212,23 @@ describe("doctors repository", () => {
   it("should_export_a_single_snapshot_when_admissions_are_inserted_concurrently", async () => {
     const snapshot = [
       {
-        id: "20000000-0000-4000-8000-000000000002",
-        doctor_id: doctor.id,
         entry_date: "2026-10-07",
         quantity: 3,
-        created_at: "2026-10-07T12:00:00Z",
-        updated_at: "2026-10-07T12:00:00Z",
+        doctor_name: doctor.name,
       },
       {
-        id: "20000000-0000-4000-8000-000000000003",
-        doctor_id: doctor.id,
         entry_date: "2026-10-06",
         quantity: 2,
-        created_at: "2026-10-06T12:00:00Z",
-        updated_at: "2026-10-06T12:00:00Z",
+        doctor_name: doctor.name,
       },
     ];
     const currentRows = [...snapshot];
     mocks.rpc.mockImplementation(async () => {
       const rowsInStatementSnapshot = [...currentRows];
       currentRows.unshift({
-        id: "20000000-0000-4000-8000-000000000001",
-        doctor_id: doctor.id,
         entry_date: "2026-10-08",
         quantity: 5,
-        created_at: "2026-10-08T12:00:00Z",
-        updated_at: "2026-10-08T12:00:00Z",
+        doctor_name: doctor.name,
       });
       return { data: rowsInStatementSnapshot, error: null };
     });
@@ -253,14 +244,16 @@ describe("doctors repository", () => {
       { entry_date: "2026-10-06", doctor_name: doctor.name, quantity: 2 },
     ]);
     expect(currentRows).toHaveLength(3);
-    expect(mocks.rpc).toHaveBeenCalledWith("list_admission_entries", {
-      p_start_date: "2026-10-01",
-      p_end_date: "2026-11-01",
-      p_doctor_id: null,
-    });
+    expect(mocks.rpc).toHaveBeenCalledWith(
+      "list_admission_entries_for_export",
+      {
+        p_start_date: "2026-10-01",
+        p_end_date: "2026-11-01",
+        p_limit: 10_001,
+      },
+    );
     expect(mocks.rpc).toHaveBeenCalledOnce();
-    expect(mocks.from).toHaveBeenCalledOnce();
-    expect(mocks.from).toHaveBeenCalledWith("doctors");
+    expect(mocks.from).not.toHaveBeenCalled();
     expect(mocks.requireAdmin).toHaveBeenCalledOnce();
   });
 
