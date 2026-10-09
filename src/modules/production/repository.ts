@@ -38,6 +38,16 @@ const entryRowSchema = z.object({
 
 const uuidResultSchema = z.string().uuid();
 const PAGE_SIZE = 1000;
+const productionExportRowsSchema = z.array(
+  z.object({
+    reference_period: z.iso.date(),
+    category_name: z.string().min(1),
+    procedure_name: z.string().min(1),
+    quantity: z.union([z.string(), z.number()]).transform(String),
+    counting_unit: z.string().min(1),
+    source: z.string().min(1),
+  }),
+);
 
 export type ProductionIndicatorEntry = ProductionEntry &
   Readonly<{ category_id: string }>;
@@ -219,6 +229,31 @@ export async function listProductionEntries(
         : "Categoria indisponível",
     };
   });
+}
+
+export async function listProductionEntriesForExport(
+  startDate: string,
+  throughExclusive: string,
+  maxRows: number,
+) {
+  await requireProductionAdmin();
+  if (!Number.isSafeInteger(maxRows) || maxRows < 1 || maxRows > 10_001) {
+    throw new Error("O limite de linhas da exportação é inválido.");
+  }
+  const { data, error } = await getNeonDataApiClient().rpc(
+    "list_production_entries_for_export",
+    {
+      p_start: startDate,
+      p_through_exclusive: throughExclusive,
+      p_limit: maxRows,
+    },
+  );
+  return requireData(
+    data,
+    error,
+    "Não foi possível carregar os lançamentos da exportação.",
+    productionExportRowsSchema,
+  );
 }
 
 async function listProductionEntryRows(filters: {

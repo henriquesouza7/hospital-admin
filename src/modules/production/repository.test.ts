@@ -5,6 +5,7 @@ import {
   loadProductionIndicatorSource,
   listProcedureCategories,
   listProductionEntries,
+  listProductionEntriesForExport,
   listProductionProcedures,
 } from "./repository";
 
@@ -26,6 +27,42 @@ beforeEach(() => {
 });
 
 describe("production repository", () => {
+  it("should_read_production_export_from_one_bounded_snapshot", async () => {
+    rpc.mockResolvedValue({
+      data: [
+        {
+          reference_period: "2026-10-01",
+          category_name: "Categoria sintética",
+          procedure_name: "Procedimento sintético",
+          quantity: "2.000",
+          counting_unit: "procedimentos",
+          source: "realizado",
+        },
+      ],
+      error: null,
+    });
+
+    await expect(
+      listProductionEntriesForExport("2026-10-01", "2026-11-01", 10_001),
+    ).resolves.toEqual([
+      {
+        reference_period: "2026-10-01",
+        category_name: "Categoria sintética",
+        procedure_name: "Procedimento sintético",
+        quantity: "2.000",
+        counting_unit: "procedimentos",
+        source: "realizado",
+      },
+    ]);
+    expect(rpc).toHaveBeenCalledOnce();
+    expect(rpc).toHaveBeenCalledWith("list_production_entries_for_export", {
+      p_start: "2026-10-01",
+      p_through_exclusive: "2026-11-01",
+      p_limit: 10_001,
+    });
+    expect(from).not.toHaveBeenCalled();
+  });
+
   it("should_filter_indicator_entries_to_the_requested_year", async () => {
     const categoryId = "00000000-0000-4000-8000-000000000101";
     const procedureId = "00000000-0000-4000-8000-000000000201";

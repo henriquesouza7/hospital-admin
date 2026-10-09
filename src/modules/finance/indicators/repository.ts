@@ -25,6 +25,7 @@ const itemWithOrderSchema = itemSchema.extend({
     supplier: supplierSchema,
   }),
 });
+const purchaseExportSchema = z.array(itemWithOrderSchema);
 const fairSchema = z.array(
   z.object({
     competence: z.iso.date(),
@@ -73,46 +74,72 @@ export async function loadIndicatorsSource(
   const [endYear, endMonthNumber] = endMonth.split("-").map(Number);
   const throughExclusive = `${new Date(Date.UTC(endYear, endMonthNumber, 1)).toISOString().slice(0, 10)}`;
 
-  const purchases: IndicatorPurchase[] = [];
+  let purchases: IndicatorPurchase[] = [];
   const purchaseLimit =
     options.maxPurchaseRows === undefined
       ? Number.POSITIVE_INFINITY
       : Math.max(0, Math.floor(options.maxPurchaseRows));
-  for (const sector of ["farmacia", "laboratorio"] as const) {
-    let offset = 0;
-    while (purchases.length < purchaseLimit) {
-      const pageSize = Math.min(PAGE_SIZE, purchaseLimit - purchases.length);
-      const { data, error } = await getNeonDataApiClient()
-        .from("purchase_order_items")
-        .select(
-          "id,product_id,quantity,unit_price,line_total,product_name_snapshot,product_presentation_snapshot,product_category_snapshot,purchase_order:purchase_orders!inner(sector,order_date,supplier:suppliers!inner(id,name))",
-        )
-        .eq("purchase_order.sector", sector)
-        .gte("purchase_order.order_date", from)
-        .lt("purchase_order.order_date", throughExclusive)
-        .order("id", { ascending: true })
-        .range(offset, offset + pageSize - 1);
-      const items = assertData(data, error, z.array(itemWithOrderSchema));
-      purchases.push(
-        ...items.map((item) => ({
-          id: item.id,
-          sector: item.purchase_order.sector,
-          productId: item.product_id,
-          supplierId: item.purchase_order.supplier.id,
-          supplierName: item.purchase_order.supplier.name,
-          orderDate: item.purchase_order.order_date,
-          quantity: item.quantity,
-          unitPrice: item.unit_price,
-          lineTotal: item.line_total,
-          productName: item.product_name_snapshot,
-          presentation: item.product_presentation_snapshot,
-          category: item.product_category_snapshot,
-        })),
-      );
-      if (items.length < pageSize) break;
-      offset += pageSize;
+  if (options.maxPurchaseRows !== undefined) {
+    const { data, error } = await getNeonDataApiClient().rpc(
+      "list_purchase_order_items_for_export",
+      {
+        p_start: from,
+        p_through_exclusive: throughExclusive,
+        p_limit: purchaseLimit,
+      },
+    );
+    const items = assertData(data, error, purchaseExportSchema);
+    purchases = items.map((item) => ({
+      id: item.id,
+      sector: item.purchase_order.sector,
+      productId: item.product_id,
+      supplierId: item.purchase_order.supplier.id,
+      supplierName: item.purchase_order.supplier.name,
+      orderDate: item.purchase_order.order_date,
+      quantity: item.quantity,
+      unitPrice: item.unit_price,
+      lineTotal: item.line_total,
+      productName: item.product_name_snapshot,
+      presentation: item.product_presentation_snapshot,
+      category: item.product_category_snapshot,
+    }));
+  } else {
+    for (const sector of ["farmacia", "laboratorio"] as const) {
+      let offset = 0;
+      while (purchases.length < purchaseLimit) {
+        const pageSize = Math.min(PAGE_SIZE, purchaseLimit - purchases.length);
+        const { data, error } = await getNeonDataApiClient()
+          .from("purchase_order_items")
+          .select(
+            "id,product_id,quantity,unit_price,line_total,product_name_snapshot,product_presentation_snapshot,product_category_snapshot,purchase_order:purchase_orders!inner(sector,order_date,supplier:suppliers!inner(id,name))",
+          )
+          .eq("purchase_order.sector", sector)
+          .gte("purchase_order.order_date", from)
+          .lt("purchase_order.order_date", throughExclusive)
+          .order("id", { ascending: true })
+          .range(offset, offset + pageSize - 1);
+        const items = assertData(data, error, z.array(itemWithOrderSchema));
+        purchases.push(
+          ...items.map((item) => ({
+            id: item.id,
+            sector: item.purchase_order.sector,
+            productId: item.product_id,
+            supplierId: item.purchase_order.supplier.id,
+            supplierName: item.purchase_order.supplier.name,
+            orderDate: item.purchase_order.order_date,
+            quantity: item.quantity,
+            unitPrice: item.unit_price,
+            lineTotal: item.line_total,
+            productName: item.product_name_snapshot,
+            presentation: item.product_presentation_snapshot,
+            category: item.product_category_snapshot,
+          })),
+        );
+        if (items.length < pageSize) break;
+        offset += pageSize;
+      }
+      if (purchases.length >= purchaseLimit) break;
     }
-    if (purchases.length >= purchaseLimit) break;
   }
 
   const { data: fairData, error: fairError } = await getNeonDataApiClient()

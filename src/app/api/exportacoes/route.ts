@@ -9,7 +9,7 @@ import {
   loadIndicatorsSource,
 } from "@/modules/finance/indicators/repository";
 import { amountToCents } from "@/modules/finance/indicators/domain";
-import { listProductionEntries } from "@/modules/production/repository";
+import { listProductionEntriesForExport } from "@/modules/production/repository";
 import { getSurgerySummary } from "@/modules/minor-surgeries/repository";
 import { buildCsv } from "@/modules/audit/domain";
 
@@ -256,11 +256,11 @@ export async function GET(request: Request) {
         ]);
       }
       case "producao": {
-        const entries = await listProductionEntries({
-          from,
-          to: through,
-          maxRows: MAX_ROWS,
-        });
+        const entries = await listProductionEntriesForExport(
+          firstDay,
+          afterLastDay,
+          MAX_ROWS + 1,
+        );
         if (entries.length > MAX_ROWS) {
           return NextResponse.json(
             {

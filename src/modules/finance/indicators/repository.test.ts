@@ -58,47 +58,34 @@ describe("financial indicators repository", () => {
     expect(mocks.requireFinanceAdmin).toHaveBeenCalledOnce();
   });
 
-  it("should_page_through_the_global_purchase_limit_without_truncating", async () => {
-    const items = Array.from({ length: 1_001 }, (_, index) => {
-      const id =
-        "00000000-0000-4000-8000-" + String(index + 1).padStart(12, "0");
-      return {
-        id,
-        product_id: "00000000-0000-4000-8000-000000000003",
-        quantity: "1.000",
-        unit_price: "10.00",
-        line_total: "10.00",
-        product_name_snapshot: "Produto sintético",
-        product_presentation_snapshot: "Caixa",
-        product_category_snapshot: null,
-        purchase_order: {
-          sector: "farmacia",
-          order_date: "2026-10-08",
-          supplier: {
-            id: "00000000-0000-4000-8000-000000000004",
-            name: "Fornecedor sintético",
-          },
+  it("should_use_one_snapshot_rpc_for_capped_purchase_exports", async () => {
+    const snapshotItem = {
+      id: "00000000-0000-4000-8000-000000000001",
+      product_id: "00000000-0000-4000-8000-000000000003",
+      quantity: "1.000",
+      unit_price: "10.00",
+      line_total: "10.00",
+      product_name_snapshot: "Produto sintético",
+      product_presentation_snapshot: "Caixa",
+      product_category_snapshot: null,
+      purchase_order: {
+        sector: "farmacia",
+        order_date: "2026-10-08",
+        supplier: {
+          id: "00000000-0000-4000-8000-000000000004",
+          name: "Fornecedor sintético",
         },
-      };
-    });
-    const calls: string[] = [];
-    const ranges: Array<[number, number]> = [];
-
+      },
+    };
+    mocks.rpc.mockResolvedValue({ data: [snapshotItem], error: null });
+    const tables: string[] = [];
     mocks.from.mockImplementation((table: string) => {
-      calls.push(table);
+      tables.push(table);
       const query = {
         select: () => query,
-        eq: () => query,
         gte: () => query,
         lt: () => query,
         order: () => query,
-        range: (start: number, end: number) => {
-          ranges.push([start, end]);
-          return Promise.resolve({
-            data: items.slice(start, end + 1),
-            error: null,
-          });
-        },
         then: (resolve: (value: unknown) => unknown) =>
           Promise.resolve({ data: [], error: null }).then(resolve),
       };
@@ -110,17 +97,19 @@ describe("financial indicators repository", () => {
       includeProducts: false,
     });
 
-    expect(source.purchases).toHaveLength(1_001);
+    expect(source.purchases).toHaveLength(1);
+    expect(source.purchases[0]?.id).toBe(snapshotItem.id);
     expect(source.products).toEqual([]);
-    expect(ranges).toEqual([
-      [0, 999],
-      [1_000, 1_000],
-    ]);
-    expect(calls).toEqual([
-      "purchase_order_items",
-      "purchase_order_items",
-      "monthly_fair_expenses",
-    ]);
+    expect(mocks.rpc).toHaveBeenCalledOnce();
+    expect(mocks.rpc).toHaveBeenCalledWith(
+      "list_purchase_order_items_for_export",
+      {
+        p_start: "2026-10-01",
+        p_through_exclusive: "2026-11-01",
+        p_limit: 1_001,
+      },
+    );
+    expect(tables).toEqual(["monthly_fair_expenses"]);
     expect(mocks.requireFinanceAdmin).toHaveBeenCalledOnce();
   });
 });

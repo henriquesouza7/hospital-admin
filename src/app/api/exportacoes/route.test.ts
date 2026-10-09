@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => ({
     );
   }),
   loadIndicatorsSource: vi.fn(),
-  listProductionEntries: vi.fn(),
+  listProductionEntriesForExport: vi.fn(),
   getSurgerySummary: vi.fn(),
   buildCsv: vi.fn(),
 }));
@@ -41,7 +41,7 @@ vi.mock("@/modules/audit/domain", () => ({
       .join("\n"),
 }));
 vi.mock("@/modules/production/repository", () => ({
-  listProductionEntries: mocks.listProductionEntries,
+  listProductionEntriesForExport: mocks.listProductionEntriesForExport,
 }));
 vi.mock("@/modules/minor-surgeries/repository", () => ({
   getSurgerySummary: mocks.getSurgerySummary,
@@ -193,7 +193,7 @@ describe("administrative exports", () => {
   });
 
   it("should_accept_exactly_maximum_production_data_rows", async () => {
-    mocks.listProductionEntries.mockResolvedValue(
+    mocks.listProductionEntriesForExport.mockResolvedValue(
       Array.from({ length: 10_000 }, () => ({
         reference_period: "2026-10-01",
         category_name: "Categoria sintética",
@@ -211,6 +211,11 @@ describe("administrative exports", () => {
     );
 
     expect(response.status).toBe(200);
+    expect(mocks.listProductionEntriesForExport).toHaveBeenCalledWith(
+      "2026-10-01",
+      "2026-11-01",
+      10_001,
+    );
   });
 
   it("should_bound_purchase_export_and_skip_unneeded_products", async () => {
@@ -237,7 +242,7 @@ describe("administrative exports", () => {
   });
 
   it("should_localize_production_quantities_in_csv", async () => {
-    mocks.listProductionEntries.mockResolvedValue([
+    mocks.listProductionEntriesForExport.mockResolvedValue([
       {
         reference_period: "2026-10-01",
         category_name: "Categoria sintética",
