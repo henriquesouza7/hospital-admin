@@ -109,14 +109,6 @@ export type IndicatorsData = Readonly<{
   laboratoryItemCount: number;
 }>;
 
-function toCents(value: string): bigint {
-  const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(value);
-  if (!match) throw new Error("Valor monetário inválido recebido do banco.");
-  return (
-    BigInt(match[1]) * BigInt(100) + BigInt((match[2] ?? "").padEnd(2, "0"))
-  );
-}
-
 function monthList(start: string, end: string): string[] {
   const [year, month] = start.split("-").map(Number);
   const [endYear, endMonth] = end.split("-").map(Number);
@@ -175,7 +167,7 @@ export function buildIndicatorsData(
   for (const purchase of allPeriodPurchases) {
     const month = byMonth.get(purchase.orderDate.slice(0, 7));
     if (!month) continue;
-    const total = toCents(purchase.lineTotal);
+    const total = amountToCents(purchase.lineTotal);
     if (purchase.sector === "farmacia") {
       month.pharmacyCents += total;
       month.hasPharmacyRecords = true;
@@ -188,7 +180,7 @@ export function buildIndicatorsData(
   for (const expense of periodFair) {
     const month = byMonth.get(expense.competence.slice(0, 7));
     if (!month) continue;
-    month.fairCents += toCents(expense.totalAmount);
+    month.fairCents += amountToCents(expense.totalAmount);
     month.hasRecords = true;
     month.hasFairRecords = true;
   }
@@ -250,17 +242,17 @@ export function buildPriceGroups(
       (a, b) =>
         a.orderDate.localeCompare(b.orderDate) || a.id.localeCompare(b.id),
     );
-    let lowest = toCents(ordered[0].unitPrice);
+    let lowest = amountToCents(ordered[0].unitPrice);
     let highest = lowest;
     for (const observation of ordered.slice(1)) {
-      const price = toCents(observation.unitPrice);
+      const price = amountToCents(observation.unitPrice);
       if (price < lowest) lowest = price;
       if (price > highest) highest = price;
     }
     const bestSupplierNames = [
       ...new Map(
         ordered
-          .filter((item) => toCents(item.unitPrice) === lowest)
+          .filter((item) => amountToCents(item.unitPrice) === lowest)
           .map((item) => [item.supplierId, item.supplierName]),
       ).values(),
     ].sort();
@@ -309,8 +301,8 @@ export function compareConsecutivePrices(
 
       const previous = previousOnDate[0];
       const current = currentOnDate[0];
-      const previousCents = toCents(previous.unitPrice);
-      const currentCents = toCents(current.unitPrice);
+      const previousCents = amountToCents(previous.unitPrice);
+      const currentCents = amountToCents(current.unitPrice);
       const differenceCents = currentCents - previousCents;
       const percentageBasisPoints =
         previousCents === BigInt(0)
@@ -366,11 +358,11 @@ export function calculateSavingsOpportunities(
         BigInt(0),
       );
       const realSpendCents = group.observations.reduce(
-        (total, item) => total + toCents(item.lineTotal),
+        (total, item) => total + amountToCents(item.lineTotal),
         BigInt(0),
       );
       const potentialSavingsCents = group.observations.reduce((total, item) => {
-        const actual = toCents(item.lineTotal);
+        const actual = amountToCents(item.lineTotal);
         const benchmark = calculateLineTotalCents(
           item.quantity,
           `${group.lowestUnitPriceCents / BigInt(100)}.${(group.lowestUnitPriceCents % BigInt(100)).toString().padStart(2, "0")}`,
@@ -418,5 +410,5 @@ export function getHistoricalPriceHistory(
 }
 
 export function toMoneyCents(value: string): bigint {
-  return toCents(value);
+  return amountToCents(value);
 }
