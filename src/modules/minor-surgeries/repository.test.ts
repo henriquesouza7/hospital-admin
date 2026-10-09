@@ -21,6 +21,9 @@ vi.mock("./access", () => ({
 }));
 
 import {
+  createSurgeryAppointment,
+  createSurgeryDay,
+  createSurgeryWaitlistEntry,
   getSurgeryDay,
   getSurgerySummary,
   listDayAppointments,
@@ -29,6 +32,9 @@ import {
   listSurgeryWaitlist,
   listUpcomingSurgeryDays,
   searchSurgeryPatients,
+  transferSurgeryWaitlistEntry,
+  updateSurgeryAppointmentStatus,
+  updateSurgeryDayCapacity,
 } from "./repository";
 
 const PAGE_SIZE = 1000;
@@ -160,6 +166,121 @@ describe("minor surgeries repository", () => {
     mocks.singleResult.mockResolvedValue({ data: day, error: null });
 
     await expect(getSurgeryDay(day.id)).resolves.toEqual(day);
+  });
+
+  it("should_create_a_surgery_day_with_its_requested_capacity", async () => {
+    const dayId = makeId(20);
+    mocks.rpc.mockResolvedValueOnce({ data: dayId, error: null });
+
+    await createSurgeryDay({ procedure_date: "2026-10-30", capacity: 7 });
+
+    expect(mocks.requireMinorSurgeriesAdmin).toHaveBeenCalledOnce();
+    expect(mocks.rpc).toHaveBeenCalledWith("create_surgery_day", {
+      p_procedure_date: "2026-10-30",
+      p_capacity: 7,
+    });
+  });
+
+  it("should_not_call_a_mutation_rpc_when_the_admin_guard_rejects", async () => {
+    mocks.requireMinorSurgeriesAdmin.mockRejectedValueOnce(
+      new Error("synthetic forbidden session"),
+    );
+
+    await expect(
+      createSurgeryDay({ procedure_date: "2026-10-30", capacity: 10 }),
+    ).rejects.toThrow("synthetic forbidden session");
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it("should_update_capacity_through_the_guarded_database_rpc", async () => {
+    const dayId = makeId(21);
+    mocks.rpc.mockResolvedValueOnce({ data: true, error: null });
+
+    await updateSurgeryDayCapacity({ surgery_day_id: dayId, capacity: 8 });
+
+    expect(mocks.rpc).toHaveBeenCalledWith("update_surgery_day_capacity", {
+      p_surgery_day_id: dayId,
+      p_capacity: 8,
+    });
+  });
+
+  it("should_report_capacity_conflicts_without_exposing_database_details", async () => {
+    mocks.rpc.mockResolvedValueOnce({
+      data: null,
+      error: { code: "23514", message: "synthetic constraint detail" },
+    });
+
+    await expect(
+      updateSurgeryDayCapacity({ surgery_day_id: makeId(22), capacity: 1 }),
+    ).rejects.toThrow("A capacidade está cheia ou abaixo da ocupação atual.");
+  });
+
+  it("should_create_an_appointment_with_the_selected_status_and_patient", async () => {
+    const appointmentId = makeId(24);
+    const dayId = makeId(25);
+    const patientId = makeId(26);
+    mocks.rpc.mockResolvedValueOnce({ data: appointmentId, error: null });
+
+    await createSurgeryAppointment({
+      surgery_day_id: dayId,
+      patient_id: patientId,
+      patient_name: null,
+      status: "awaiting_confirmation",
+    });
+
+    expect(mocks.rpc).toHaveBeenCalledWith("create_surgery_appointment", {
+      p_surgery_day_id: dayId,
+      p_patient_id: patientId,
+      p_patient_name: null,
+      p_status: "awaiting_confirmation",
+    });
+  });
+
+  it("should_persist_cancellation_through_the_status_rpc", async () => {
+    const appointmentId = makeId(27);
+    mocks.rpc.mockResolvedValueOnce({ data: true, error: null });
+
+    await updateSurgeryAppointmentStatus({
+      appointment_id: appointmentId,
+      status: "cancelled",
+    });
+
+    expect(mocks.rpc).toHaveBeenCalledWith(
+      "update_surgery_appointment_status",
+      { p_appointment_id: appointmentId, p_status: "cancelled" },
+    );
+  });
+
+  it("should_add_a_person_to_the_independent_waitlist", async () => {
+    const waitlistId = makeId(28);
+    const patientId = makeId(29);
+    mocks.rpc.mockResolvedValueOnce({ data: waitlistId, error: null });
+
+    await createSurgeryWaitlistEntry({
+      patient_id: patientId,
+      patient_name: null,
+    });
+
+    expect(mocks.rpc).toHaveBeenCalledWith("create_surgery_waitlist_entry", {
+      p_patient_id: patientId,
+      p_patient_name: null,
+    });
+  });
+
+  it("should_transfer_the_original_waitlist_entry_to_the_selected_day", async () => {
+    const waitlistId = makeId(30);
+    const dayId = makeId(31);
+    mocks.rpc.mockResolvedValueOnce({ data: makeId(32), error: null });
+
+    await transferSurgeryWaitlistEntry({
+      waitlist_id: waitlistId,
+      surgery_day_id: dayId,
+    });
+
+    expect(mocks.rpc).toHaveBeenCalledWith("transfer_surgery_waitlist_entry", {
+      p_waitlist_id: waitlistId,
+      p_surgery_day_id: dayId,
+    });
   });
 
   it("should_fetch_waiting_entries_completely_and_bound_transferred_history", async () => {

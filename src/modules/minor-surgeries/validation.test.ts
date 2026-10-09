@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  parseSurgeryDayCapacityForm,
   parseSurgeryAppointmentForm,
   parseSurgeryDayForm,
   parseSurgeryWaitlistForm,
+  parseSurgeryWaitlistTransferForm,
   surgeryAppointmentStatusSchema,
   surgeryDayIdSchema,
 } from "./validation";
@@ -50,6 +52,24 @@ describe("minor surgeries validation", () => {
     expect(parseSurgeryDayForm(badCapacity).success).toBe(false);
   });
 
+  it("should_accept_only_positive_integer_capacity_for_an_existing_day", () => {
+    const form = new FormData();
+    form.set("surgery_day_id", dayId);
+    form.set("capacity", "3");
+    expect(parseSurgeryDayCapacityForm(form)).toMatchObject({
+      success: true,
+      data: { surgery_day_id: dayId, capacity: 3 },
+    });
+
+    for (const invalidCapacity of ["0", "-1", "1.5", "not-a-number"]) {
+      form.set("capacity", invalidCapacity);
+      expect(parseSurgeryDayCapacityForm(form).success).toBe(false);
+    }
+    form.set("surgery_day_id", "not-a-uuid");
+    form.set("capacity", "3");
+    expect(parseSurgeryDayCapacityForm(form).success).toBe(false);
+  });
+
   it("should_require_exactly_one_existing_patient_or_new_name_when_creating_appointment", () => {
     const form = new FormData();
     form.set("surgery_day_id", dayId);
@@ -92,5 +112,18 @@ describe("minor surgeries validation", () => {
     form.set("patient_id", patientId);
     form.set("status", "cancelled");
     expect(parseSurgeryAppointmentForm(form).success).toBe(false);
+  });
+
+  it("should_require_valid_waitlist_and_destination_ids_for_transfer", () => {
+    const form = new FormData();
+    form.set("waitlist_id", patientId);
+    form.set("surgery_day_id", dayId);
+    expect(parseSurgeryWaitlistTransferForm(form).success).toBe(true);
+
+    form.set("surgery_day_id", "invalid");
+    expect(parseSurgeryWaitlistTransferForm(form).success).toBe(false);
+    form.set("surgery_day_id", dayId);
+    form.set("waitlist_id", "invalid");
+    expect(parseSurgeryWaitlistTransferForm(form).success).toBe(false);
   });
 });
