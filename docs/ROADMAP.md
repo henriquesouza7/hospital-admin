@@ -70,16 +70,18 @@ Em 08/10/2026, os fluxos da Fase 6 continuam sem homologação autenticada no ba
 - [ ] Homologação
 
 Dashboard geral, consulta de auditoria, exportações e smokes E2E autenticados
-estão no PR #25. Sete migrations do ciclo de consolidação (cinco de 08/10 e
-duas de 09/10) foram confirmadas no Neon demo `floral-breeze-18394345`, branch
+estão no PR #25. As sete migrations-base do ciclo (cinco de 08/10 e duas de
+09/10) foram anteriormente reportadas como aplicadas no Neon demo
+`floral-breeze-18394345`, branch
 `br-misty-recipe-b8muzwtd`; consultas read-only confirmaram objetos e
 privilégios descritos em `DEMO_2026-10-09.md`. A consulta atual também encontrou
 `list_monthly_expense_totals_exact` com valores textuais e permissões restritas,
 compatível com `20261009020000_preserve_exact_financial_export_totals.sql`.
-Como não há ledger de migrations, a presença do objeto não informa quando ou
-como foi instalado; esta rodada não aplicou SQL e a migration não deve ser
-reaplicada enquanto a RPC existir. A chamada financeira autenticada continua
-sem homologação. O PR #25 continua sem merge.
+As oito migrations versionadas do ciclo (cinco de 08/10 e três de 09/10) estão
+documentadas para ambientes novos. Como não há ledger de migrations, a presença
+da RPC não informa quando ou como foi instalada; esta rodada não aplicou SQL e
+a migration não deve ser reaplicada enquanto a RPC existir. A chamada financeira
+autenticada continua sem homologação. O PR #25 continua sem merge.
 
 Fase 7 permanece aberta até executar os quatro smokes autenticados com uma
 sessão real, testar RLS/RPCs usando atores autenticados, validar persistência e
