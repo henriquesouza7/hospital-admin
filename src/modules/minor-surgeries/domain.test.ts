@@ -28,6 +28,24 @@ describe("minor surgeries domain", () => {
   it("should_release_capacity_when_appointment_is_cancelled", () => {
     expect(isActiveAppointment("cancelled")).toBe(false);
     expect(isActiveAppointment("confirmed")).toBe(true);
+
+    const summary = summarizeSurgeryDay(
+      { id: "day", procedure_date: "2026-10-30", capacity: 1 },
+      [{ status: "cancelled" }],
+    );
+
+    expect(summary.occupied).toBe(0);
+    expect(availableCapacity(summary)).toBe(1);
+  });
+
+  it("should_show_no_available_capacity_when_active_statuses_fill_the_day", () => {
+    const summary = summarizeSurgeryDay(
+      { id: "day", procedure_date: "2026-10-30", capacity: 2 },
+      [{ status: "awaiting_confirmation" }, { status: "confirmed" }],
+    );
+
+    expect(summary.occupied).toBe(summary.capacity);
+    expect(availableCapacity(summary)).toBe(0);
   });
 
   it("should_label_status_in_portuguese", () => {

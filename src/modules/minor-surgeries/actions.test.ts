@@ -34,7 +34,9 @@ import {
   createSurgeryDayAction,
   initialMinorSurgeryActionState,
   searchSurgeryPatientsAction,
+  transferSurgeryWaitlistEntryAction,
   updateSurgeryDayCapacityAction,
+  updateSurgeryAppointmentStatusAction,
 } from "./actions";
 
 describe("minor surgeries actions", () => {
@@ -54,6 +56,53 @@ describe("minor surgeries actions", () => {
     );
 
     expect(result.status).toBe("success");
+    expect(mocks.revalidatePath).toHaveBeenCalledWith(
+      "/pequenas-cirurgias/dias/[id]",
+      "page",
+    );
+  });
+
+  it("should_revalidate_all_surgery_pages_after_cancellation", async () => {
+    mocks.updateSurgeryAppointmentStatus.mockResolvedValue(undefined);
+    const formData = new FormData();
+    formData.set("appointment_id", "f9a52c88-2973-4c38-8542-d7ce03122cc8");
+    formData.set("status", "cancelled");
+
+    const result = await updateSurgeryAppointmentStatusAction(
+      initialMinorSurgeryActionState,
+      formData,
+    );
+
+    expect(result.status).toBe("success");
+    expect(mocks.updateSurgeryAppointmentStatus).toHaveBeenCalledWith({
+      appointment_id: "f9a52c88-2973-4c38-8542-d7ce03122cc8",
+      status: "cancelled",
+    });
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/pequenas-cirurgias");
+    expect(mocks.revalidatePath).toHaveBeenCalledWith(
+      "/pequenas-cirurgias/fila",
+    );
+  });
+
+  it("should_revalidate_queue_and_destination_pages_after_transfer", async () => {
+    mocks.transferSurgeryWaitlistEntry.mockResolvedValue(undefined);
+    const formData = new FormData();
+    formData.set("waitlist_id", "f9a52c88-2973-4c38-8542-d7ce03122cc8");
+    formData.set("surgery_day_id", "a07dd5df-a160-49f2-a55c-a51274683a02");
+
+    const result = await transferSurgeryWaitlistEntryAction(
+      initialMinorSurgeryActionState,
+      formData,
+    );
+
+    expect(result.status).toBe("success");
+    expect(mocks.transferSurgeryWaitlistEntry).toHaveBeenCalledWith({
+      waitlist_id: "f9a52c88-2973-4c38-8542-d7ce03122cc8",
+      surgery_day_id: "a07dd5df-a160-49f2-a55c-a51274683a02",
+    });
+    expect(mocks.revalidatePath).toHaveBeenCalledWith(
+      "/pequenas-cirurgias/fila",
+    );
     expect(mocks.revalidatePath).toHaveBeenCalledWith(
       "/pequenas-cirurgias/dias/[id]",
       "page",
