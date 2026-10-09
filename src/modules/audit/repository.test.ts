@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   lt: vi.fn(),
   eq: vi.fn(),
   in: vi.fn(),
+  or: vi.fn(),
   range: vi.fn(),
 }));
 
@@ -31,6 +32,7 @@ describe("administrative audit repository", () => {
     lt: mocks.lt,
     eq: mocks.eq,
     in: mocks.in,
+    or: mocks.or,
     range: mocks.range,
   };
 
@@ -45,6 +47,7 @@ describe("administrative audit repository", () => {
       mocks.lt,
       mocks.eq,
       mocks.in,
+      mocks.or,
     ]) {
       method.mockReturnValue(query);
     }
@@ -62,6 +65,8 @@ describe("administrative audit repository", () => {
         action: null,
         actorId: null,
         page: 1,
+        snapshotAt: null,
+        snapshotId: null,
       }),
     ).rejects.toThrow("blocked");
     expect(mocks.from).not.toHaveBeenCalled();
@@ -76,6 +81,8 @@ describe("administrative audit repository", () => {
       action: null,
       actorId: null,
       page: 1,
+      snapshotAt: null,
+      snapshotId: null,
     });
 
     expect(mocks.lt).toHaveBeenCalledWith(
@@ -106,6 +113,8 @@ describe("administrative audit repository", () => {
       action: null,
       actorId: null,
       page: AUDIT_MAX_PAGE,
+      snapshotAt: "2026-10-08T12:00:00Z",
+      snapshotId: "10000",
     });
 
     expect(result.events).toHaveLength(50);
@@ -113,6 +122,7 @@ describe("administrative audit repository", () => {
       page: AUDIT_MAX_PAGE,
       hasMore: false,
       limitReached: true,
+      snapshot: { createdAt: "2026-10-08T12:00:00Z", id: "10000" },
     });
     expect(mocks.range).toHaveBeenCalledWith(
       (AUDIT_MAX_PAGE - 1) * 50,
@@ -130,12 +140,15 @@ describe("administrative audit repository", () => {
         action: "updated",
         actorId: "admin",
         page: 2,
+        snapshotAt: "2026-11-01T00:00:00.000Z",
+        snapshotId: "100",
       }),
     ).resolves.toEqual({
       events: [],
       page: 2,
       hasMore: false,
       limitReached: false,
+      snapshot: { createdAt: "2026-11-01T00:00:00.000Z", id: "100" },
     });
     expect(mocks.from).toHaveBeenCalledWith("audit_logs");
     expect(mocks.order).toHaveBeenNthCalledWith(1, "created_at", {
@@ -155,5 +168,76 @@ describe("administrative audit repository", () => {
       "admission_import",
     ]);
     expect(mocks.range).toHaveBeenCalledWith(50, 100);
+  });
+
+  it("should_anchor_later_pages_to_the_first_page_snapshot", async () => {
+    await listAdministrativeAudit({
+      from: null,
+      through: null,
+      module: "todos",
+      entityType: null,
+      action: null,
+      actorId: null,
+      page: 2,
+      snapshotAt: "2026-10-09T10:00:00.123Z",
+      snapshotId: "42",
+    });
+
+    expect(mocks.or).toHaveBeenCalledWith(
+      "created_at.lt.2026-10-09T10:00:00.123Z,and(created_at.eq.2026-10-09T10:00:00.123Z,id.lte.42)",
+    );
+    expect(mocks.range).toHaveBeenCalledWith(50, 100);
+  });
+
+  it("should_capture_the_newest_row_as_the_first_page_snapshot", async () => {
+    mocks.range.mockResolvedValue({
+      data: [
+        {
+          id: "42",
+          actor_id: "admin",
+          entity_type: "doctor",
+          entity_id: null,
+          action: "updated",
+          payload: {},
+          created_at: "2026-10-09T10:00:00.123Z",
+        },
+      ],
+      error: null,
+    });
+
+    const result = await listAdministrativeAudit({
+      from: null,
+      through: null,
+      module: "todos",
+      entityType: null,
+      action: null,
+      actorId: null,
+      page: 1,
+      snapshotAt: null,
+      snapshotId: null,
+    });
+
+    expect(result.snapshot).toEqual({
+      createdAt: "2026-10-09T10:00:00.123Z",
+      id: "42",
+    });
+  });
+
+  it("should_restart_at_page_one_when_the_snapshot_is_missing", async () => {
+    const result = await listAdministrativeAudit({
+      from: null,
+      through: null,
+      module: "todos",
+      entityType: null,
+      action: null,
+      actorId: null,
+      page: 2,
+      snapshotAt: null,
+      snapshotId: null,
+    });
+
+    expect(result.page).toBe(1);
+    expect(mocks.or).not.toHaveBeenCalled();
+    expect(mocks.range).toHaveBeenCalledWith(0, 50);
   });
 });

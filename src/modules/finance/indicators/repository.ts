@@ -7,6 +7,7 @@ import type { IndicatorFairExpense, IndicatorPurchase } from "./domain";
 
 const PAGE_SIZE = 1000;
 const numeric = z.union([z.string(), z.number()]).transform(String);
+const exactMonetaryTotal = z.string().regex(/^\d+(?:\.\d{1,2})?$/);
 const supplierSchema = z.object({ id: z.string().uuid(), name: z.string() });
 const itemSchema = z.object({
   id: z.string().uuid(),
@@ -35,9 +36,9 @@ const fairSchema = z.array(
 const monthlyTotalsSchema = z.array(
   z.object({
     competence: z.iso.date(),
-    pharmacy_total: numeric,
-    laboratory_total: numeric,
-    fair_total: numeric,
+    pharmacy_total: exactMonetaryTotal,
+    laboratory_total: exactMonetaryTotal,
+    fair_total: exactMonetaryTotal,
     pharmacy_item_count: z.number().int().nonnegative(),
     laboratory_item_count: z.number().int().nonnegative(),
     has_fair_record: z.boolean(),
@@ -186,7 +187,7 @@ export async function listMonthlyExpenseTotals(
     .toISOString()
     .slice(0, 10);
   const { data, error } = await getNeonDataApiClient().rpc(
-    "list_monthly_expense_totals",
+    "list_monthly_expense_totals_exact",
     { p_start: from, p_through_exclusive: throughExclusive },
   );
   return assertData(data, error, monthlyTotalsSchema);

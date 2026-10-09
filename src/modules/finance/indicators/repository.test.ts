@@ -51,11 +51,56 @@ describe("financial indicators repository", () => {
         has_fair_record: true,
       },
     ]);
-    expect(mocks.rpc).toHaveBeenCalledWith("list_monthly_expense_totals", {
-      p_start: "2026-10-01",
-      p_through_exclusive: "2026-11-01",
-    });
+    expect(mocks.rpc).toHaveBeenCalledWith(
+      "list_monthly_expense_totals_exact",
+      {
+        p_start: "2026-10-01",
+        p_through_exclusive: "2026-11-01",
+      },
+    );
     expect(mocks.requireFinanceAdmin).toHaveBeenCalledOnce();
+  });
+
+  it("should_preserve_large_monthly_totals_as_decimal_strings", async () => {
+    mocks.rpc.mockResolvedValue({
+      data: [
+        {
+          competence: "2026-10-01",
+          pharmacy_total: "90071992547409.93",
+          laboratory_total: "0.00",
+          fair_total: "0.00",
+          pharmacy_item_count: 1,
+          laboratory_item_count: 0,
+          has_fair_record: false,
+        },
+      ],
+      error: null,
+    });
+
+    const totals = await listMonthlyExpenseTotals("2026-10", "2026-10");
+
+    expect(totals[0]?.pharmacy_total).toBe("90071992547409.93");
+  });
+
+  it("should_reject_number_valued_monthly_totals_to_prevent_precision_loss", async () => {
+    mocks.rpc.mockResolvedValue({
+      data: [
+        {
+          competence: "2026-10-01",
+          pharmacy_total: 90071992547409.94,
+          laboratory_total: "0.00",
+          fair_total: "0.00",
+          pharmacy_item_count: 1,
+          laboratory_item_count: 0,
+          has_fair_record: false,
+        },
+      ],
+      error: null,
+    });
+
+    await expect(
+      listMonthlyExpenseTotals("2026-10", "2026-10"),
+    ).rejects.toThrow();
   });
 
   it("should_use_one_snapshot_rpc_for_capped_purchase_exports", async () => {

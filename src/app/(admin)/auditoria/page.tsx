@@ -49,6 +49,8 @@ export default async function AuditPage({ searchParams }: Props) {
     action: one(search.action)?.slice(0, 80) || null,
     actorId: one(search.actor)?.slice(0, 160) || null,
     page: Number.isSafeInteger(rawPage) && rawPage > 0 ? rawPage : 1,
+    snapshotAt: one(search.snapshot_at),
+    snapshotId: one(search.snapshot_id),
   };
   const result = await listAdministrativeAudit(filters);
   return (
@@ -192,7 +194,7 @@ export default async function AuditPage({ searchParams }: Props) {
           {result.page > 1 ? (
             <Link
               className="rounded-md border px-3 py-2 text-sm"
-              href={pageHref(search, result.page - 1)}
+              href={pageHref(search, result.page - 1, result.snapshot)}
             >
               Eventos mais recentes
             </Link>
@@ -205,7 +207,7 @@ export default async function AuditPage({ searchParams }: Props) {
           {result.hasMore ? (
             <Link
               className="rounded-md border px-3 py-2 text-sm"
-              href={pageHref(search, result.page + 1)}
+              href={pageHref(search, result.page + 1, result.snapshot)}
             >
               Eventos anteriores
             </Link>
@@ -225,6 +227,7 @@ export default async function AuditPage({ searchParams }: Props) {
 function pageHref(
   search: Record<string, string | string[] | undefined>,
   page: number,
+  snapshot: { createdAt: string; id: string } | null,
 ) {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(search)) {
@@ -232,5 +235,9 @@ function pageHref(
     if (normalized && key !== "page") params.set(key, normalized);
   }
   params.set("page", String(page));
+  if (snapshot) {
+    params.set("snapshot_at", snapshot.createdAt);
+    params.set("snapshot_id", snapshot.id);
+  }
   return `/auditoria?${params.toString()}`;
 }

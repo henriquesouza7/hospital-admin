@@ -30,18 +30,36 @@ export type AuditFilters = Readonly<{
   action: string | null;
   actorId: string | null;
   page: number;
+  snapshotAt: string | null;
+  snapshotId: string | null;
 }>;
 
 export async function listAdministrativeAudit(filters: AuditFilters) {
   await requireAdmin();
-  const page = Math.min(Math.max(filters.page, 1), AUDIT_MAX_PAGE);
+  const maxSnapshotId = BigInt("9223372036854775807");
+  const validSnapshot =
+    filters.snapshotAt !== null &&
+    filters.snapshotId !== null &&
+    z.iso.datetime({ offset: true }).safeParse(filters.snapshotAt).success &&
+    /^(?:0|[1-9]\d*)$/.test(filters.snapshotId) &&
+    BigInt(filters.snapshotId) <= maxSnapshotId;
+  const page = Math.min(
+    Math.max(validSnapshot || filters.page === 1 ? filters.page : 1, 1),
+    AUDIT_MAX_PAGE,
+  );
   const offset = (page - 1) * AUDIT_PAGE_SIZE;
   if (
     filters.module !== "todos" &&
     filters.entityType &&
     !entityTypesForModule(filters.module).includes(filters.entityType)
   ) {
-    return { events: [], page, hasMore: false, limitReached: false };
+    return {
+      events: [],
+      page,
+      hasMore: false,
+      limitReached: false,
+      snapshot: null,
+    };
   }
   let query = getNeonDataApiClient()
     .from("audit_logs")
@@ -51,13 +69,24 @@ export async function listAdministrativeAudit(filters: AuditFilters) {
 
   if (filters.from) query = query.gte("created_at", filters.from);
   if (filters.through) query = query.lt("created_at", filters.through);
+  if (validSnapshot) {
+    query = query.or(
+      `created_at.lt.${filters.snapshotAt},and(created_at.eq.${filters.snapshotAt},id.lte.${filters.snapshotId})`,
+    );
+  }
   if (filters.actorId) query = query.eq("actor_id", filters.actorId);
   if (filters.action) query = query.eq("action", filters.action);
   if (filters.entityType) query = query.eq("entity_type", filters.entityType);
   else if (filters.module !== "todos") {
     const entities = entityTypesForModule(filters.module);
     if (entities.length === 0)
-      return { events: [], page, hasMore: false, limitReached: false };
+      return {
+        events: [],
+        page,
+        hasMore: false,
+        limitReached: false,
+        snapshot: null,
+      };
     query = query.in("entity_type", [...entities]);
   }
 
@@ -67,10 +96,16 @@ export async function listAdministrativeAudit(filters: AuditFilters) {
   }
   const rows = z.array(rowSchema).parse(data);
   const hasMore = rows.length > AUDIT_PAGE_SIZE;
+  const snapshot = validSnapshot
+    ? { createdAt: filters.snapshotAt!, id: filters.snapshotId! }
+    : rows[0]
+      ? { createdAt: rows[0].created_at, id: rows[0].id }
+      : null;
   return {
     events: rows.slice(0, AUDIT_PAGE_SIZE),
     page,
     hasMore: page < AUDIT_MAX_PAGE && hasMore,
     limitReached: page === AUDIT_MAX_PAGE && hasMore,
+    snapshot,
   };
 }
