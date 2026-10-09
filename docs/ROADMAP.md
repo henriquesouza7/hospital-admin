@@ -77,11 +77,14 @@ estão no PR #25. As sete migrations-base do ciclo (cinco de 08/10 e duas de
 privilégios descritos em `DEMO_2026-10-09.md`. A consulta atual também encontrou
 `list_monthly_expense_totals_exact` com valores textuais e permissões restritas,
 compatível com `20261009020000_preserve_exact_financial_export_totals.sql`.
-As oito migrations versionadas do ciclo (cinco de 08/10 e três de 09/10) estão
+As nove migrations versionadas do ciclo (cinco de 08/10 e quatro de 09/10) estão
 documentadas para ambientes novos. Como não há ledger de migrations, a presença
 da RPC não informa quando ou como foi instalada; esta rodada não aplicou SQL e
-a migration não deve ser reaplicada enquanto a RPC existir. A chamada financeira
-autenticada continua sem homologação. O PR #25 continua sem merge.
+a migration não deve ser reaplicada enquanto a RPC existir. A nova migration
+`20261009030000_index_purchase_orders_by_order_date.sql` está versionada no PR,
+mas não foi aplicada no Neon demo; a validação com histórico populado também
+permanece pendente. A chamada financeira autenticada continua sem homologação.
+O PR #25 continua sem merge.
 
 Fase 7 permanece aberta até executar os quatro smokes autenticados com uma
 sessão real, testar RLS/RPCs usando atores autenticados, validar persistência e
