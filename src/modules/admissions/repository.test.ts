@@ -209,32 +209,38 @@ describe("doctors repository", () => {
     });
   });
 
-  it("should_page_admission_export_rows_and_join_doctor_names", async () => {
-    const source = Array.from({ length: 1001 }, () => ({
-      entry_date: "2026-10-07",
-      quantity: 3,
-      doctor: { name: doctor.name },
-    }));
-    const ranges: Array<[number, number]> = [];
-    const select = vi.fn().mockImplementation(() => {
-      const query = {
-        gte: vi.fn(),
-        lt: vi.fn(),
-        order: vi.fn(),
-        range: vi.fn().mockImplementation((start: number, end: number) => {
-          ranges.push([start, end]);
-          return Promise.resolve({
-            data: source.slice(start, end + 1),
-            error: null,
-          });
-        }),
-      };
-      query.gte.mockReturnValue(query);
-      query.lt.mockReturnValue(query);
-      query.order.mockReturnValue(query);
-      return query;
+  it("should_export_a_single_snapshot_when_admissions_are_inserted_concurrently", async () => {
+    const snapshot = [
+      {
+        id: "20000000-0000-4000-8000-000000000002",
+        doctor_id: doctor.id,
+        entry_date: "2026-10-07",
+        quantity: 3,
+        created_at: "2026-10-07T12:00:00Z",
+        updated_at: "2026-10-07T12:00:00Z",
+      },
+      {
+        id: "20000000-0000-4000-8000-000000000003",
+        doctor_id: doctor.id,
+        entry_date: "2026-10-06",
+        quantity: 2,
+        created_at: "2026-10-06T12:00:00Z",
+        updated_at: "2026-10-06T12:00:00Z",
+      },
+    ];
+    const currentRows = [...snapshot];
+    mocks.rpc.mockImplementation(async () => {
+      const rowsInStatementSnapshot = [...currentRows];
+      currentRows.unshift({
+        id: "20000000-0000-4000-8000-000000000001",
+        doctor_id: doctor.id,
+        entry_date: "2026-10-08",
+        quantity: 5,
+        created_at: "2026-10-08T12:00:00Z",
+        updated_at: "2026-10-08T12:00:00Z",
+      });
+      return { data: rowsInStatementSnapshot, error: null };
     });
-    mocks.from.mockReturnValue({ select });
 
     const entries = await listAdmissionEntriesForExport(
       "2026-10-01",
@@ -242,20 +248,19 @@ describe("doctors repository", () => {
       10_001,
     );
 
-    expect(entries).toHaveLength(1001);
-    expect(entries[0]).toEqual({
-      entry_date: "2026-10-07",
-      doctor_name: doctor.name,
-      quantity: 3,
-    });
-    expect(mocks.from).toHaveBeenCalledWith("admission_entries");
-    expect(select).toHaveBeenCalledWith(
-      "entry_date,quantity,doctor:doctors!inner(name)",
-    );
-    expect(ranges).toEqual([
-      [0, 999],
-      [1000, 1999],
+    expect(entries).toEqual([
+      { entry_date: "2026-10-07", doctor_name: doctor.name, quantity: 3 },
+      { entry_date: "2026-10-06", doctor_name: doctor.name, quantity: 2 },
     ]);
+    expect(currentRows).toHaveLength(3);
+    expect(mocks.rpc).toHaveBeenCalledWith("list_admission_entries", {
+      p_start_date: "2026-10-01",
+      p_end_date: "2026-11-01",
+      p_doctor_id: null,
+    });
+    expect(mocks.rpc).toHaveBeenCalledOnce();
+    expect(mocks.from).toHaveBeenCalledOnce();
+    expect(mocks.from).toHaveBeenCalledWith("doctors");
     expect(mocks.requireAdmin).toHaveBeenCalledOnce();
   });
 

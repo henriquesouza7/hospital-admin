@@ -94,14 +94,6 @@ const admissionDashboardTotalsSchema = z.object({
     }),
   ),
 });
-const admissionExportRowsSchema = z.array(
-  z.object({
-    entry_date: z.iso.date(),
-    quantity: quantitySchema,
-    doctor: z.object({ name: z.string().min(1) }),
-  }),
-);
-const ADMISSION_EXPORT_PAGE_SIZE = 1000;
 const targetRowsSchema = z.array(
   z.object({
     id: z.string().uuid(),
@@ -163,15 +155,12 @@ export async function listAdmissionEntries(
 ): Promise<AdmissionEntry[]> {
   await requireAdmin();
   const client = getNeonDataApiClient();
-  const { data, error } = await client.rpc("list_admission_entries", {
-    p_start_date: startDate,
-    p_end_date: endDate,
-    p_doctor_id: doctorId ?? null,
-  });
-  if (error || data === null || data === undefined) {
-    throw new Error("Não foi possível carregar os lançamentos de internações.");
-  }
-  const entries = entryRowsSchema.parse(data);
+  const entries = await readAdmissionEntryRows(
+    client,
+    startDate,
+    endDate,
+    doctorId,
+  );
   const doctors = await listAllDoctors(client);
   const doctorsById = new Map(doctors.map((doctor) => [doctor.id, doctor]));
   return entries
@@ -189,6 +178,23 @@ export async function listAdmissionEntries(
       (a, b) =>
         b.entry_date.localeCompare(a.entry_date) || a.id.localeCompare(b.id),
     );
+}
+
+async function readAdmissionEntryRows(
+  client: ReturnType<typeof getNeonDataApiClient>,
+  startDate: string,
+  endDate: string,
+  doctorId?: string,
+) {
+  const { data, error } = await client.rpc("list_admission_entries", {
+    p_start_date: startDate,
+    p_end_date: endDate,
+    p_doctor_id: doctorId ?? null,
+  });
+  if (error || data === null || data === undefined) {
+    throw new Error("Não foi possível carregar os lançamentos de internações.");
+  }
+  return entryRowsSchema.parse(data);
 }
 
 export async function getAdmissionDashboardTotals(
@@ -228,37 +234,23 @@ export async function listAdmissionEntriesForExport(
   if (!Number.isSafeInteger(maxRows) || maxRows < 1 || maxRows > 10_001) {
     throw new Error("O limite de linhas da exportação é inválido.");
   }
-  const entries: Array<{
-    entry_date: string;
-    doctor_name: string;
-    quantity: number;
-  }> = [];
-  for (let offset = 0; offset < maxRows; offset += ADMISSION_EXPORT_PAGE_SIZE) {
-    const pageSize = Math.min(ADMISSION_EXPORT_PAGE_SIZE, maxRows - offset);
-    const { data, error } = await getNeonDataApiClient()
-      .from("admission_entries")
-      .select("entry_date,quantity,doctor:doctors!inner(name)")
-      .gte("entry_date", startDate)
-      .lt("entry_date", endDate)
-      .order("entry_date", { ascending: false })
-      .order("doctor_id", { ascending: true })
-      .range(offset, offset + pageSize - 1);
-    if (error || data === null || data === undefined) {
-      throw new Error(
-        "Não foi possível carregar os lançamentos da exportação.",
-      );
-    }
-    const rows = admissionExportRowsSchema.parse(data);
-    entries.push(
-      ...rows.map((entry) => ({
-        entry_date: entry.entry_date,
-        doctor_name: entry.doctor.name,
-        quantity: entry.quantity,
-      })),
-    );
-    if (rows.length < pageSize) break;
-  }
-  return entries;
+  const client = getNeonDataApiClient();
+  const rows = await readAdmissionEntryRows(client, startDate, endDate);
+  const boundedRows = rows.slice(0, maxRows);
+  const doctors = await listAllDoctors(client);
+  const doctorsById = new Map(
+    doctors.map((doctor) => [doctor.id, doctor.name]),
+  );
+  return boundedRows.map((entry) => {
+    const doctorName = doctorsById.get(entry.doctor_id);
+    if (!doctorName)
+      throw new Error("O histórico referencia um médico inexistente.");
+    return {
+      entry_date: entry.entry_date,
+      doctor_name: doctorName,
+      quantity: entry.quantity,
+    };
+  });
 }
 
 export async function listAdmissionTargets(
