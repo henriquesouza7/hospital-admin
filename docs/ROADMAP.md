@@ -73,10 +73,13 @@ Dashboard geral, consulta de auditoria, exportações e smokes E2E autenticados
 estão no PR #25. Sete migrations do ciclo de consolidação (cinco de 08/10 e
 duas de 09/10) foram confirmadas no Neon demo `floral-breeze-18394345`, branch
 `br-misty-recipe-b8muzwtd`; consultas read-only confirmaram objetos e
-privilégios descritos em `DEMO_2026-10-09.md`. A migration incremental
-`20261009020000_preserve_exact_financial_export_totals.sql` permanece pendente
-de autorização e implantação; até lá, o dashboard identifica os totais
-financeiros como indisponíveis nesse ambiente. O PR #25 continua sem merge.
+privilégios descritos em `DEMO_2026-10-09.md`. A consulta atual também encontrou
+`list_monthly_expense_totals_exact` com valores textuais e permissões restritas,
+compatível com `20261009020000_preserve_exact_financial_export_totals.sql`.
+Como não há ledger de migrations, a presença do objeto não informa quando ou
+como foi instalado; esta rodada não aplicou SQL e a migration não deve ser
+reaplicada enquanto a RPC existir. A chamada financeira autenticada continua
+sem homologação. O PR #25 continua sem merge.
 
 Fase 7 permanece aberta até executar os quatro smokes autenticados com uma
 sessão real, testar RLS/RPCs usando atores autenticados, validar persistência e
@@ -88,8 +91,10 @@ negócio continuam vazios e nenhum dado sintético foi inserido.
 Em 09/10/2026, a correção do token circular `--font-sans` foi verificada no
 navegador deste worktree: login, recuperação e redefinição sem token computam
 Geist; login e recuperação não têm overflow em 390 px ou 1440 px, e o foco de
-teclado no email é visível. A captura com erro de recuperação não foi reproduzida
-contra este HEAD: não foi enviado email e não se obteve status/código do Neon
-Auth; a origem local exata precisa ser definida em `APP_BASE_URL` quando a porta
-for diferente de 3000. O fluxo real de recuperação e as páginas administrativas
-continuam sem homologação autenticada.
+teclado no email é visível. O `.env.local` deste worktree não define
+`APP_BASE_URL`; o fallback gera callback para `:3000` mesmo em outra porta, então
+o link pode voltar ao endereço errado. Neon Auth tem SMTP compartilhado e
+`allow_localhost=true`; como essa opção permite localhost sem whitelist, não foi
+confirmado que a diferença de origem cause o erro capturado. O envio e a
+redefinição reais, assim como as páginas administrativas, continuam sem
+homologação autenticada.
