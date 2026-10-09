@@ -75,7 +75,9 @@ demo `floral-breeze-18394345`, branch `br-misty-recipe-b8muzwtd`; consultas
 read-only confirmaram a política administrativa única da auditoria, RLS nas
 tabelas examinadas, privilégios das RPCs agregadoras e o índice de ordenação.
 O HEAD `0add2be` passou os gates locais e recebeu revisão sem problemas graves;
-26 discussões estão resolvidas. O PR continua sem merge.
+26 discussões estão resolvidas. O HEAD atual `0fbd497` inclui smokes
+autenticados preparados, passou os gates locais e aguarda nova revisão. O PR
+continua sem merge.
 
 Fase 7 permanece aberta até executar os quatro smokes autenticados com uma
 sessão real, testar RLS/RPCs usando atores autenticados, validar persistência e
