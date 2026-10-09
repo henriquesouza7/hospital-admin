@@ -7,6 +7,7 @@ import type { IndicatorFairExpense, IndicatorPurchase } from "./domain";
 
 const PAGE_SIZE = 1000;
 const numeric = z.union([z.string(), z.number()]).transform(String);
+const exactMonetaryTotal = z.string().regex(/^\d+(?:\.\d{1,2})?$/);
 const supplierSchema = z.object({ id: z.string().uuid(), name: z.string() });
 const itemSchema = z.object({
   id: z.string().uuid(),
@@ -25,10 +26,22 @@ const itemWithOrderSchema = itemSchema.extend({
     supplier: supplierSchema,
   }),
 });
+const purchaseExportSchema = z.array(itemWithOrderSchema);
 const fairSchema = z.array(
   z.object({
     competence: z.iso.date(),
     total_amount: numeric,
+  }),
+);
+const monthlyTotalsSchema = z.array(
+  z.object({
+    competence: z.iso.date(),
+    pharmacy_total: exactMonetaryTotal,
+    laboratory_total: exactMonetaryTotal,
+    fair_total: exactMonetaryTotal,
+    pharmacy_item_count: z.number().int().nonnegative(),
+    laboratory_item_count: z.number().int().nonnegative(),
+    has_fair_record: z.boolean(),
   }),
 );
 const productSchema = z.array(
@@ -49,46 +62,98 @@ function assertData<T>(data: unknown, error: unknown, schema: z.ZodType<T>): T {
   return schema.parse(data);
 }
 
+export class MonthlyExpenseTotalsRpcUnavailableError extends Error {
+  constructor() {
+    super("A RPC de totais financeiros exatos não está instalada.");
+    this.name = "MonthlyExpenseTotalsRpcUnavailableError";
+  }
+}
+
+function isMissingExactTotalsRpc(error: unknown) {
+  if (typeof error !== "object" || error === null || !("code" in error)) {
+    return false;
+  }
+  return error.code === "PGRST202" || error.code === "42883";
+}
+
 export async function loadIndicatorsSource(
   startMonth: string,
   endMonth: string,
+  options: Readonly<{
+    maxPurchaseRows?: number;
+    includeProducts?: boolean;
+  }> = {},
 ) {
   await requireFinanceAdmin();
   const from = `${startMonth}-01`;
   const [endYear, endMonthNumber] = endMonth.split("-").map(Number);
   const throughExclusive = `${new Date(Date.UTC(endYear, endMonthNumber, 1)).toISOString().slice(0, 10)}`;
 
-  const purchases: IndicatorPurchase[] = [];
-  for (const sector of ["farmacia", "laboratorio"] as const) {
-    for (let offset = 0; ; offset += PAGE_SIZE) {
-      const { data, error } = await getNeonDataApiClient()
-        .from("purchase_order_items")
-        .select(
-          "id,product_id,quantity,unit_price,line_total,product_name_snapshot,product_presentation_snapshot,product_category_snapshot,purchase_order:purchase_orders!inner(sector,order_date,supplier:suppliers!inner(id,name))",
-        )
-        .eq("purchase_order.sector", sector)
-        .gte("purchase_order.order_date", from)
-        .lt("purchase_order.order_date", throughExclusive)
-        .order("id", { ascending: true })
-        .range(offset, offset + PAGE_SIZE - 1);
-      const items = assertData(data, error, z.array(itemWithOrderSchema));
-      purchases.push(
-        ...items.map((item) => ({
-          id: item.id,
-          sector: item.purchase_order.sector,
-          productId: item.product_id,
-          supplierId: item.purchase_order.supplier.id,
-          supplierName: item.purchase_order.supplier.name,
-          orderDate: item.purchase_order.order_date,
-          quantity: item.quantity,
-          unitPrice: item.unit_price,
-          lineTotal: item.line_total,
-          productName: item.product_name_snapshot,
-          presentation: item.product_presentation_snapshot,
-          category: item.product_category_snapshot,
-        })),
-      );
-      if (items.length < PAGE_SIZE) break;
+  let purchases: IndicatorPurchase[] = [];
+  const purchaseLimit =
+    options.maxPurchaseRows === undefined
+      ? Number.POSITIVE_INFINITY
+      : Math.max(0, Math.floor(options.maxPurchaseRows));
+  if (options.maxPurchaseRows !== undefined) {
+    const { data, error } = await getNeonDataApiClient().rpc(
+      "list_purchase_order_items_for_export",
+      {
+        p_start: from,
+        p_through_exclusive: throughExclusive,
+        p_limit: purchaseLimit,
+      },
+    );
+    const items = assertData(data, error, purchaseExportSchema);
+    purchases = items.map((item) => ({
+      id: item.id,
+      sector: item.purchase_order.sector,
+      productId: item.product_id,
+      supplierId: item.purchase_order.supplier.id,
+      supplierName: item.purchase_order.supplier.name,
+      orderDate: item.purchase_order.order_date,
+      quantity: item.quantity,
+      unitPrice: item.unit_price,
+      lineTotal: item.line_total,
+      productName: item.product_name_snapshot,
+      presentation: item.product_presentation_snapshot,
+      category: item.product_category_snapshot,
+    }));
+  } else {
+    for (const sector of ["farmacia", "laboratorio"] as const) {
+      let offset = 0;
+      while (purchases.length < purchaseLimit) {
+        const pageSize = Math.min(PAGE_SIZE, purchaseLimit - purchases.length);
+        const { data, error } = await getNeonDataApiClient()
+          .from("purchase_order_items")
+          .select(
+            "id,product_id,quantity,unit_price,line_total,product_name_snapshot,product_presentation_snapshot,product_category_snapshot,purchase_order:purchase_orders!inner(sector,order_date,supplier:suppliers!inner(id,name))",
+          )
+          .eq("purchase_order.sector", sector)
+          .gte("purchase_order.order_date", from)
+          .lt("purchase_order.order_date", throughExclusive)
+          .order("id", { ascending: true })
+          .range(offset, offset + pageSize - 1);
+        const items = assertData(data, error, z.array(itemWithOrderSchema));
+        purchases.push(
+          ...items.map((item) => ({
+            id: item.id,
+            sector: item.purchase_order.sector,
+            productId: item.product_id,
+            supplierId: item.purchase_order.supplier.id,
+            supplierName: item.purchase_order.supplier.name,
+            orderDate: item.purchase_order.order_date,
+            quantity: item.quantity,
+            unitPrice: item.unit_price,
+            lineTotal: item.line_total,
+            productName: item.product_name_snapshot,
+            presentation: item.product_presentation_snapshot,
+            category: item.product_category_snapshot,
+          })),
+        );
+        if (items.length < pageSize) break;
+        offset += pageSize;
+      }
+      if (purchases.length >= purchaseLimit) break;
     }
   }
 
@@ -100,15 +165,17 @@ export async function loadIndicatorsSource(
     .order("competence", { ascending: true });
 
   const products: ProductOption[] = [];
-  for (let offset = 0; ; offset += PAGE_SIZE) {
-    const { data, error } = await getNeonDataApiClient()
-      .from("products")
-      .select("id,sector,name,presentation,is_active")
-      .order("id", { ascending: true })
-      .range(offset, offset + PAGE_SIZE - 1);
-    const rows = assertData(data, error, productSchema);
-    products.push(...rows);
-    if (rows.length < PAGE_SIZE) break;
+  if (options.includeProducts !== false) {
+    for (let offset = 0; ; offset += PAGE_SIZE) {
+      const { data, error } = await getNeonDataApiClient()
+        .from("products")
+        .select("id,sector,name,presentation,is_active")
+        .order("id", { ascending: true })
+        .range(offset, offset + PAGE_SIZE - 1);
+      const rows = assertData(data, error, productSchema);
+      products.push(...rows);
+      if (rows.length < PAGE_SIZE) break;
+    }
   }
 
   return {
@@ -121,4 +188,24 @@ export async function loadIndicatorsSource(
     ),
     products,
   };
+}
+
+export async function listMonthlyExpenseTotals(
+  startMonth: string,
+  endMonth: string,
+) {
+  await requireFinanceAdmin();
+  const from = `${startMonth}-01`;
+  const [endYear, endMonthNumber] = endMonth.split("-").map(Number);
+  const throughExclusive = new Date(Date.UTC(endYear, endMonthNumber, 1))
+    .toISOString()
+    .slice(0, 10);
+  const { data, error } = await getNeonDataApiClient().rpc(
+    "list_monthly_expense_totals_exact",
+    { p_start: from, p_through_exclusive: throughExclusive },
+  );
+  if (isMissingExactTotalsRpc(error)) {
+    throw new MonthlyExpenseTotalsRpcUnavailableError();
+  }
+  return assertData(data, error, monthlyTotalsSchema);
 }

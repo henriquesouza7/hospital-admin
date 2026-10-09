@@ -1,8 +1,8 @@
 import { PageHeader } from "@/components/page-header";
-import { summarizeAdmissions } from "@/modules/admissions/domain";
+import { summarizeAdmissionTotals } from "@/modules/admissions/domain";
 import { AdmissionsDashboardView } from "@/modules/admissions/dashboard-view";
 import {
-  listAdmissionEntries,
+  getAdmissionDashboardTotals,
   listAdmissionTargets,
 } from "@/modules/admissions/repository";
 import { parseYearMonth } from "@/modules/admissions/period";
@@ -22,12 +22,12 @@ export default async function AdmissionsPage({
   const period = parseYearMonth(await searchParams);
   const startDate = `${period.year}-01-01`;
   const endDate = `${period.year + 1}-01-01`;
-  const [entries, targets] = await Promise.all([
-    listAdmissionEntries(startDate, endDate),
+  const [totals, targets] = await Promise.all([
+    getAdmissionDashboardTotals(startDate, endDate),
     listAdmissionTargets(startDate, endDate),
   ]);
-  const dashboard = summarizeAdmissions(
-    entries,
+  const dashboard = summarizeAdmissionTotals(
+    totals,
     targets,
     period.year,
     period.month,

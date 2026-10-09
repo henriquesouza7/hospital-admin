@@ -5,6 +5,7 @@ import {
   loadProductionIndicatorSource,
   listProcedureCategories,
   listProductionEntries,
+  listProductionEntriesForExport,
   listProductionProcedures,
 } from "./repository";
 
@@ -26,7 +27,43 @@ beforeEach(() => {
 });
 
 describe("production repository", () => {
-  it("should_load_indicator_source_with_three_paginated_dataset_queries", async () => {
+  it("should_read_production_export_from_one_bounded_snapshot", async () => {
+    rpc.mockResolvedValue({
+      data: [
+        {
+          reference_period: "2026-10-01",
+          category_name: "Categoria sintética",
+          procedure_name: "Procedimento sintético",
+          quantity: "2.000",
+          counting_unit: "procedimentos",
+          source: "realizado",
+        },
+      ],
+      error: null,
+    });
+
+    await expect(
+      listProductionEntriesForExport("2026-10-01", "2026-11-01", 10_001),
+    ).resolves.toEqual([
+      {
+        reference_period: "2026-10-01",
+        category_name: "Categoria sintética",
+        procedure_name: "Procedimento sintético",
+        quantity: "2.000",
+        counting_unit: "procedimentos",
+        source: "realizado",
+      },
+    ]);
+    expect(rpc).toHaveBeenCalledOnce();
+    expect(rpc).toHaveBeenCalledWith("list_production_entries_for_export", {
+      p_start: "2026-10-01",
+      p_through_exclusive: "2026-11-01",
+      p_limit: 10_001,
+    });
+    expect(from).not.toHaveBeenCalled();
+  });
+
+  it("should_filter_indicator_entries_to_the_requested_year", async () => {
     const categoryId = "00000000-0000-4000-8000-000000000101";
     const procedureId = "00000000-0000-4000-8000-000000000201";
     const createdAt = "2026-03-01T00:00:00.000Z";
@@ -64,16 +101,28 @@ describe("production repository", () => {
         },
       ],
     };
+    const filters: Array<[string, string, string]> = [];
     from.mockImplementation((table: string) => {
       const query = {
         select: () => query,
+        gte: (column: string, value: string) => {
+          filters.push([table, column, value]);
+          return query;
+        },
+        lte: (column: string, value: string) => {
+          filters.push([table, column, value]);
+          return query;
+        },
         order: () => query,
         range: async () => ({ data: rowsByTable[table], error: null }),
       };
       return query;
     });
 
-    const source = await loadProductionIndicatorSource();
+    const source = await loadProductionIndicatorSource({
+      from: "2026-01",
+      to: "2026-12",
+    });
 
     expect(requireProductionAdmin).toHaveBeenCalledOnce();
     expect(from.mock.calls.map(([table]) => table).sort()).toEqual([
@@ -94,6 +143,10 @@ describe("production repository", () => {
       counting_unit: "procedimentos",
       quantity: "0",
     });
+    expect(filters).toEqual([
+      ["production_entries", "reference_period", "2026-01-01"],
+      ["production_entries", "reference_period", "2026-12-01"],
+    ]);
   });
 
   it("sends a normalized entry payload without client supplied actor identity", async () => {

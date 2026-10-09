@@ -1,10 +1,20 @@
 import { describe, expect, it } from "vitest";
 import {
+  summarizeAdmissionTotals,
   summarizeAdmissions,
   type AdmissionEntry,
   type AdmissionTarget,
 } from "./domain";
 import { getAdmissionMonthStatusLabel } from "./admission-dashboard-chart";
+import { addMonthsClamped } from "./period";
+
+describe("admissions period dates", () => {
+  it("should_clamp_two_year_period_end_to_february_when_start_is_leap_day", () => {
+    expect(
+      addMonthsClamped(new Date("2028-02-29T00:00:00Z"), 24).toISOString(),
+    ).toBe("2030-02-28T00:00:00.000Z");
+  });
+});
 
 const entries: AdmissionEntry[] = [
   {
@@ -106,6 +116,46 @@ describe("admissions dashboard analytics", () => {
         quantity: 5,
       },
     ]);
+  });
+
+  it("should_build_the_dashboard_from_aggregates_without_changing_history", () => {
+    const expected = summarizeAdmissions(
+      entries,
+      targets,
+      2026,
+      10,
+      new Date("2026-10-07T00:00:00Z"),
+    );
+    const dashboard = summarizeAdmissionTotals(
+      {
+        monthlyTotals: [
+          { month: 1, quantity: 5 },
+          { month: 9, quantity: 2 },
+          { month: 10, quantity: 3 },
+        ],
+        annualTotal: 10,
+        byDoctor: [
+          {
+            doctorId: "doctor-a",
+            doctorName: "Dra. Teste A",
+            active: true,
+            quantity: 5,
+          },
+          {
+            doctorId: "doctor-b",
+            doctorName: "Dr. Teste B",
+            active: false,
+            quantity: 5,
+          },
+        ],
+      },
+      targets,
+      2026,
+      10,
+      new Date("2026-10-07T00:00:00Z"),
+    );
+
+    expect(dashboard).toEqual(expected);
   });
 
   it("should_return_zeroes_for_months_without_entries_and_mark_elapsed_period", () => {

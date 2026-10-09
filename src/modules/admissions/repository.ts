@@ -3,7 +3,12 @@ import "server-only";
 import { z } from "zod";
 import { getNeonDataApiClient } from "@/lib/neon/data-api";
 import { requireAdmin } from "@/lib/auth/require-admin";
-import type { AdmissionEntry, AdmissionTarget, Doctor } from "./domain";
+import type {
+  AdmissionDashboardTotals,
+  AdmissionEntry,
+  AdmissionTarget,
+  Doctor,
+} from "./domain";
 
 const doctorSchema = z.object({
   id: z.string().uuid(),
@@ -72,6 +77,30 @@ const entryRowsSchema = z.array(
     updated_at: z.iso.datetime({ offset: true }),
   }),
 );
+const admissionExportRowsSchema = z.array(
+  z.object({
+    entry_date: z.iso.date(),
+    quantity: quantitySchema,
+    doctor_name: z.string().min(1),
+  }),
+);
+const admissionDashboardTotalsSchema = z.object({
+  monthly_totals: z.array(
+    z.object({
+      month: z.number().int().min(1).max(12),
+      quantity: quantitySchema,
+    }),
+  ),
+  annual_total: quantitySchema,
+  by_doctor: z.array(
+    z.object({
+      doctor_id: z.string().uuid(),
+      doctor_name: z.string().min(1),
+      doctor_active: z.boolean(),
+      quantity: quantitySchema,
+    }),
+  ),
+});
 const targetRowsSchema = z.array(
   z.object({
     id: z.string().uuid(),
@@ -133,15 +162,12 @@ export async function listAdmissionEntries(
 ): Promise<AdmissionEntry[]> {
   await requireAdmin();
   const client = getNeonDataApiClient();
-  const { data, error } = await client.rpc("list_admission_entries", {
-    p_start_date: startDate,
-    p_end_date: endDate,
-    p_doctor_id: doctorId ?? null,
-  });
-  if (error || data === null || data === undefined) {
-    throw new Error("Não foi possível carregar os lançamentos de internações.");
-  }
-  const entries = entryRowsSchema.parse(data);
+  const entries = await readAdmissionEntryRows(
+    client,
+    startDate,
+    endDate,
+    doctorId,
+  );
   const doctors = await listAllDoctors(client);
   const doctorsById = new Map(doctors.map((doctor) => [doctor.id, doctor]));
   return entries
@@ -159,6 +185,74 @@ export async function listAdmissionEntries(
       (a, b) =>
         b.entry_date.localeCompare(a.entry_date) || a.id.localeCompare(b.id),
     );
+}
+
+async function readAdmissionEntryRows(
+  client: ReturnType<typeof getNeonDataApiClient>,
+  startDate: string,
+  endDate: string,
+  doctorId?: string,
+) {
+  const { data, error } = await client.rpc("list_admission_entries", {
+    p_start_date: startDate,
+    p_end_date: endDate,
+    p_doctor_id: doctorId ?? null,
+  });
+  if (error || data === null || data === undefined) {
+    throw new Error("Não foi possível carregar os lançamentos de internações.");
+  }
+  return entryRowsSchema.parse(data);
+}
+
+export async function getAdmissionDashboardTotals(
+  startDate: string,
+  throughExclusive: string,
+): Promise<AdmissionDashboardTotals> {
+  await requireAdmin();
+  const { data, error } = await getNeonDataApiClient().rpc(
+    "get_admission_dashboard_totals",
+    {
+      p_start: startDate,
+      p_through_exclusive: throughExclusive,
+    },
+  );
+  if (error || data === null || data === undefined) {
+    throw new Error("Não foi possível carregar o resumo de internações.");
+  }
+  const totals = admissionDashboardTotalsSchema.parse(data);
+  return {
+    monthlyTotals: totals.monthly_totals,
+    annualTotal: totals.annual_total,
+    byDoctor: totals.by_doctor.map((doctor) => ({
+      doctorId: doctor.doctor_id,
+      doctorName: doctor.doctor_name,
+      active: doctor.doctor_active,
+      quantity: doctor.quantity,
+    })),
+  };
+}
+
+export async function listAdmissionEntriesForExport(
+  startDate: string,
+  endDate: string,
+  maxRows: number,
+) {
+  await requireAdmin();
+  if (!Number.isSafeInteger(maxRows) || maxRows < 1 || maxRows > 10_001) {
+    throw new Error("O limite de linhas da exportação é inválido.");
+  }
+  const { data, error } = await getNeonDataApiClient().rpc(
+    "list_admission_entries_for_export",
+    {
+      p_start_date: startDate,
+      p_end_date: endDate,
+      p_limit: maxRows,
+    },
+  );
+  if (error || data === null || data === undefined) {
+    throw new Error("Não foi possível carregar os lançamentos da exportação.");
+  }
+  return admissionExportRowsSchema.parse(data);
 }
 
 export async function listAdmissionTargets(

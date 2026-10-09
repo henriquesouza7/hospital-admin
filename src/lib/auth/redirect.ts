@@ -35,12 +35,22 @@ export function getPasswordResetRedirectUrl(
     throw new Error("APP_BASE_URL é obrigatório fora do desenvolvimento.");
   }
 
-  const url = new URL(origin);
+  let url: URL;
+  try {
+    url = new URL(origin);
+  } catch {
+    throw new Error("APP_BASE_URL deve ser uma origem HTTPS válida.");
+  }
+
+  const isDevelopmentLocalOrigin =
+    nodeEnv === "development" &&
+    url.protocol === "http:" &&
+    url.hostname === "localhost" &&
+    url.port.length > 0;
 
   if (
     url.origin !== origin ||
-    (url.protocol !== "https:" &&
-      !(nodeEnv === "development" && url.origin === localAppOrigin))
+    (url.protocol !== "https:" && !isDevelopmentLocalOrigin)
   ) {
     throw new Error("APP_BASE_URL deve ser uma origem HTTPS válida.");
   }

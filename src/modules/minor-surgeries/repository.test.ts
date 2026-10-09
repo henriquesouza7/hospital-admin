@@ -25,6 +25,7 @@ import {
   createSurgeryDay,
   createSurgeryWaitlistEntry,
   getSurgeryDay,
+  getSurgerySummary,
   listDayAppointments,
   listSurgeryDaysPage,
   listMinorSurgeryAudit,
@@ -111,6 +112,32 @@ describe("minor surgeries repository", () => {
       };
       return query;
     });
+  });
+
+  it("should_load_bounded_surgery_summary_without_patient_rows", async () => {
+    const summary = {
+      days: [],
+      has_more: false,
+      day_count: 0,
+      waiting_count: 4,
+      capacity: 0,
+      occupied: 0,
+      awaiting_confirmation: 0,
+      confirmed: 0,
+    };
+    mocks.rpc.mockResolvedValue({ data: summary, error: null });
+
+    await expect(
+      getSurgerySummary("2026-10-01", "2026-11-01", 10_001),
+    ).resolves.toEqual(summary);
+
+    expect(mocks.rpc).toHaveBeenCalledWith("get_surgery_summary", {
+      p_start: "2026-10-01",
+      p_through_exclusive: "2026-11-01",
+      p_max_rows: 10_001,
+    });
+    expect(mocks.from).not.toHaveBeenCalled();
+    expect(mocks.requireMinorSurgeriesAdmin).toHaveBeenCalledOnce();
   });
 
   it("should_throw_when_day_query_fails", async () => {

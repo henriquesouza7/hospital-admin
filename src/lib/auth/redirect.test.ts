@@ -30,14 +30,41 @@ describe("auth redirects", () => {
     expect(getPasswordResetRedirectUrl(undefined, "development")).toBe(
       "http://localhost:3000/login/reset-password",
     );
+    expect(
+      getPasswordResetRedirectUrl("http://localhost:3000", "development"),
+    ).toBe("http://localhost:3000/login/reset-password");
+    expect(
+      getPasswordResetRedirectUrl("http://localhost:3002", "development"),
+    ).toBe("http://localhost:3002/login/reset-password");
   });
 
-  it("should_reject_untrusted_origin_when_resetting_password", () => {
+  it("should_require_a_configured_origin_outside_development", () => {
     expect(() =>
       getPasswordResetRedirectUrl(undefined, "production"),
     ).toThrow();
+  });
+
+  it("should_reject_external_http_origins_and_local_http_in_production", () => {
     expect(() =>
       getPasswordResetRedirectUrl("http://example.com", "production"),
+    ).toThrow();
+    expect(() =>
+      getPasswordResetRedirectUrl("http://example.com", "development"),
+    ).toThrow();
+    expect(() =>
+      getPasswordResetRedirectUrl("http://localhost", "development"),
+    ).toThrow();
+    expect(() =>
+      getPasswordResetRedirectUrl("http://localhost:3002", "production"),
+    ).toThrow();
+  });
+
+  it("should_reject_invalid_urls_and_non_origin_values", () => {
+    expect(() =>
+      getPasswordResetRedirectUrl("not a url", "development"),
+    ).toThrow();
+    expect(() =>
+      getPasswordResetRedirectUrl("http://localhost:3002/reset", "development"),
     ).toThrow();
     expect(() =>
       getPasswordResetRedirectUrl("https://example.com/other", "production"),

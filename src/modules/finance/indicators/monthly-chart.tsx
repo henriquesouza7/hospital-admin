@@ -9,14 +9,20 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { formatCurrency } from "@/modules/admin-dashboard/domain";
+import { currencyChartTickCents } from "./domain";
 
 type ChartPoint = Readonly<{
   month: string;
   label: string;
   pharmacy: number;
+  pharmacyExact: string;
   laboratory: number;
+  laboratoryExact: string;
   fair: number;
+  fairExact: string;
   total: number;
+  totalExact: string;
   hasRecords: boolean;
 }>;
 
@@ -25,7 +31,13 @@ const currency = new Intl.NumberFormat("pt-BR", {
   currency: "BRL",
 });
 
-export function MonthlyChart({ points }: { points: readonly ChartPoint[] }) {
+export function MonthlyChart({
+  points,
+  scale,
+}: {
+  points: readonly ChartPoint[];
+  scale: string;
+}) {
   return (
     <div
       className="h-72 w-full"
@@ -43,10 +55,23 @@ export function MonthlyChart({ points }: { points: readonly ChartPoint[] }) {
             width={84}
             tickLine={false}
             axisLine={false}
-            tickFormatter={(value: number) => currency.format(value)}
+            tickFormatter={(value: number) =>
+              formatCurrency(currencyChartTickCents(value, BigInt(scale)))
+            }
           />
           <Tooltip
-            formatter={(value) => currency.format(Number(value))}
+            formatter={(value, name, item) => {
+              const point = item.payload as ChartPoint;
+              const exactValue =
+                name === "Farmácia"
+                  ? point.pharmacyExact
+                  : name === "Laboratório"
+                    ? point.laboratoryExact
+                    : name === "Feira"
+                      ? point.fairExact
+                      : point.totalExact;
+              return [exactValue ?? currency.format(Number(value)), name ?? ""];
+            }}
             labelFormatter={(label) =>
               `${label} · ${points.find((point) => point.label === label)?.hasRecords ? "Com registros" : "Sem registros"}`
             }

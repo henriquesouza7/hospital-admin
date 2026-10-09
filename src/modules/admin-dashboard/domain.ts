@@ -1,0 +1,81 @@
+import { formatCurrency as formatBigIntCurrency } from "../finance/pharmacy/format";
+
+export function monthName(month: number): string {
+  return new Intl.DateTimeFormat("pt-BR", { month: "short", timeZone: "UTC" })
+    .format(new Date(Date.UTC(2020, month - 1, 1)))
+    .replace(".", "");
+}
+
+export function formatCurrency(cents: bigint): string {
+  return formatBigIntCurrency(cents);
+}
+
+export function formatInteger(value: number): string {
+  return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(
+    value,
+  );
+}
+
+export function getProductionForMonth(
+  entries: readonly {
+    procedure_id: string;
+    procedure_name: string;
+    counting_unit: string;
+    source: string;
+    reference_period: string;
+    quantity: string;
+  }[],
+  year: number,
+  month: number,
+) {
+  const competence = `${year}-${String(month).padStart(2, "0")}`;
+  const grouped = new Map<
+    string,
+    {
+      procedureId: string;
+      name: string;
+      unit: string;
+      source: string;
+      quantity: number;
+    }
+  >();
+  for (const entry of entries) {
+    if (entry.reference_period.slice(0, 7) !== competence) continue;
+    const key = JSON.stringify([
+      entry.procedure_id,
+      entry.counting_unit,
+      entry.source,
+    ]);
+    const current = grouped.get(key);
+    if (current) current.quantity += Number(entry.quantity);
+    else
+      grouped.set(key, {
+        procedureId: entry.procedure_id,
+        name: entry.procedure_name,
+        unit: entry.counting_unit,
+        source: entry.source,
+        quantity: Number(entry.quantity),
+      });
+  }
+  return [...grouped.entries()]
+    .map(([key, value]) => ({ id: key, ...value }))
+    .sort(
+      (left, right) =>
+        left.name.localeCompare(right.name, "pt-BR") ||
+        left.source.localeCompare(right.source, "pt-BR") ||
+        left.unit.localeCompare(right.unit, "pt-BR"),
+    );
+}
+
+export function summarizeSurgeryDays(days: readonly SurgeryDaySummary[]) {
+  return days.reduce(
+    (summary, day) => ({
+      occupied: summary.occupied + day.occupied,
+      capacity: summary.capacity + day.capacity,
+      awaiting: summary.awaiting + day.awaitingConfirmation,
+      confirmed: summary.confirmed + day.confirmed,
+    }),
+    { occupied: 0, capacity: 0, awaiting: 0, confirmed: 0 },
+  );
+}
+import type { SurgeryDaySummary } from "@/modules/minor-surgeries/domain";

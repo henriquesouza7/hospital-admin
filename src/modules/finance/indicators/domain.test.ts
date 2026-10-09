@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  amountToCents,
   buildIndicatorsData,
   buildPriceGroups,
   calculateSavingsOpportunities,
   compareConsecutivePrices,
+  currencyChartTickCents,
+  currencyChartScale,
+  currencyChartValue,
   getHistoricalPriceHistory,
   getLargestIncreases,
   topSavingsOpportunities,
@@ -16,6 +20,24 @@ const productId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const otherProductId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const supplierOne = "11111111-1111-4111-8111-111111111111";
 const supplierTwo = "22222222-2222-4222-8222-222222222222";
+
+describe("financial chart precision", () => {
+  it("should_scale_bigint_chart_values_without_losing_exact_totals", () => {
+    const cents = amountToCents("90071992547409.93");
+    const scale = currencyChartScale([cents]);
+
+    expect(cents).toBe(BigInt("9007199254740993"));
+    expect(scale).toBe(BigInt(10_000_000));
+    expect(currencyChartValue(cents, scale)).toBeCloseTo(900_719_925.474099);
+  });
+
+  it("should_preserve_fractional_scaled_chart_values_when_amount_is_below_scale", () => {
+    expect(currencyChartValue(BigInt(99), BigInt(100))).toBe(0.99);
+    expect(currencyChartValue(BigInt(1099), BigInt(100))).toBe(10.99);
+    expect(currencyChartTickCents(0.25, BigInt(100))).toBe(BigInt(25));
+    expect(currencyChartTickCents(0.75, BigInt(100))).toBe(BigInt(75));
+  });
+});
 
 function purchase(
   overrides: Partial<IndicatorPurchase> = {},
