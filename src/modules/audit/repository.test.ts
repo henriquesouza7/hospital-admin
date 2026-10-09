@@ -223,6 +223,69 @@ describe("administrative audit repository", () => {
     });
   });
 
+  it("should_not_repeat_rows_when_a_new_audit_event_is_inserted_between_pages", async () => {
+    const createdAt = "2026-10-09T10:00:00.123Z";
+    const makeEvent = (id: number) => ({
+      id: String(id),
+      actor_id: "admin",
+      entity_type: "doctor",
+      entity_id: String(id),
+      action: "updated",
+      payload: {},
+      created_at: createdAt,
+    });
+    const persistedRows = Array.from({ length: 60 }, (_, index) =>
+      makeEvent(60 - index),
+    );
+
+    mocks.range.mockImplementation(async (start: number, end: number) => {
+      const hasSnapshotFilter = mocks.or.mock.calls.length > 0;
+      const rows = persistedRows
+        .filter((row) => !hasSnapshotFilter || BigInt(row.id) <= BigInt(60))
+        .sort((left, right) => Number(BigInt(right.id) - BigInt(left.id)));
+      return { data: rows.slice(start, end + 1), error: null };
+    });
+
+    const firstPage = await listAdministrativeAudit({
+      from: null,
+      through: null,
+      module: "todos",
+      entityType: null,
+      action: null,
+      actorId: null,
+      page: 1,
+      snapshotAt: null,
+      snapshotId: null,
+    });
+    expect(firstPage.events).toHaveLength(50);
+    expect(firstPage.hasMore).toBe(true);
+    expect(firstPage.snapshot).toEqual({ createdAt, id: "60" });
+
+    persistedRows.unshift(makeEvent(61));
+    const nextPage = await listAdministrativeAudit({
+      from: null,
+      through: null,
+      module: "todos",
+      entityType: null,
+      action: null,
+      actorId: null,
+      page: 2,
+      snapshotAt: firstPage.snapshot?.createdAt ?? null,
+      snapshotId: firstPage.snapshot?.id ?? null,
+    });
+
+    const firstPageIds = new Set(firstPage.events.map((event) => event.id));
+    expect(nextPage.events.map((event) => event.id)).toEqual(
+      Array.from({ length: 10 }, (_, index) => String(10 - index)),
+    );
+    expect(nextPage.events.some((event) => firstPageIds.has(event.id))).toBe(
+      false,
+    );
+    expect(mocks.or).toHaveBeenCalledWith(
+      "created_at.lt.2026-10-09T10:00:00.123Z,and(created_at.eq.2026-10-09T10:00:00.123Z,id.lte.60)",
+    );
+  });
+
   it("should_restart_at_page_one_when_the_snapshot_is_missing", async () => {
     const result = await listAdministrativeAudit({
       from: null,

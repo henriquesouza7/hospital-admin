@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { SectionHeader } from "@/components/section-header";
 import {
   auditModules,
+  buildAuditPageHref,
   moduleForEntity,
   parseAuditDate,
   type AuditModule,
@@ -194,7 +195,11 @@ export default async function AuditPage({ searchParams }: Props) {
           {result.page > 1 ? (
             <Link
               className="rounded-md border px-3 py-2 text-sm"
-              href={pageHref(search, result.page - 1, result.snapshot)}
+              href={buildAuditPageHref(
+                search,
+                result.page - 1,
+                result.snapshot,
+              )}
             >
               Eventos mais recentes
             </Link>
@@ -207,7 +212,11 @@ export default async function AuditPage({ searchParams }: Props) {
           {result.hasMore ? (
             <Link
               className="rounded-md border px-3 py-2 text-sm"
-              href={pageHref(search, result.page + 1, result.snapshot)}
+              href={buildAuditPageHref(
+                search,
+                result.page + 1,
+                result.snapshot,
+              )}
             >
               Eventos anteriores
             </Link>
@@ -222,22 +231,4 @@ export default async function AuditPage({ searchParams }: Props) {
       </section>
     </div>
   );
-}
-
-function pageHref(
-  search: Record<string, string | string[] | undefined>,
-  page: number,
-  snapshot: { createdAt: string; id: string } | null,
-) {
-  const params = new URLSearchParams();
-  for (const [key, value] of Object.entries(search)) {
-    const normalized = one(value);
-    if (normalized && key !== "page") params.set(key, normalized);
-  }
-  params.set("page", String(page));
-  if (snapshot) {
-    params.set("snapshot_at", snapshot.createdAt);
-    params.set("snapshot_id", snapshot.id);
-  }
-  return `/auditoria?${params.toString()}`;
 }

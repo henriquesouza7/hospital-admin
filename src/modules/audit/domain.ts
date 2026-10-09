@@ -1,6 +1,35 @@
 export const AUDIT_PAGE_SIZE = 50;
 export const AUDIT_MAX_PAGE = 200;
 
+export type AuditSnapshot = Readonly<{
+  createdAt: string;
+  id: string;
+}>;
+
+export function buildAuditSnapshotFilter(snapshot: AuditSnapshot): string {
+  return `created_at.lt.${snapshot.createdAt},and(created_at.eq.${snapshot.createdAt},id.lte.${snapshot.id})`;
+}
+
+export function buildAuditPageHref(
+  search: Record<string, string | string[] | undefined>,
+  page: number,
+  snapshot: AuditSnapshot | null,
+): string {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(search)) {
+    const normalized = Array.isArray(value)
+      ? (value[0] ?? null)
+      : (value ?? null);
+    if (normalized && key !== "page") params.set(key, normalized);
+  }
+  params.set("page", String(page));
+  if (snapshot) {
+    params.set("snapshot_at", snapshot.createdAt);
+    params.set("snapshot_id", snapshot.id);
+  }
+  return `/auditoria?${params.toString()}`;
+}
+
 export const auditModules = [
   "financeiro",
   "internacoes",

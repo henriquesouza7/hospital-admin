@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { readFile } from "node:fs/promises";
 
 const mocks = vi.hoisted(() => ({
   from: vi.fn(),
@@ -15,6 +16,7 @@ vi.mock("@/modules/finance/pharmacy/access", () => ({
 }));
 
 import { listMonthlyExpenseTotals, loadIndicatorsSource } from "./repository";
+import { amountToCents } from "./domain";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -61,25 +63,38 @@ describe("financial indicators repository", () => {
     expect(mocks.requireFinanceAdmin).toHaveBeenCalledOnce();
   });
 
-  it("should_preserve_large_monthly_totals_as_decimal_strings", async () => {
-    mocks.rpc.mockResolvedValue({
-      data: [
-        {
-          competence: "2026-10-01",
-          pharmacy_total: "90071992547409.93",
-          laboratory_total: "0.00",
-          fair_total: "0.00",
-          pharmacy_item_count: 1,
-          laboratory_item_count: 0,
-          has_fair_record: false,
-        },
-      ],
-      error: null,
+  it("should_preserve_exact_totals_through_sql_and_serialized_json", async () => {
+    const migration = await readFile(
+      new URL(
+        "../../../../db/migrations/20261009020000_preserve_exact_financial_export_totals.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    expect(migration).toContain("pharmacy_total text");
+    expect(migration).toContain(
+      "coalesce(purchase_totals.pharmacy_total, 0)::numeric::text",
+    );
+
+    const responseBody =
+      '[{"competence":"2026-10-01","pharmacy_total":"90071992547409.93","laboratory_total":"0.00","fair_total":"0.00","pharmacy_item_count":1,"laboratory_item_count":0,"has_fair_record":false}]';
+    const response = new Response(responseBody, {
+      headers: { "content-type": "application/json" },
     });
+    mocks.rpc.mockImplementation(async () => ({
+      data: await response.json(),
+      error: null,
+    }));
 
     const totals = await listMonthlyExpenseTotals("2026-10", "2026-10");
 
     expect(totals[0]?.pharmacy_total).toBe("90071992547409.93");
+    expect(amountToCents(totals[0]?.pharmacy_total ?? "")).toBe(
+      BigInt("9007199254740993"),
+    );
+    expect(JSON.stringify(totals)).toContain(
+      '"pharmacy_total":"90071992547409.93"',
+    );
   });
 
   it("should_reject_number_valued_monthly_totals_to_prevent_precision_loss", async () => {

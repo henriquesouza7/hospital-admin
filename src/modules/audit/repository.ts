@@ -6,7 +6,9 @@ import { requireAdmin } from "@/lib/auth/require-admin";
 import {
   AUDIT_MAX_PAGE,
   AUDIT_PAGE_SIZE,
+  buildAuditSnapshotFilter,
   entityTypesForModule,
+  type AuditSnapshot,
   type AuditModule,
 } from "./domain";
 
@@ -71,7 +73,10 @@ export async function listAdministrativeAudit(filters: AuditFilters) {
   if (filters.through) query = query.lt("created_at", filters.through);
   if (validSnapshot) {
     query = query.or(
-      `created_at.lt.${filters.snapshotAt},and(created_at.eq.${filters.snapshotAt},id.lte.${filters.snapshotId})`,
+      buildAuditSnapshotFilter({
+        createdAt: filters.snapshotAt!,
+        id: filters.snapshotId!,
+      }),
     );
   }
   if (filters.actorId) query = query.eq("actor_id", filters.actorId);
@@ -96,7 +101,7 @@ export async function listAdministrativeAudit(filters: AuditFilters) {
   }
   const rows = z.array(rowSchema).parse(data);
   const hasMore = rows.length > AUDIT_PAGE_SIZE;
-  const snapshot = validSnapshot
+  const snapshot: AuditSnapshot | null = validSnapshot
     ? { createdAt: filters.snapshotAt!, id: filters.snapshotId! }
     : rows[0]
       ? { createdAt: rows[0].created_at, id: rows[0].id }
