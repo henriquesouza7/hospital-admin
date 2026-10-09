@@ -69,10 +69,17 @@ Em 08/10/2026, os fluxos da Fase 6 continuam sem homologação autenticada no ba
 - [ ] Testes de segurança
 - [ ] Homologação
 
-Dashboard geral, consulta de auditoria, exportações e novos testes automatizados
-estão no PR #25. A migration 20261008200000 foi aplicada somente no branch Neon
-isolado de demonstração em 08/10/2026, mas a revisão identificou que a política
-legada de leitura própria continua permissiva. A migration incremental
-20261008210000 remove essa política e aguarda aplicação autorizada no mesmo
-branch. Os itens permanecem abertos até a validação dessa política, os gates do
-HEAD final, revisão sem P1/P2 e fluxos autenticados.
+Dashboard geral, consulta de auditoria, exportações e smokes E2E autenticados
+estão no PR #25. As quatro migrations de consolidação foram aplicadas no Neon
+demo `floral-breeze-18394345`, branch `br-misty-recipe-b8muzwtd`; consultas
+read-only confirmaram a política administrativa única da auditoria, RLS nas
+tabelas examinadas, privilégios das RPCs agregadoras e o índice de ordenação.
+O HEAD `0add2be` passou os gates locais e recebeu revisão sem problemas graves;
+26 discussões estão resolvidas. O PR continua sem merge.
+
+Fase 7 permanece aberta até executar os quatro smokes autenticados com uma
+sessão real, testar RLS/RPCs usando atores autenticados, validar persistência e
+auditoria ponta a ponta, inspecionar downloads e terminar homologação visual em
+1440 px e 390 px. A preparação atual não cria uma sessão: sem um estado
+administrativo existente, os smokes autenticados são ignorados. Os dados de
+negócio continuam vazios e nenhum dado sintético foi inserido.
