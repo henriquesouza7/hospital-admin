@@ -46,7 +46,23 @@ test.describe("autenticação com Neon Auth isolado", () => {
     }
     await page.getByLabel("Email").fill("login-test@invalid.example");
     await page.getByLabel("Senha").fill("synthetic-invalid-password");
+    const invalidLoginResponse = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === "/api/auth/sign-in/email" &&
+        response.request().method() === "POST",
+    );
     await page.getByRole("button", { name: "Entrar" }).click();
+    const invalidLogin = await invalidLoginResponse;
+    expect(invalidLogin.status()).toBe(401);
+    const invalidPayload: unknown = await invalidLogin.json();
+    const invalidCode =
+      typeof invalidPayload === "object" &&
+      invalidPayload !== null &&
+      "code" in invalidPayload &&
+      typeof invalidPayload.code === "string"
+        ? invalidPayload.code
+        : null;
+    expect(invalidCode).toBe("INVALID_EMAIL_OR_PASSWORD");
     await expect(page.getByText("Email ou senha inválidos.")).toBeVisible();
 
     await page.getByLabel("Email").fill(credentials.email);

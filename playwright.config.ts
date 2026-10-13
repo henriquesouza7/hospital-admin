@@ -11,6 +11,9 @@ const baseURL = explicitBaseURL ?? "http://localhost:3000";
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: true,
+  // Authenticated tests refresh a shared ignored storage-state file; their
+  // dashboards still test parallel requests inside the dedicated smoke.
+  workers: process.env.PLAYWRIGHT_AUTH_STORAGE_STATE ? 1 : undefined,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
   reporter: "html",

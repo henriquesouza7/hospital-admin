@@ -28,6 +28,12 @@ embutidas. Nenhuma migration ou dado de negócio foi escrito, nenhum email foi
 enviado e production e o Neon demo compartilhado não foram acessados para
 escrita.
 
+O E2E verificou no retorno real de uma credencial sintética inválida somente
+HTTP 401 e o código `INVALID_EMAIL_OR_PASSWORD`; não registra o corpo da resposta.
+Com `PLAYWRIGHT_AUTH_STORAGE_STATE` configurado, o runner usa um worker porque o
+fluxo renova esse arquivo compartilhado ignorado; o teste dedicado ainda envia
+duas requisições administrativas simultâneas ao dashboard.
+
 Gates desta correção: instalação congelada, formatação, lint, typecheck, 380
 testes unitários, build e E2E 13/13 passaram. O teste integrado cobre login
 sintético válido/inválido, papel, rotas, reload, logout, proteção, dashboards,
