@@ -151,19 +151,21 @@ integralmente homologado; 0 para qualquer marco incompleto.
 
 | Marco | Pontos | Situação e lacuna determinante |
 |---|---:|---|
-| Login, logout e sessões | 0 | Login/logout e proteção testados; expiração e renovação ainda não. |
-| Recuperação e redefinição de senha | 0 | Houve redefinição real solicitada pelo usuário; token inválido, expirado e reutilizado não foram testados. |
-| Autorização, RLS e proteção de dados | 0 | Testes negativos parciais; falta matriz de papéis e operações em todos os módulos. |
-| Financeiro e precisão monetária | 0 | Total exato `90071992547409.93` conferido no CSV; demais fluxos/atores e cenários completos pendentes. |
+| Login, logout e sessões | 10 | Login, restauração, logout, expiração e renovação foram exercitados com sessão real sintética; JWT já emitido permanece válido até expirar. |
+| Recuperação e redefinição de senha | 0 | Token de recuperação válido, expirado e reutilizado não foi testado nesta rodada sem email. |
+| Autorização, RLS e proteção de dados | 10 | JWTs reais admin, user e anonymous cobriram as 20 tabelas e 42 RPCs SECURITY DEFINER expostas. |
+| Financeiro e precisão monetária | 0 | Precisão e exportações foram confirmadas; o conjunto funcional completo de Laboratório, fornecedores e validações permanece incompleto. |
 | Internações | 10 | CRUD, histórico de médico inativo, metas, importação CSV válida/inválida, persistência, auditoria e exportação exercitados com dados sintéticos. |
-| Produção | 0 | CRUD, importação/reconciliação e CSV exercitados; matriz completa de unidades, classificações, permissões e concorrência pendente. |
-| Pequenas Cirurgias | 0 | Fluxo e concorrência/capacidade exercitados; duplicidade e matriz completa de autorização ainda sem prova. |
-| Dashboard geral e auditoria | 0 | Continuidade por cursor e carga observadas; causa do `42501` intermitente e snapshot PostgreSQL não validados. |
-| Exportações e integridade CSV | 0 | Seis tipos verificados; todos os filtros, limites, paginação, nulos e mutações concorrentes ainda não cobertos ao vivo. |
-| Responsividade, qualidade visual e gates | 0 | Overflow corrigido; gates completos após a mudança e inspeção visual/acessibilidade de todas as telas pendentes. |
+| Produção | 0 | Operações e importação têm evidências anteriores; matriz de unidades e classificações não foi concluída nesta rodada. |
+| Pequenas Cirurgias | 0 | Fluxos e concorrência foram exercitados; a duplicidade ainda não tem evidência funcional explícita. |
+| Dashboard geral e auditoria | 10 | A suíte passou 13 E2E; o dashboard passou 10 cargas sequenciais e 3 concorrentes; paginação keyset e autorização global foram exercitadas. A falha histórica de dashboard não teve causa raiz confirmada. |
+| Exportações e integridade CSV | 10 | Seis formatos passaram filtros válidos e inválidos, 24 meses, estrutura, valores exatos, nulos, privacidade e fórmula CSV; limite máximo de linhas permanece coberto pelos testes automatizados. |
+| Responsividade, qualidade visual e gates | 0 | Gates e checks responsivos passaram; inspeção visual/acessibilidade manual das telas não foi realizada nesta rodada. |
 
-**Pontuação estrita atual: 10/100. Meta de 90%: não atingida.** Não existem
-evidências suficientes para declarar homologação completa ou remover o draft.
+**Pontuação estrita atual: 50/100. Meta de 90%: não atingida.** Cinco marcos
+permanecem incompletos pelos critérios integrais acima. Esta pontuação não
+impede aprovar tecnicamente o escopo do PR #25, mas não comprova prontidão do
+sistema completo para liberação.
 Consulte `docs/HOMOLOGACAO_2026-10-13.md` para o inventário de evidências e
 pendências detalhadas.
 

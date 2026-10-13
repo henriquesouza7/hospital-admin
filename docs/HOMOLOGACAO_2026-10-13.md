@@ -421,3 +421,89 @@ confirmação do usuário.
 não foi recalculada porque o documento não contém pesos verificáveis por critério.
 A meta de 90/100 não está comprovada. Não declarar o sistema homologado para
 liberação enquanto os bloqueadores acima permanecerem.
+
+## Fechamento de autorização, sessão e CSV — 13/10/2026
+
+Execução final no branch isolado `br-long-base-b88yvq9r` do projeto Neon
+`still-bird-03340027`, banco `neondb`, com a aplicação deste worktree em
+`http://localhost:3006`. A URL do Postgres foi obtida pelo CLI Neon com projeto,
+branch e role explícitos; seu endpoint coincidiu com o Data API. A inspeção SQL
+foi `READ ONLY` e terminou em rollback. Nenhuma migration, production ou Neon
+demo compartilhado foi alterado. Um usuário básico sintético com domínio
+reservado `.invalid` foi criado pelo endpoint oficial de signup; nenhum email
+real foi endereçado.
+
+### Autorização real por JWT
+
+- O catálogo confirmou RLS habilitado em **20/20 tabelas públicas** e 20
+  políticas. Entre as 44 funções `SECURITY DEFINER`: **0** search paths fora de
+  `pg_catalog`, **0** EXECUTE para `PUBLIC` e **0** EXECUTE para `anonymous`.
+- JWTs reais do Neon Auth foram usados para admin, usuário básico e anonymous.
+  Admin leu 20/20 tabelas e executou as 12 RPCs administrativas de leitura
+  exercitadas (HTTP 200). Básico recebeu zero linhas em 20/20 tabelas; 40 RPCs
+  foram negadas por autorização e `is_admin()`/`is_finance_admin()` retornaram
+  `false`. Anonymous recebeu 403/SQLSTATE `42501` nas 20 tabelas e foi negado
+  nas 42 RPCs `SECURITY DEFINER` expostas a `authenticated`.
+- Não houve mutação durante a matriz. Operações de escrita foram invocadas com
+  parâmetros nulos para verificar a barreira negativa; a validação positiva de
+  CRUD e transações PostgreSQL está registrada nas evidências funcionais
+  anteriores deste arquivo.
+
+### Sessões
+
+- JWT do Neon Auth com validade de 900 segundos: o token foi consultado 60
+  segundos após `exp` e não autorizou `is_admin()` (Data API respondeu 400). A
+  sessão-cookie ainda ativa obteve token novo em HTTP 200 com `exp` posterior.
+- Após logout real: `get-session` não retornou usuário, `/api/auth/token`
+  respondeu 401 e `/internacoes` redirecionou para `/login` (307).
+- Um JWT já emitido permaneceu aceito por `is_admin()` até expirar (HTTP 200,
+  `true`). Este é o limite observado de revogação: logout revoga a sessão da
+  aplicação, mas não invalida imediatamente um bearer JWT já copiado; sua
+  janela restante é limitada pelo `exp` de 15 minutos. É risco residual do
+  modelo de token, não uma correção aplicada nesta rodada.
+- A restauração após reload, logout e novo login passou no E2E autenticado.
+  Não foi exercitado um token válido de recuperação de senha; nenhum email real
+  foi enviado.
+
+### Exportações adversariais
+
+- Os seis relatórios (`gastos`, `compras`, `internacoes`, `metas`, `producao` e
+  `cirurgias`) retornaram CSV válido tanto para outubro de 2026 quanto para o
+  intervalo máximo aceito de 24 meses (`2025-01` a `2026-12`). As 12 respostas
+  mantiveram BOM UTF-8, CRLF, largura uniforme das linhas e datas dentro dos
+  filtros; células sem valor ficaram vazias, sem literais `null` ou `undefined`.
+- O total financeiro de teste preservou `90071992547409,93` e
+  `90071992547860,60`. A resposta de Produção escapou a fórmula sintética
+  encontrada: 1 célula escapada e 0 fórmulas ativas. Nenhum nome de paciente
+  sintético conhecido apareceu nos CSVs.
+- Oito entradas inválidas (parâmetros ausentes ou repetidos, mês inválido,
+  período invertido, 25 meses e tipo desconhecido) retornaram HTTP 400. O acesso
+  com a sessão básica foi redirecionado para `/login?error=forbidden` (307).
+  A fronteira de 10.000 linhas segue coberta pelos testes unitários; esta base
+  sintética não contém volume para um teste vivo de 10.001 linhas. A corrida de
+  inserção concorrente no CSV de Internações permanece documentada na evidência
+  anterior; não foi repetida nesta rodada.
+
+### Dashboard, testes e decisão
+
+- Uma primeira navegação E2E com um storage state antigo mostrou página de erro
+  do servidor. Após novo login pelo fluxo oficial e captura de estado atual,
+  passaram 10/10 cargas sequenciais, 3/3 concorrentes e a suíte completa
+  autenticada de **13/13**; o código da falha inicial não foi recuperado e sua
+  causa raiz não está comprovada. Não houve correção especulativa. Registrar
+  como risco residual de estabilidade, sem reprodução com a sessão renovada.
+- Gates finais após o build: `pnpm install --frozen-lockfile`,
+  `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test` (383/383 em
+  52 arquivos), `pnpm build` e `pnpm test:e2e` (13/13; 8 testes com sessão/ator
+  e 5 sem sessão). O teste de fluxo de autenticação também passou 2/2
+  isoladamente.
+- Pela pontuação estrita de dez marcos, **50/100**: Login/sessão,
+  autorização/RLS, Internações, dashboard/auditoria e exportações estão
+  integralmente demonstrados; os outros cinco marcos continuam abaixo dos
+  critérios de aceite completos descritos em `docs/ROADMAP.md`. A meta de
+  90/100 e a prontidão de liberação do sistema não foram alcançadas.
+- Decisão desta rodada: não foi encontrado defeito crítico reproduzível nos
+  fluxos priorizados; autorização essencial, sessões, exportações e gates
+  passaram. O escopo técnico do PR #25 está apto à revisão final. O PR permanece
+  em draft e sem merge; pendências dos demais marcos e os dois riscos residuais
+  acima não foram convertidos em alterações especulativas.
