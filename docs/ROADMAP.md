@@ -83,24 +83,38 @@ da RPC não informa quando ou como foi instalada; esta rodada não aplicou SQL e
 a migration não deve ser reaplicada enquanto a RPC existir. A nova migration
 `20261009030000_index_purchase_orders_by_order_date.sql` está versionada no PR,
 mas não foi aplicada no Neon demo; a validação com histórico populado também
-permanece pendente. A chamada financeira autenticada continua sem homologação.
-O PR #25 continua sem merge.
+permanece pendente. A autenticação manual real e a leitura dos indicadores no
+dashboard foram verificadas em 12/10/2026; exportação/download, smoke automatizado
+com estado Playwright e demais verificações ainda não estão homologados. O PR #25
+continua sem merge.
 
-Fase 7 permanece aberta até executar os quatro smokes autenticados com uma
-sessão real, testar RLS/RPCs usando atores autenticados, validar persistência e
-auditoria ponta a ponta, inspecionar downloads e terminar homologação visual em
-1440 px e 390 px. A preparação atual não cria uma sessão: sem um estado
-administrativo existente, os smokes autenticados são ignorados. Os dados de
-negócio continuam vazios e nenhum dado sintético foi inserido.
+Fase 7 permanece aberta até executar os quatro smokes automatizados com um
+estado Playwright real, testar RLS/RPCs usando atores autenticados, validar
+persistência e auditoria ponta a ponta, inspecionar downloads e terminar
+homologação visual em 1440 px e 390 px. O estado autenticado do Chrome não é
+reutilizado automaticamente pelo Playwright; sem `PLAYWRIGHT_AUTH_STORAGE_STATE`,
+os quatro smokes são ignorados. Os dados de negócio continuam vazios e nenhum
+dado sintético foi inserido.
+
+Em 12/10/2026, após login manual real no Neon demo, o dashboard, a auditoria e a
+página de Pequenas Cirurgias renderizaram sem erro e exibiram estados vazios
+compatíveis com os dados consultados. A primeira chamada ao resumo de Pequenas
+Cirurgias retornou SQLSTATE `42501` (negação de autorização); a RPC e seus
+privilégios foram conferidos por consulta read-only, e `is_admin()` retornou
+`true` na sessão atual. Após remover o diagnóstico temporário, um reload carregou
+financeiro, Internações, Produção e Pequenas Cirurgias sem erro. A causa da
+negação transitória inicial não pôde ser reproduzida, portanto não há correção
+de autorização presumida. A página de exportações abriu, mas o navegador bloqueou
+o download CSV agregado (`ERR_BLOCKED_BY_CLIENT`); nenhum arquivo foi salvo.
+Não houve escrita no banco nem alteração em production.
 
 Em 09/10/2026, a correção do token circular `--font-sans` foi verificada no
 navegador deste worktree: login, recuperação e redefinição sem token computam
 Geist; login e recuperação não têm overflow em 390 px ou 1440 px, e o foco de
 teclado no email é visível. A porta 3002 estava em uso por outro worktree; este
 worktree foi iniciado em `localhost:3003` com `APP_BASE_URL` configurada apenas
-no `.env.local` ignorado pelo Git. A rota protegida redirecionou para `/login`,
-sem sessão administrativa. Neon Auth demo tem SMTP compartilhado e
-`allow_localhost=true`. O operador autorizou uma solicitação de recuperação, mas
-nenhuma foi enviada: o formulário ficou aberto para o operador digitar o email
-sem registrá-lo em logs ou neste documento. Status HTTP, código técnico, entrega,
-redefinição com token e novo login seguem pendentes.
+no `.env.local` ignorado pelo Git. Naquele ciclo a rota protegida redirecionou
+para `/login`. Em 12/10/2026, o operador confirmou a redefinição da senha e fez
+login manual real. Neon Auth demo tem SMTP compartilhado e
+`allow_localhost=true`; nenhum novo email de recuperação foi enviado. O login
+real foi aceito e a sessão administrativa abriu as rotas protegidas.
