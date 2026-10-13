@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import {
@@ -7,6 +8,8 @@ import {
 import {
   listMonthlyExpenseTotals,
   loadIndicatorsSource,
+  MonthlyExpenseTotalsQueryError,
+  MonthlyExpenseTotalsRpcUnavailableError,
 } from "@/modules/finance/indicators/repository";
 import { amountToCents } from "@/modules/finance/indicators/domain";
 import { listProductionEntriesForExport } from "@/modules/production/repository";
@@ -323,7 +326,27 @@ export async function GET(request: Request) {
         ]);
       }
     }
-  } catch {
+  } catch (error) {
+    unstable_rethrow(error);
+    if (error instanceof MonthlyExpenseTotalsRpcUnavailableError) {
+      return NextResponse.json(
+        {
+          error:
+            "A consulta de totais exatos não está disponível neste ambiente.",
+          code: "RPC_UNAVAILABLE",
+        },
+        { status: 503 },
+      );
+    }
+    if (error instanceof MonthlyExpenseTotalsQueryError) {
+      return NextResponse.json(
+        {
+          error: "Não foi possível consultar os totais financeiros.",
+          ...(error.code ? { code: error.code } : {}),
+        },
+        { status: error.code === "42501" ? 403 : 503 },
+      );
+    }
     return NextResponse.json(
       { error: "Não foi possível gerar a exportação solicitada." },
       { status: 500 },

@@ -126,3 +126,44 @@ reiniciar o servidor local, o painel voltou a exibir os totais persistidos. Os
 quatro smokes autenticados passaram, incluindo eventos de download dos CSVs de
 Gastos e Cirurgias. Os arquivos ainda precisam de inspeção manual. Nenhum dado
 foi escrito no Neon demo e production não foi alterada.
+
+### Rodada de homologação read-only — 12/10/2026
+
+- No worktree de Consolidação, o PR #25 estava limpo e sincronizado em
+  `ea5fcea2591b180ded7519b98316ab02d9712a0a`, aberto, draft e mergeável. A
+  sessão Playwright administrativa real já existia localmente em arquivo
+  ignorado pelo Git.
+- Antes da reconstrução, uma requisição autenticada ao CSV de Gastos retornou
+  HTTP 500 e o cartão do dashboard informou indisponibilidade. O mesmo endpoint
+  retornou HTTP 200 após reconstruir e reiniciar a aplicação; a falha original
+  não foi reproduzida e sua causa não foi determinada. A rota agora preserva
+  redirects do Next e classifica somente erros tipados de totais: `42501` como
+  403, RPC ausente como 503 e demais falhas como 503, expondo somente códigos
+  allowlisted. Testes de regressão cobrem a classificação e o redirect.
+- Com a sessão real, Dashboard e Auditoria carregaram; os seis relatórios
+  (`gastos`, `compras`, `internacoes`, `metas`, `producao` e `cirurgias`)
+  retornaram HTTP 200. A inspeção em memória confirmou nome de arquivo,
+  `text/csv; charset=utf-8`, BOM UTF-8, CRLF, cabeçalhos sem campos pessoais e
+  ausência de células iniciadas por prefixos de fórmula. O intervalo consultado
+  continha de zero a uma linha administrativa por relatório; não foi inserido
+  dado sintético. Isso não homologa centavos não nulos nem conteúdo com volume
+  representativo. A mesma API sem sessão redirecionou a `/login`.
+- O conector Neon MCP estava desconectado (`USER_NOT_LOGGED_IN`); não foi
+  possível consultar novamente catálogos, policies ou privilégios do PostgreSQL
+  nesta rodada. A leitura estática das migrations confirma guards por
+  `is_admin()`/`is_finance_admin()`, funções `SECURITY DEFINER` com
+  `search_path=pg_catalog`, EXECUTE concedido a `authenticated` e revogado de
+  `PUBLIC`; o runtime validou apenas caminhos positivos da sessão admin atual,
+  não atores sem permissão nem políticas RLS negativas.
+- Nenhum SQL, migration ou dado foi escrito no Neon. A migration de índice
+  `20261009030000_index_purchase_orders_by_order_date.sql` segue não verificada
+  nesta rodada; a última evidência registrada dizia que não estava aplicada.
+  `production` não foi alterada.
+- Após as alterações, passaram `pnpm install --frozen-lockfile`,
+  `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test` (341 testes em
+  46 arquivos), `pnpm build`, `pnpm test:e2e` (9 testes, incluindo 4
+  autenticados) e `git diff --check`.
+- Fase 7 permanece aberta. Faltam acesso read-only ao Neon para catálogo atual,
+  atores legítimos distintos para testar negações, autorização específica antes
+  de qualquer escrita sintética, persistência e auditoria após mutações, CSVs
+  com dados de teste não nulos e inspeção visual autenticada em 390 px e 1440 px.

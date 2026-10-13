@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { redirect } from "next/navigation";
 
 const mocks = vi.hoisted(() => ({
   requireAdmin: vi.fn(),
@@ -30,6 +31,12 @@ vi.mock("@/modules/admissions/repository", () => ({
 vi.mock("@/modules/finance/indicators/repository", () => ({
   listMonthlyExpenseTotals: mocks.listMonthlyExpenseTotals,
   loadIndicatorsSource: mocks.loadIndicatorsSource,
+  MonthlyExpenseTotalsQueryError: class extends Error {
+    constructor(readonly code: string | null) {
+      super("Não foi possível consultar os totais financeiros.");
+    }
+  },
+  MonthlyExpenseTotalsRpcUnavailableError: class extends Error {},
 }));
 vi.mock("@/modules/finance/indicators/domain", () => ({
   amountToCents: mocks.amountToCents,
@@ -48,6 +55,10 @@ vi.mock("@/modules/minor-surgeries/repository", () => ({
 }));
 
 import { GET } from "./route";
+import {
+  MonthlyExpenseTotalsQueryError,
+  MonthlyExpenseTotalsRpcUnavailableError,
+} from "@/modules/finance/indicators/repository";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -81,6 +92,56 @@ beforeEach(() => {
 });
 
 describe("administrative exports", () => {
+  it("should_report_financial_authorization_denial_without_database_details", async () => {
+    mocks.listMonthlyExpenseTotals.mockRejectedValue(
+      new MonthlyExpenseTotalsQueryError("42501"),
+    );
+
+    const response = await GET(
+      new Request(
+        "http://localhost/api/exportacoes?tipo=gastos&inicio=2026-10&fim=2026-10",
+      ),
+    );
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({
+      error: "Não foi possível consultar os totais financeiros.",
+      code: "42501",
+    });
+  });
+
+  it("should_report_missing_financial_totals_rpc_as_unavailable", async () => {
+    mocks.listMonthlyExpenseTotals.mockRejectedValue(
+      new MonthlyExpenseTotalsRpcUnavailableError(),
+    );
+
+    const response = await GET(
+      new Request(
+        "http://localhost/api/exportacoes?tipo=gastos&inicio=2026-10&fim=2026-10",
+      ),
+    );
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      error: "A consulta de totais exatos não está disponível neste ambiente.",
+      code: "RPC_UNAVAILABLE",
+    });
+  });
+
+  it("should_preserve_framework_redirects_from_nested_authorization", async () => {
+    mocks.listMonthlyExpenseTotals.mockImplementation(() => redirect("/login"));
+
+    await expect(
+      GET(
+        new Request(
+          "http://localhost/api/exportacoes?tipo=gastos&inicio=2026-10&fim=2026-10",
+        ),
+      ),
+    ).rejects.toMatchObject({
+      digest: expect.stringContaining("NEXT_REDIRECT"),
+    });
+  });
+
   it("should_bound_surgery_export_and_count_the_waitlist_in_the_database", async () => {
     mocks.getSurgerySummary.mockResolvedValue({
       days: [
