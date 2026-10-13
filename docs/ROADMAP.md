@@ -213,6 +213,11 @@ Em 08/10/2026, os fluxos da Fase 6 continuam sem homologação autenticada no ba
 - [ ] Testes de segurança
 - [ ] Homologação
 
+Em 13/10/2026, o preparador de storage state passou a exigir origem local
+explícita e arquivo por ambiente, validando metadados de origem e dos endpoints
+Neon antes de reutilizar uma sessão. Isso corrige o P2 da porta/runbook; a captura
+de uma sessão administrativa válida e a homologação autenticada continuam pendentes.
+
 Dashboard geral, consulta de auditoria, exportações e smokes E2E autenticados
 estão no PR #25. As sete migrations-base do ciclo (cinco de 08/10 e duas de
 09/10) foram anteriormente reportadas como aplicadas no Neon demo

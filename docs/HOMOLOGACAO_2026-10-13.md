@@ -1,5 +1,40 @@
 # Homologação isolada — 13/10/2026
 
+## Correção do preparador de sessão e separação de ambientes
+
+- A revisão do PR #25 apontou inconsistência entre a porta padrão `3006` do
+  preparador de sessão e a porta `3003` do runbook do demo. O preparador agora
+  exige `PLAYWRIGHT_BASE_URL` explícita, aceita somente origem HTTP localhost
+  com porta explícita e exige `PLAYWRIGHT_AUTH_STORAGE_STATE` dentro do caminho
+  ignorado `tests/e2e/.auth/`.
+- A reutilização exige metadados correspondentes à origem local e aos endpoints
+  configurados de Neon Auth e Data API; estado ausente, inválido, sem metadados
+  ou de outro ambiente força login manual e validação do acesso financeiro.
+  Tokens, cookies, credenciais e URLs de endpoints não são emitidos nos logs.
+- O runbook agora separa `demo-admin.json` em `localhost:3003` de
+  `homologacao-admin.json` em `localhost:3006`; a porta configurada deve ser a
+  que o processo local realmente está usando.
+- Esta correção ainda não comprova uma sessão administrativa válida. A última
+  tentativa do operador informou email ou senha inválidos; não houve novo login,
+  escrita no banco ou chamada autenticada nesta correção. Smokes autenticados e
+  demais evidências dependentes de sessão permanecem pendentes.
+- A comparação read-only dos endpoints locais de Auth/Data API com a configuração
+  do Neon confirmou correspondência com o projeto `still-bird-03340027`, branch
+  `br-long-base-b88yvq9r`, banco `neondb`; a porta 3006 pertence ao Next deste
+  worktree. Nenhuma migration foi reaplicada ou dado de negócio escrito.
+- A consulta read-only ao catálogo encontrou zero tabelas públicas sem RLS e
+  confirmou índices de auditoria por `(created_at DESC, id DESC)`, unicidade de
+  lançamentos de internações por médico/data, e unicidade de agendamento ativo
+  por cirurgia/paciente. Nenhuma tabela de ledger de migrations foi encontrada;
+  a presença de objetos não prova o histórico de aplicação.
+- Testes unitários cobrem URL ausente/inválida, HTTP externo, portas locais,
+  caminho de estado, vínculo de ambiente, ausência de segredos nas mensagens e
+  exemplos do runbook. A matriz RLS/RPC completa, expiração/renovação, tokens de
+  recuperação, concorrência com sessões PostgreSQL independentes e a matriz
+  integral dos CSVs permanecem pendentes.
+- A pontuação estrita permanece em 10/100; a correção de configuração não fecha
+  nenhum dos marcos funcionais ainda incompletos.
+
 ## Ambiente e limites
 
 - Repositório/PR: `henriquesouza7/hospital-admin`, PR #25, branch

@@ -1,6 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const explicitBaseURL = process.env.PLAYWRIGHT_BASE_URL;
+if (process.env.PLAYWRIGHT_AUTH_STORAGE_STATE && !explicitBaseURL) {
+  throw new Error(
+    "Defina PLAYWRIGHT_BASE_URL para executar E2E autenticado no ambiente da sessão.",
+  );
+}
 const baseURL = explicitBaseURL ?? "http://localhost:3000";
 
 export default defineConfig({
