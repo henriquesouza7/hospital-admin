@@ -74,10 +74,9 @@
   retornados por `get_auth` e `get_data_api`. Foram alinhadas somente as URLs
   locais de Auth e Data API ao projeto confirmado; o segredo de cookie foi
   preservado. Essa correção local não cria uma sessão autenticada.
-- O armazenamento E2E `tests/e2e/.auth/admin.json` não está disponível no
-  worktree atual. Portanto, novos smokes autenticados, requisições 50x,
-  renovações de sessão e matriz real de RLS/RPC continuam pendentes de sessão
-  válida; não foram simulados.
+- Naquela inspeção não havia estado E2E administrativo válido. A etapa posterior
+  abaixo registra a captura de uma sessão real; arquivos locais de estado não
+  são evidência por si só e não devem ser expostos.
 
 ## Correções no código
 
@@ -167,30 +166,87 @@ escritos e zero armazenamento faturável reportado. Isso não substitui a fatura
 deve ser mantido enquanto as evidências forem necessárias; exclusão depende de
 confirmação do usuário.
 
+## Homologação autenticada — 13/10/2026, após reconexão
+
+- O worktree `feat/consolidacao-final-demo` foi executado em
+  `http://localhost:3006`. As URLs locais de Auth e Data API coincidiram
+  exatamente com `get_auth` e `get_data_api` do projeto `still-bird-03340027`,
+  branch `br-long-base-b88yvq9r`, banco `neondb`; `APP_BASE_URL` local também
+  aponta para a porta 3006. Production e o Neon demo compartilhado não foram
+  contatados para escrita.
+- O Auth oficial informou cadastro habilitado, sem exigência de verificação de
+  email. Foram criadas identidades de teste com domínio reservado `.invalid`,
+  sem disparo de email. O papel `admin` foi atribuído pelo conector Neon; as
+  outras identidades de teste ficaram como `user`. A contagem final agregada é
+  2 `admin` e 8 `user`, incluindo as cinco identidades já existentes. Nenhuma
+  senha ou endereço foi registrado neste documento.
+- A sessão administrativa renovada após a promoção produziu `admin` no endpoint
+  de sessão; a Data API retornou `true` para `is_admin()` e
+  `is_finance_admin()`. A RPC `get_admission_dashboard_totals` respondeu 200
+  para o intervalo anual válido `2026-01-01`–`2027-01-01`. O usuário básico
+  retornou `false` nas duas verificações, recebeu 403/SQLSTATE `42501` ao
+  tentar a mesma RPC e ao tentar criar dia de Cirurgia, e leu zero linhas de
+  `audit_logs`; o administrador leu a auditoria. A chamada anônima direta à
+  Data API continuou em HTTP 400, portanto a matriz de ator anônimo permanece
+  inconclusiva.
+- A sessão administrativa persistiu ao recarregar o dashboard. Logout real
+  redirecionou para `/login` e o acesso protegido posterior também redirecionou.
+  O storage state usado pelos testes foi revogado por esse logout; para uma
+  nova rodada autenticada será necessário capturar outra sessão com
+  `tests/e2e/prepare-auth-state.mjs`. O login manual da conta administrativa
+  preexistente retornou “Email ou senha inválidos”; não houve tentativa de
+  recuperação de senha.
+- Concorrência de Cirurgias: duas sessões administrativas enviaram agendamentos
+  simultâneos para um dia sintético com capacidade 1. A leitura posterior da
+  tabela no PostgreSQL confirmou exatamente um agendamento ativo persistido.
+  Isso valida a trava da RPC em concorrência real via aplicação; não substitui
+  uma bateria com sessões PostgreSQL independentes criadas diretamente.
+- Auditoria: após carregar a primeira página de 50 eventos, foi inserido um
+  evento administrativo sintético antes de abrir a página seguinte. Ambas as
+  páginas retornaram 50 eventos, o link preservou os dois campos do cursor e
+  não houve evento duplicado entre páginas.
+- CSVs: sete respostas autenticadas (Gastos, Compras, Internações, Metas,
+  Produção em outubro e novembro e Cirurgias em novembro) retornaram 200, MIME e
+  nome corretos, BOM UTF-8 e CRLF. O CSV de Gastos preservou os valores
+  sintéticos `90071992547409,93` e `90071992547860,60`; Produção escapou a
+  fórmula sintética; nenhum nome de paciente sintético testado apareceu. Sem
+  sessão, a rota de exportação redirecionou para `/login`.
+- E2E: os seis smokes administrativos passaram isoladamente. A suíte completa
+  executada com um worker passou 11/11. Uma execução inicial com seis workers
+  falhou no primeiro teste do dashboard e interrompeu os cinco testes
+  administrativos seguintes; a repetição serial aprovou tudo, então a
+  estabilidade sob paralelismo permanece como risco a acompanhar.
+- `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test` (345 em 49
+  arquivos), `pnpm build` e `git diff --check` passaram nesta rodada. Nenhuma
+  migration foi aplicada ou reaplicada.
+- Permanecem sem comprovação: RLS com ator anônimo por JWT, expiração/renovação
+  de sessão, todas as RPCs e mutações por papel, todas as combinações de filtros
+  e limites de exportação, e concorrência PostgreSQL independente direta. A
+  rodada autenticada não altera essas pendências por inferência.
+
 ## Pendências bloqueadoras
 
 1. Confirmar o custo faturado pelo painel; a consulta confirmou plano gratuito e
    métricas de consumo, mas não apresentou fatura.
-2. Completar os testes de RLS/RPC com administrador, administrador financeiro,
-   usuário autenticado básico e anônimo em leitura e mutação, para todos os
-   módulos.
-3. Testar expiração/renovação de sessão e os estados de token de recuperação sem
-   enviar email real.
-4. Reproduzir/investigar o `42501` intermitente com telemetria redigida; manter
-   registrada a falha inicial mesmo se uma repetição passar.
-5. Validar auditoria e invariantes de concorrência por transações PostgreSQL
-   reais nos fluxos ainda não cobertos.
-6. Completar CSVs por parser: filtros, limite, ordenação, nulos, caracteres,
-   aspas, delimitadores, autorização e consistência sob alterações concorrentes.
-7. Preservar os resultados dos gates desta rodada sem cookies, tokens,
-   credenciais ou dados pessoais. Os gates passaram; seis casos autenticados do
-   E2E foram pulados por falta de storage state.
-8. Conferir o ledger de migrations por mecanismo oficial, caso disponível; não
+2. Completar RLS/RPC por módulo para papéis básicos e anônimo. Nesta rodada,
+   Internações, Financeiro e auditoria tiveram verificações diretas; a Data API
+   anônima permaneceu inconclusiva.
+3. Testar expiração/renovação de sessão e estados de token de recuperação sem
+   enviar email real. Persistência após reload e logout foram validados.
+4. Manter registrada a falha `42501` histórica, ainda sem causa raiz comprovada;
+   ela não se repetiu nos testes atuais.
+5. Ampliar concorrência PostgreSQL real além da disputa por uma vaga em
+   Cirurgias. A corrida atual foi feita por duas sessões da aplicação e a
+   persistência foi conferida no banco.
+6. Completar CSVs com filtros, limites, ordenação, nulos, caracteres, aspas,
+   delimitadores e consistência sob alterações concorrentes. Os sete arquivos
+   verificados nesta rodada cobrem formato e conteúdo sintético básico.
+7. Conferir o ledger de migrations por mecanismo oficial, caso disponível; não
    reaplicar migration com base apenas em presença de objetos.
-9. Revisão Codex do novo HEAD e resolução dos threads aplicáveis. O PR #25 deve
-   permanecer em draft e sem merge, conforme autorização vigente.
+8. Revisar o novo HEAD e resolver threads aplicáveis. O PR #25 deve permanecer
+   em draft e sem merge, conforme autorização vigente.
 
-**Pontuação estrita atual: 10/100. Meta 90/100: não atingida.** Somente o marco
-de Internações foi considerado integralmente comprovado com a evidência
-disponível; os demais contêm ao menos uma lacuna de aceite. Não declarar o
-sistema homologado para liberação enquanto os bloqueadores acima permanecerem.
+**Última pontuação estrita registrada antes da rodada autenticada: 10/100.** Ela
+não foi recalculada porque o documento não contém pesos verificáveis por critério.
+A meta de 90/100 não está comprovada. Não declarar o sistema homologado para
+liberação enquanto os bloqueadores acima permanecerem.
