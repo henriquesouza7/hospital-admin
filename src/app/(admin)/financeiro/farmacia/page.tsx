@@ -17,7 +17,10 @@ export default async function PharmacyPage() {
         title="Farmácia"
         description="Acompanhe compras de medicamentos e insumos e mantenha o histórico de preços por fornecedor."
         actions={
-          <Button render={<Link href="/financeiro/farmacia/pedidos/novo" />}>
+          <Button
+            nativeButton={false}
+            render={<Link href="/financeiro/farmacia/pedidos/novo" />}
+          >
             <PackagePlus aria-hidden="true" />
             Novo pedido
           </Button>

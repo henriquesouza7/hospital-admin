@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 
 const storageState = process.env.PLAYWRIGHT_AUTH_STORAGE_STATE;
@@ -67,6 +68,16 @@ test.describe("smokes administrativos autenticados", () => {
   test("should_keep_administrative_dashboards_within_supported_viewports", async ({
     page,
   }) => {
+    test.setTimeout(120_000);
+    const buttonSemanticsWarnings: string[] = [];
+    page.on("console", (message) => {
+      if (
+        message.type() === "warning" &&
+        message.text().includes("nativeButton")
+      ) {
+        buttonSemanticsWarnings.push(message.text());
+      }
+    });
     const viewportHeights = new Map([
       [390, 844],
       [768, 1024],
@@ -114,6 +125,8 @@ test.describe("smokes administrativos autenticados", () => {
         });
       }
     }
+
+    expect(buttonSemanticsWarnings).toEqual([]);
   });
 
   test("should_download_aggregate_csv_reports_with_a_real_admin_session", async ({
@@ -126,13 +139,35 @@ test.describe("smokes administrativos autenticados", () => {
       page.getByRole("heading", { level: 1, name: "Exportações CSV" }),
     ).toBeVisible();
 
-    for (const reportType of ["gastos", "cirurgias"]) {
+    for (const reportType of [
+      "gastos",
+      "compras",
+      "internacoes",
+      "metas",
+      "producao",
+      "cirurgias",
+    ]) {
+      await page.getByLabel("Início").fill("2099-10");
+      await page.getByLabel("Fim").fill("2099-10");
       await page.getByLabel("Relatório").selectOption(reportType);
       const downloadPromise = page.waitForEvent("download");
       await page.getByRole("button", { name: "Baixar CSV" }).click();
       const download = await downloadPromise;
+      const downloadPath = await download.path();
+      if (!downloadPath) throw new Error("O arquivo CSV não foi salvo.");
+      const csv = await readFile(downloadPath, "utf8");
 
-      expect(download.suggestedFilename()).toMatch(/\.csv$/i);
+      expect(download.suggestedFilename()).toBe(
+        `${reportType}-2099-10-2099-10.csv`,
+      );
+      expect(csv.startsWith("\uFEFF")).toBe(true);
+      expect(csv).toContain("\r\n");
+      expect(csv).not.toContain("HOMOLOGACAO TESTE - RACE");
+      expect(csv).not.toContain("HOMOLOGACAO TESTE - DUPLICIDADE");
+
+      if (reportType === "gastos" || reportType === "compras") {
+        expect(csv).toContain("9999999999,99");
+      }
     }
   });
 

@@ -1,5 +1,56 @@
 # Homologação isolada — 13/10/2026
 
+## Execução técnica posterior — 13/10/2026
+
+Esta atualização substitui as pendências de sessão, E2E, responsividade,
+exportações e concorrência PostgreSQL registradas anteriormente. Foi usada
+somente a branch isolada `br-long-base-b88yvq9r` do projeto
+`still-bird-03340027`; nenhum email foi enviado, migration executada,
+production alterada ou dado real utilizado.
+
+- A sessão existente do usuário sintético administrador foi validada pelo
+  endpoint oficial da aplicação (`/api/auth/get-session`, papel `admin`). O
+  storage state permitiu executar todos os smokes autenticados.
+- Foram corrigidos dois usos de `Button` como `Link` com `nativeButton=true` na
+  Farmácia/Pedidos. O smoke agora falha se aparecer esse aviso de semântica.
+  Também foi restaurada a deduplicação do token Data API por render React após
+  a rodada sem cache gerar 429; 10/10 repetições com duas páginas passaram.
+- A discussão P2 `4261339379` do preparador de sessão está resolvida e obsoleta.
+  As 14 regressões de URL/ambiente/isolamento de storage state passaram.
+- Os seis CSVs reais foram baixados na sessão administrativa para outubro de
+  2099, período dos registros sintéticos. Todos passaram verificações de nome,
+  BOM UTF-8, CRLF e ausência dos nomes sintéticos dos pacientes. Gastos e
+  Compras continham `9999999999,99`, igual ao valor decimal persistido
+  `9999999999.99`; a resposta de Gastos foi HTTP 200 e `text/csv`.
+- Duas conexões PostgreSQL independentes disputaram uma vaga cirúrgica: uma
+  criou agendamento e a outra recebeu “No available capacity”. Outra disputa
+  para o mesmo paciente/dia criou um agendamento e a outra foi barrada pelo
+  índice único. A competição financeira para a mesma competência também teve
+  uma gravação e uma rejeição por unicidade. O banco confirmou 2 agendamentos,
+  2 auditorias correspondentes, 1 despesa e sua auditoria. Um savepoint que
+  incluiu criação de paciente e auditoria foi revertido: zero paciente e mesma
+  contagem de auditoria após rollback.
+- Confirmação read-only de catálogo: 20 tabelas públicas com RLS, zero sem RLS;
+  `anonymous` sem SELECT em `audit_logs` nem EXECUTE das RPCs verificadas;
+  `authenticated` com os grants esperados. Isto confirma privilégios e
+  configuração, mas não é uma matriz funcional assinada de todos os atores.
+- Gates finais: formatação, lint, typecheck, 359/359 testes em 50 arquivos,
+  build e E2E 11/11 (6 autenticados, 5 públicos, zero ignorados). As 48
+  combinações de 12 rotas e quatro larguras passaram. O dashboard em duas
+  páginas passou 10/10 repetições. Nos logs dessas execuções: zero 429, 42501,
+  falha de dashboard, 5xx ou aviso `nativeButton`.
+- Não foi reproduzida a falha histórica 42501; o mecanismo original permanece
+  sem causa raiz demonstrada. Os testes SQL de concorrência chamaram RPCs em
+  transações isoladas com ator sintético, mas a sessão MCP de SQL é privilegiada;
+  por isso eles provam serialização, unicidade e rollback PostgreSQL, não RLS
+  sob JWT de usuário básico/anônimo. A inspeção de RLS por perfil e os fluxos de
+  expiração/renovação e uso de tokens de recuperação continuam incompletos.
+
+Pontuação estrita: **10/100**. Internações continua sendo o único marco
+integralmente comprovado; os novos resultados não completam outro marco inteiro.
+PR #25 continua em draft e sem merge. Custos efetivamente faturados não foram
+verificados nesta rodada.
+
 ## Atualização final de interface e estabilidade — 13/10/2026
 
 Esta seção substitui os resultados anteriores de E2E e responsividade, que

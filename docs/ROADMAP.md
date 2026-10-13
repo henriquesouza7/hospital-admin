@@ -1,5 +1,32 @@
 # Roadmap
 
+## Execução posterior de homologação — 13/10/2026
+
+Na branch isolada do PR #25, o usuário sintético `admin` foi validado na
+aplicação. Os seis CSVs foram baixados e verificados com dados persistidos;
+Gastos e Compras preservaram `9999999999.99` como `9999999999,99` e nenhum dos
+seis arquivos continha os nomes sintéticos dos pacientes. A concorrência de
+duas transações PostgreSQL independentes foi exercitada para capacidade
+cirúrgica, duplicidade de paciente/dia e unicidade de despesa mensal. Rollback
+de uma criação com auditoria deixou zero linha de paciente e não aumentou a
+auditoria. São dados exclusivamente sintéticos.
+
+Foram corrigidos os avisos `nativeButton` no fluxo de Farmácia/Pedidos e o E2E
+responsivo agora os detecta. A suíte também cobre os seis relatórios. Resultado
+final: 359/359 testes unitários, 11/11 E2E (seis autenticados, cinco públicos,
+zero ignorados), 10/10 repetições do dashboard concorrente e sucesso em
+formatação, lint, typecheck e build. Os logs tiveram zero 429, 42501 e 5xx; a
+causa do 42501 histórico permanece desconhecida. A P2 4261339379 está resolvida
+e obsoleta.
+
+A leitura de catálogo confirmou RLS em 20/20 tabelas públicas e grants
+anônimos negados para auditoria e RPCs consultadas. Isso não substitui uma
+matriz de políticas executada por JWT básico/anônimo; expiração/renovação e
+tokens de recuperação também continuam pendentes. A pontuação estrita segue em
+**10/100**, pois nenhum marco adicional foi comprovado por inteiro. O PR #25
+continua draft e sem merge. Consulte
+`docs/HOMOLOGACAO_2026-10-13.md` para escopo e evidências.
+
 ## Atualização da homologação — 13/10/2026
 
 O smoke autenticado de responsividade ampliou a cobertura para 12 rotas em
