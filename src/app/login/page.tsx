@@ -1,5 +1,6 @@
 import { Building2 } from "lucide-react";
 import { LoginForm } from "@/components/auth/login-form";
+import { getEnvironmentLabel } from "@/lib/environment-label";
 
 type LoginPageProps = Readonly<{
   searchParams: Promise<{ error?: string; next?: string }>;
@@ -23,7 +24,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <div>
             <p className="font-semibold tracking-tight">Hospital Admin</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Gestão administrativa
+              {getEnvironmentLabel()}
             </p>
           </div>
         </div>

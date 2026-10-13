@@ -8,9 +8,6 @@ import { getNeonServerEnv } from "@/lib/neon/env";
 
 type NeonDataApiClient = ReturnType<typeof createClient>;
 
-let neonDataApiClient: NeonDataApiClient | undefined;
-
-// Deduplicate token retrieval within a render; React cache scopes values per request.
 const getDataApiToken = cache(async () => {
   const startedAt = performance.now();
   const result = await getNeonAuth()
@@ -36,18 +33,12 @@ const getDataApiToken = cache(async () => {
   return data?.token ?? null;
 });
 
-export function getNeonDataApiClient() {
-  if (neonDataApiClient) {
-    return neonDataApiClient;
-  }
-
+export function getNeonDataApiClient(): NeonDataApiClient {
   const env = getNeonServerEnv();
-  neonDataApiClient = createClient({
+  return createClient({
     dataApi: {
       url: env.dataApiUrl,
       getToken: getDataApiToken,
     },
   });
-
-  return neonDataApiClient;
 }

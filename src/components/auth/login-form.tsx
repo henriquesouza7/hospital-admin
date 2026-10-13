@@ -3,6 +3,10 @@
 import { type FormEvent, useState, useTransition } from "react";
 import Link from "next/link";
 import { getSafeRedirectPath } from "@/lib/auth/redirect";
+import {
+  getLoginErrorMessage,
+  getLoginUnavailableMessage,
+} from "@/lib/auth/login-error";
 
 type LoginFormProps = Readonly<{ next?: string }>;
 
@@ -31,13 +35,14 @@ export function LoginForm({ next }: LoginFormProps) {
         });
 
         if (!response.ok) {
-          setError("Email ou senha inválidos.");
+          const payload: unknown = await response.json().catch(() => null);
+          setError(getLoginErrorMessage(response.status, payload));
           return;
         }
 
         window.location.assign(getSafeRedirectPath(next));
       } catch {
-        setError("O login está indisponível no momento.");
+        setError(getLoginUnavailableMessage());
       }
     });
   }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Building2 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { LogoutButton } from "@/components/logout-button";
+import { getEnvironmentLabel } from "@/lib/environment-label";
 import { isNavigationItemActive, navigationGroups } from "@/lib/navigation";
 
 type AdminShellProps = Readonly<{ children: React.ReactNode }>;
@@ -92,7 +93,7 @@ export function AdminShell({ children }: AdminShellProps) {
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden rounded-full border bg-card px-3 py-1 text-xs font-medium text-muted-foreground sm:inline-flex">
-              Ambiente de demonstração
+              {getEnvironmentLabel()}
             </span>
             <LogoutButton />
           </div>

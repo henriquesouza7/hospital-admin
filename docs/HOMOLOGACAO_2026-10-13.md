@@ -1,5 +1,40 @@
 # Homologação isolada — 13/10/2026
 
+## Correção do login e renovação da sessão — 13/10/2026
+
+O fluxo do formulário tratava toda resposta HTTP não bem-sucedida como senha
+incorreta. Isso mascarava indisponibilidade, configuração e requisições
+inválidas. Agora a interface considera apenas status e códigos estáveis do
+Better Auth, mantém mensagens não enumeráveis e nunca exibe a mensagem bruta do
+provedor. A conta sintética administrativa entrou pelo formulário real no
+Neon Auth isolado; o endpoint de token respondeu HTTP 200, a sessão retornou
+papel `admin`, e Financeiro, Internações e Pequenas Cirurgias funcionaram após
+reload e logout. A conta sintética básica continuou sem acesso financeiro.
+
+Foi reproduzido também um estado de teste enganoso: o storage state era salvo
+antes do logout que revogava o mesmo token. O cookie de sessão em cache ainda
+fazia `/api/auth/get-session` mostrar `admin`, enquanto `/api/auth/token`
+retornava HTTP 401 e as consultas protegidas falhavam. O E2E agora salva o
+storage state somente após novo login e confirma HTTP 200 no endpoint de token.
+Com sessão nova, duas requisições simultâneas ao dashboard e a suíte autenticada
+passaram. O cliente Data API é criado por acesso e o token continua deduplicado
+no escopo de render React, sem cache global entre usuários.
+
+O processo validado foi `next start` deste worktree em `localhost:3006`; as
+origens Neon Auth e Data API configuradas apontam ao mesmo endpoint, banco e
+branch de homologação isolado. A validação agora rejeita divergência de host,
+região, porta, protocolo, banco, caminho, query, fragmento ou credenciais
+embutidas. Nenhuma migration ou dado de negócio foi escrito, nenhum email foi
+enviado e production e o Neon demo compartilhado não foram acessados para
+escrita.
+
+Gates desta correção: instalação congelada, formatação, lint, typecheck, 380
+testes unitários, build e E2E 13/13 passaram. O teste integrado cobre login
+sintético válido/inválido, papel, rotas, reload, logout, proteção, dashboards,
+auditoria, responsividade, CSV e Pequenas Cirurgias. O status específico da
+tentativa de login da conta pessoal do operador não foi observado; esta rodada
+não leu nem alterou essa identidade. O PR #25 continua em draft e sem merge.
+
 ## Execução técnica posterior — 13/10/2026
 
 Esta atualização substitui as pendências de sessão, E2E, responsividade,
