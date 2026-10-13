@@ -2,6 +2,7 @@ import "server-only";
 
 import { z } from "zod";
 import { getNeonDataApiClient } from "@/lib/neon/data-api";
+import { logDashboardQueryFailure } from "../../lib/neon/dashboard-diagnostics";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import type {
   AdmissionDashboardTotals,
@@ -209,6 +210,7 @@ export async function getAdmissionDashboardTotals(
   throughExclusive: string,
 ): Promise<AdmissionDashboardTotals> {
   await requireAdmin();
+  const startedAt = performance.now();
   const { data, error } = await getNeonDataApiClient().rpc(
     "get_admission_dashboard_totals",
     {
@@ -217,9 +219,24 @@ export async function getAdmissionDashboardTotals(
     },
   );
   if (error || data === null || data === undefined) {
+    logDashboardQueryFailure({
+      operation: "admission_totals",
+      stage: "data_api",
+      error,
+      durationMs: performance.now() - startedAt,
+    });
     throw new Error("Não foi possível carregar o resumo de internações.");
   }
-  const totals = admissionDashboardTotalsSchema.parse(data);
+  const result = admissionDashboardTotalsSchema.safeParse(data);
+  if (!result.success) {
+    logDashboardQueryFailure({
+      operation: "admission_totals",
+      stage: "response_validation",
+      durationMs: performance.now() - startedAt,
+    });
+    throw new Error("Não foi possível carregar o resumo de internações.");
+  }
+  const totals = result.data;
   return {
     monthlyTotals: totals.monthly_totals,
     annualTotal: totals.annual_total,

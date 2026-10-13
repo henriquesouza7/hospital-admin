@@ -38,6 +38,7 @@ import { MonthlyChart } from "@/modules/finance/indicators/monthly-chart";
 import { loadProductionIndicatorSource } from "@/modules/production/repository";
 import { listProductionImports } from "@/modules/production-import/repository";
 import { getSurgerySummary } from "@/modules/minor-surgeries/repository";
+import { logDashboardQueryFailure } from "@/lib/neon/dashboard-diagnostics";
 import {
   formatCurrency,
   formatInteger,
@@ -54,6 +55,35 @@ type HomeProps = Readonly<{
   }>;
 }>;
 
+async function loadDashboardFinanceRows(startMonth: string, endMonth: string) {
+  const startedAt = performance.now();
+  try {
+    return {
+      kind: "available" as const,
+      rows: await listMonthlyExpenseTotals(startMonth, endMonth),
+    };
+  } catch (error: unknown) {
+    if (error instanceof MonthlyExpenseTotalsRpcUnavailableError) {
+      logDashboardQueryFailure({
+        operation: "finance_totals",
+        stage: "data_api",
+        durationMs: performance.now() - startedAt,
+      });
+      return { kind: "rpc_unavailable" as const, code: null };
+    }
+    if (error instanceof MonthlyExpenseTotalsQueryError) {
+      logDashboardQueryFailure({
+        operation: "finance_totals",
+        stage: "data_api",
+        error,
+        durationMs: performance.now() - startedAt,
+      });
+      return { kind: "query_error" as const, code: error.code };
+    }
+    throw error;
+  }
+}
+
 export default async function Home({ searchParams }: HomeProps) {
   const period = parseYearMonth(await searchParams);
   const startDate = `${period.year}-01-01`;
@@ -62,20 +92,10 @@ export default async function Home({ searchParams }: HomeProps) {
   const today = saoPauloToday();
   const todayDate = today.toISOString().slice(0, 10);
   const surgeryThrough = addMonthsClamped(today, 24);
-  const financeRowsPromise = listMonthlyExpenseTotals(
+  const financeRowsPromise = loadDashboardFinanceRows(
     `${period.year}-01`,
     `${period.year}-12`,
-  )
-    .then((rows) => ({ kind: "available" as const, rows }))
-    .catch((error: unknown) => {
-      if (error instanceof MonthlyExpenseTotalsRpcUnavailableError) {
-        return { kind: "rpc_unavailable" as const, code: null };
-      }
-      if (error instanceof MonthlyExpenseTotalsQueryError) {
-        return { kind: "query_error" as const, code: error.code };
-      }
-      throw error;
-    });
+  );
   const [
     admissionTotals,
     targets,

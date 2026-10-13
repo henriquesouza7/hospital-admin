@@ -1,5 +1,36 @@
 # Roadmap
 
+## Estado de estabilização — 13/10/2026
+
+O PR #25 segue aberto em draft, sem merge, no branch `feat/consolidacao-final-demo`.
+O HEAD-base verificado nesta rodada é `2026f2c8abe910a3e0e591b67608153accb4fd4d`.
+Foi adicionada instrumentação server-only para falhas do dashboard, limitada a
+operação/etapa fixas, código e status validados, duração e UUID aleatório; erros,
+tokens e dados pessoais não são registrados. A obtenção do token Data API agora
+usa `React.cache` para compartilhar a leitura durante um render do servidor.
+
+Com a sessão administrativa Playwright já existente, a suíte E2E passou 11/11
+(6 autenticados e 5 públicos), o teste de duas requisições simultâneas passou 6/6 e o dashboard passou
+30/30 em série no servidor de produção local (`next build` + `next start`, porta
+3004). As séries anteriores reproduziram `42501` em consultas do dashboard;
+após a mudança, estas novas séries passaram, mas não demonstram a causa-raiz nem
+provam ausência futura de falhas. Não houve testes de sessão expirada/recém-criada
+nem verificação negativa de RLS com atores distintos.
+
+A leitura do Neon demo nesta rodada permaneceu read-only; as tabelas de negócio
+continuam vazias. Não foram inseridos dados sintéticos, aplicadas migrations ou
+alteradas contas. RLS, grants e definições das RPCs foram inspecionados, mas
+nenhuma política foi exercitada com identidades não administrativas. A migration
+`20261009030000_index_purchase_orders_by_order_date.sql` continua sem aplicação
+e sem medição de desempenho com volume representativo. Persistência após
+mutação, auditoria resultante, CSV não vazio, concorrência PostgreSQL e smoke
+visual autenticado abrangente permanecem pendentes.
+
+Fases 6 e 7 permanecem abertas. Pela regra de pontuação estrita, nenhum dos dez
+marcos está integralmente homologado nesta rodada: **0/100; meta de 90% não
+atingida**. Manter o PR em draft até concluir a homologação isolada autorizada e
+a revisão final.
+
 ## Fase 0 — Fundação
 - [x] Criar repositório
 - [x] Criar documentação-base

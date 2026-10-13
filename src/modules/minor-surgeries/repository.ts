@@ -2,6 +2,7 @@ import "server-only";
 
 import { z } from "zod";
 import { getNeonDataApiClient } from "@/lib/neon/data-api";
+import { logDashboardQueryFailure } from "../../lib/neon/dashboard-diagnostics";
 import { requireMinorSurgeriesAdmin } from "./access";
 import {
   type SurgeryAppointment,
@@ -236,6 +237,7 @@ export async function getSurgerySummary(
   maxRows: number,
 ) {
   await requireMinorSurgeriesAdmin();
+  const startedAt = performance.now();
   const { data, error } = await getNeonDataApiClient().rpc(
     "get_surgery_summary",
     {
@@ -244,7 +246,29 @@ export async function getSurgerySummary(
       p_max_rows: maxRows,
     },
   );
-  return ensureResult(data, error, surgeryExportSummarySchema);
+  if (error || data === null || data === undefined) {
+    logDashboardQueryFailure({
+      operation: "surgery_summary",
+      stage: "data_api",
+      error,
+      durationMs: performance.now() - startedAt,
+    });
+    throw new Error(
+      "Não foi possível carregar os dados de pequenas cirurgias.",
+    );
+  }
+  const result = surgeryExportSummarySchema.safeParse(data);
+  if (!result.success) {
+    logDashboardQueryFailure({
+      operation: "surgery_summary",
+      stage: "response_validation",
+      durationMs: performance.now() - startedAt,
+    });
+    throw new Error(
+      "Não foi possível carregar os dados de pequenas cirurgias.",
+    );
+  }
+  return result.data;
 }
 
 export async function listSurgeryDaysPage(

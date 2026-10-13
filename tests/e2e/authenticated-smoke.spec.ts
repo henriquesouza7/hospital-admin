@@ -25,6 +25,30 @@ test.describe("smokes administrativos autenticados", () => {
     ).toContainText(/R\$/);
   });
 
+  test("should_keep_dashboard_available_for_concurrent_authenticated_requests", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({
+      storageState: storageState ?? undefined,
+    });
+    const pages = await Promise.all([context.newPage(), context.newPage()]);
+
+    try {
+      await Promise.all(pages.map((page) => page.goto("/")));
+      for (const page of pages) {
+        await expect(page).not.toHaveURL(/\/login/);
+        await expect(
+          page.getByRole("heading", {
+            level: 1,
+            name: "Painel administrativo",
+          }),
+        ).toBeVisible();
+      }
+    } finally {
+      await context.close();
+    }
+  });
+
   test("should_render_audit_filters_with_a_real_admin_session", async ({
     page,
   }) => {
