@@ -1,5 +1,32 @@
 # Roadmap
 
+## Atualização da homologação — 13/10/2026
+
+O smoke autenticado de responsividade ampliou a cobertura para 12 rotas em
+390, 768, 1024 e 1440 px; as 48 combinações passaram sem overflow da página ou
+título fora da viewport. A página de exportações foi ajustada para corrigir o
+overflow que ocorria em 768 e 1024 px. A suíte E2E final passou 11/11, incluindo
+6 cenários autenticados e 5 públicos, sem ignorados. A execução serial completa
+passou após um timeout isolado na primeira tentativa do dashboard; 30 visitas
+sequenciais e 6 requisições em pares simultâneos também passaram.
+
+O callback de token do Data API deixou de memoizar o resultado do Neon Auth
+entre renders. Após essa mudança, o teste de duas páginas concorrentes passou
+10/10 repetições e a suíte completa voltou a passar 11/11, sem erros `42501` nos
+logs dessa execução. O papel temporário da identidade sintética foi restaurado
+para `user` e confirmado pelo endpoint de sessão.
+
+A discussão P2 sobre URLs longas da auditoria foi corrigida com navegação
+keyset reversa e um cursor por link; teste de regressão cobre a ida/volta e
+inserção entre páginas.
+
+Esses resultados ampliam a evidência, mas não comprovam a matriz integral de
+RLS/RPC, o ator anônimo, sessões expiradas/renovadas, concorrência por conexões
+PostgreSQL independentes ou todos os limites dos CSVs. A pontuação estrita
+continua em **10/100**; não atingir 90% não deve ser mascarado pelos gates. PR
+#25 segue draft e sem merge. Consulte
+`docs/HOMOLOGACAO_2026-10-13.md` para o inventário atualizado.
+
 ## Homologação isolada — 13/10/2026 (atualização)
 
 O registro abaixo substitui as afirmações anteriores sobre ausência de dados e

@@ -1,5 +1,49 @@
 # Homologação isolada — 13/10/2026
 
+## Atualização final de interface e estabilidade — 13/10/2026
+
+Esta seção substitui os resultados anteriores de E2E e responsividade, que
+tinham cobertura menor. O trabalho ocorreu no worktree isolado do PR #25,
+conectado ao projeto de homologação `still-bird-03340027`, branch
+`br-long-base-b88yvq9r`; production e o Neon demo compartilhado não foram
+alterados.
+
+- A página `/exportacoes` agora usa duas colunas em telas intermediárias e
+  quatro colunas a partir de `xl`, com campos e botão dimensionados para caber
+  no viewport. Isso corrige o overflow reproduzido em 768 px e 1024 px.
+- A paginação da auditoria substituiu a pilha de até 198 cursores na query por
+  navegação keyset reversa: cada link carrega um único cursor e a direção. A
+  regressão verifica navegação de ida e volta sem linhas repetidas após uma
+  inserção entre páginas e limita a URL de página 200 a menos de 250 caracteres.
+- O teste autenticado de layout percorre 12 rotas administrativas em 390, 768,
+  1024 e 1440 px (48 combinações), verificando largura de página e posição do
+  título. A largura da página é medida pelo `body`; tabelas com rolagem interna
+  intencional não são tratadas como overflow da página.
+- Uma rodada posterior reproduziu `42501` na carga de duas páginas de dashboard
+  simultâneas. As RPCs exatas e o callback server-side passaram num diagnóstico
+  isolado protegido, então a causa não foi atribuída ao banco. Retirar a
+  memoização React do callback de token foi seguido por 10/10 repetições do E2E
+  de duas páginas e pela suíte completa 11/11 (6 autenticados, 5 públicos, zero
+  ignorados), sem `42501` nos logs. É evidência A/B favorável à correção de
+  isolamento de contexto; o mecanismo interno exato ainda não foi provado. Um
+  timeout transitório observado antes desse ajuste também foi seguido por 30
+  visitas sequenciais e 6 requisições simultâneas aprovadas.
+- O estado de teste autenticado foi obtido por sessão real existente de uma
+  identidade sintética. Para executar as verificações administrativas, o papel
+  dessa identidade foi temporariamente promovido pelo Neon Auth e a sessão foi
+  confirmada pela aplicação. Ao fim, o papel original `user` foi restaurado
+  pelo Neon Auth e `/api/auth/get-session` confirmou a mesma sessão com papel
+  `user`; a promoção não é evidência de autorização para uma conta básica.
+- A verificação de responsividade não substitui smoke visual manual, auditoria
+  de acessibilidade completa nem teste em navegadores/dispositivos distintos.
+  RLS direto com JWT de cada perfil, ator anônimo válido e concorrência com
+  conexões PostgreSQL independentes continuam pendentes quando não houver
+  contexto legítimo do provedor para executá-los.
+
+Pontuação estrita: permanece **10/100**. Os E2E e a cobertura responsiva
+ampliados não completam integralmente nenhum marco adicional da matriz de
+aceite. O PR #25 permanece draft e sem merge.
+
 ## Correção do preparador de sessão e separação de ambientes
 
 - A revisão do PR #25 apontou inconsistência entre a porta padrão `3006` do

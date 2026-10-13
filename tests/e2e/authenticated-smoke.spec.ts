@@ -67,9 +67,30 @@ test.describe("smokes administrativos autenticados", () => {
   test("should_keep_administrative_dashboards_within_supported_viewports", async ({
     page,
   }) => {
-    for (const width of [390, 1440]) {
-      await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
-      for (const route of ["/", "/financeiro/indicadores", "/internacoes"]) {
+    const viewportHeights = new Map([
+      [390, 844],
+      [768, 1024],
+      [1024, 900],
+      [1440, 900],
+    ]);
+    const routes = [
+      "/",
+      "/auditoria",
+      "/configuracoes",
+      "/exportacoes",
+      "/financeiro",
+      "/financeiro/indicadores",
+      "/financeiro/farmacia",
+      "/financeiro/laboratorio",
+      "/financeiro/feira",
+      "/internacoes",
+      "/producao",
+      "/pequenas-cirurgias",
+    ];
+
+    for (const [width, height] of viewportHeights) {
+      await page.setViewportSize({ width, height });
+      for (const route of routes) {
         await page.goto(route);
         await expect(page).not.toHaveURL(/\/login/);
         await expect(page.locator("main h1")).toBeVisible();
@@ -78,14 +99,16 @@ test.describe("smokes administrativos autenticados", () => {
           const heading = document.querySelector("main h1");
           const bounds = heading?.getBoundingClientRect();
           return {
-            horizontalOverflow:
-              document.documentElement.scrollWidth > window.innerWidth,
+            horizontalOverflow: document.body.scrollWidth > window.innerWidth,
             headingOutsideViewport:
               !bounds || bounds.left < 0 || bounds.right > window.innerWidth,
           };
         });
 
-        expect(layout).toEqual({
+        expect(
+          layout,
+          `Layout fora do viewport em ${route} (${width}px).`,
+        ).toEqual({
           horizontalOverflow: false,
           headingOutsideViewport: false,
         });

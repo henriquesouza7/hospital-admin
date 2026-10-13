@@ -51,34 +51,34 @@ export default function ExportsPage() {
         <form
           action="/api/exportacoes"
           method="get"
-          className="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_2fr_auto] sm:items-end"
+          className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,2fr)_auto] xl:items-end"
         >
-          <label className="grid gap-1.5 text-sm font-medium">
+          <label className="grid min-w-0 gap-1.5 text-sm font-medium">
             Início
             <input
               required
               type="month"
               name="inicio"
               defaultValue={competence}
-              className="h-10 rounded-md border bg-background px-3 font-normal"
+              className="h-10 w-full min-w-0 rounded-md border bg-background px-3 font-normal"
             />
           </label>
-          <label className="grid gap-1.5 text-sm font-medium">
+          <label className="grid min-w-0 gap-1.5 text-sm font-medium">
             Fim
             <input
               required
               type="month"
               name="fim"
               defaultValue={competence}
-              className="h-10 rounded-md border bg-background px-3 font-normal"
+              className="h-10 w-full min-w-0 rounded-md border bg-background px-3 font-normal"
             />
           </label>
-          <label className="grid gap-1.5 text-sm font-medium">
+          <label className="grid min-w-0 gap-1.5 text-sm font-medium">
             Relatório
             <select
               required
               name="tipo"
-              className="h-10 rounded-md border bg-background px-3 font-normal"
+              className="h-10 w-full min-w-0 rounded-md border bg-background px-3 font-normal"
             >
               {types.map(([value, title]) => (
                 <option key={value} value={value}>
@@ -88,7 +88,7 @@ export default function ExportsPage() {
             </select>
           </label>
           <button
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground"
+            className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground sm:col-span-2 xl:col-span-1 xl:w-auto"
             type="submit"
           >
             <Download aria-hidden="true" className="size-4" />
