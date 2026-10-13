@@ -13,6 +13,13 @@ const serverEnvSchema = z
     const dataDatabase = dataApi.pathname.split("/").filter(Boolean)[0];
     const authEndpoint = auth.hostname.replace(".neonauth.", ".");
     const dataEndpoint = dataApi.hostname.replace(".apirest.", ".");
+    const isNeonServiceHost = (
+      hostname: string,
+      service: "neonauth" | "apirest",
+    ) =>
+      new RegExp(
+        `^ep-[a-z0-9-]+\\.${service}\\.c-\\d+(?:\\.[a-z]{2,3}(?:-[a-z]+)+-\\d+)?\\.aws\\.neon\\.tech$`,
+      ).test(hostname);
 
     if (
       auth.protocol !== "https:" ||
@@ -25,8 +32,8 @@ const serverEnvSchema = z
       auth.hash !== "" ||
       dataApi.search !== "" ||
       dataApi.hash !== "" ||
-      !auth.hostname.includes(".neonauth.") ||
-      !dataApi.hostname.includes(".apirest.") ||
+      !isNeonServiceHost(auth.hostname, "neonauth") ||
+      !isNeonServiceHost(dataApi.hostname, "apirest") ||
       authEndpoint !== dataEndpoint ||
       auth.port !== dataApi.port ||
       !authDatabase ||

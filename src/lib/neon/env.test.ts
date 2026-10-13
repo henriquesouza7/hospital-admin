@@ -32,6 +32,28 @@ describe("Neon environment", () => {
     ).toThrow("mesmo endpoint Neon");
   });
 
+  it("should_reject_hosts_that_only_mimic_neon_service_names", () => {
+    expect(() =>
+      getNeonServerEnv({
+        ...validEnvironment,
+        NEON_AUTH_BASE_URL:
+          "https://ep-project-branch.neonauth.attacker.example/neondb/auth",
+        NEON_DATA_API_URL:
+          "https://ep-project-branch.apirest.attacker.example/neondb/rest/v1",
+      }),
+    ).toThrow("mesmo endpoint Neon");
+  });
+
+  it("should_reject_neon_domain_suffixes_nested_under_external_hosts", () => {
+    expect(() =>
+      getNeonServerEnv({
+        ...validEnvironment,
+        NEON_DATA_API_URL:
+          "https://ep-project-branch.apirest.c-1.aws.neon.tech.attacker.example/neondb/rest/v1",
+      }),
+    ).toThrow("mesmo endpoint Neon");
+  });
+
   it("should_reject_auth_and_data_api_from_different_databases", () => {
     expect(() =>
       getNeonServerEnv({
