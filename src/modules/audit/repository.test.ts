@@ -66,7 +66,7 @@ describe("administrative audit repository", () => {
         actorId: null,
         page: 1,
         cursor: null,
-        cursorHistory: [],
+        cursorDirection: "after",
       }),
     ).rejects.toThrow("blocked");
     expect(mocks.from).not.toHaveBeenCalled();
@@ -82,7 +82,7 @@ describe("administrative audit repository", () => {
       actorId: null,
       page: 1,
       cursor: null,
-      cursorHistory: [],
+      cursorDirection: "after",
     });
 
     expect(mocks.lt).toHaveBeenCalledWith(
@@ -114,10 +114,7 @@ describe("administrative audit repository", () => {
       actorId: null,
       page: AUDIT_MAX_PAGE,
       cursor: { createdAt: "2026-10-08T12:00:00Z", id: "10000" },
-      cursorHistory: Array.from({ length: 198 }, () => ({
-        createdAt: "2026-10-08T12:00:00Z",
-        id: "10000",
-      })),
+      cursorDirection: "after",
     });
 
     expect(result.events).toHaveLength(50);
@@ -126,8 +123,8 @@ describe("administrative audit repository", () => {
       hasMore: false,
       limitReached: true,
       cursor: { createdAt: "2026-10-08T12:00:00Z", id: "10000" },
-      cursorHistory: expect.any(Array),
       nextCursor: { createdAt: "2026-10-08T12:00:00Z", id: "50" },
+      previousCursor: { createdAt: "2026-10-08T12:00:00Z", id: "1" },
     });
     expect(mocks.range).toHaveBeenCalledWith(0, 50);
   });
@@ -143,7 +140,7 @@ describe("administrative audit repository", () => {
         actorId: "admin",
         page: 2,
         cursor: { createdAt: "2026-11-01T00:00:00.000Z", id: "100" },
-        cursorHistory: [],
+        cursorDirection: "after",
       }),
     ).resolves.toEqual({
       events: [],
@@ -151,8 +148,8 @@ describe("administrative audit repository", () => {
       hasMore: false,
       limitReached: false,
       cursor: { createdAt: "2026-11-01T00:00:00.000Z", id: "100" },
-      cursorHistory: [],
       nextCursor: null,
+      previousCursor: null,
     });
     expect(mocks.from).toHaveBeenCalledWith("audit_logs");
     expect(mocks.order).toHaveBeenNthCalledWith(1, "created_at", {
@@ -187,13 +184,59 @@ describe("administrative audit repository", () => {
       actorId: null,
       page: 2,
       cursor: { createdAt: "2026-10-09T10:00:00.123Z", id: "42" },
-      cursorHistory: [],
+      cursorDirection: "after",
     });
 
     expect(mocks.or).toHaveBeenCalledWith(
       "created_at.lt.2026-10-09T10:00:00.123Z,and(created_at.eq.2026-10-09T10:00:00.123Z,id.lt.42)",
     );
     expect(mocks.range).toHaveBeenCalledWith(0, 50);
+  });
+
+  it("should_fetch_the_previous_page_with_one_reverse_cursor", async () => {
+    mocks.range.mockResolvedValue({
+      data: Array.from({ length: 51 }, (_, index) => ({
+        id: String(index + 53),
+        actor_id: "admin",
+        entity_type: "doctor",
+        entity_id: String(index + 53),
+        action: "updated",
+        payload: {},
+        created_at: "2026-10-09T10:00:00.123Z",
+      })),
+      error: null,
+    });
+
+    const result = await listAdministrativeAudit({
+      from: null,
+      through: null,
+      module: "todos",
+      entityType: null,
+      action: null,
+      actorId: null,
+      page: 1,
+      cursor: { createdAt: "2026-10-09T10:00:00.123Z", id: "52" },
+      cursorDirection: "before",
+    });
+
+    expect(mocks.or).toHaveBeenCalledWith(
+      "created_at.gt.2026-10-09T10:00:00.123Z,and(created_at.eq.2026-10-09T10:00:00.123Z,id.gt.52)",
+    );
+    expect(mocks.order).toHaveBeenNthCalledWith(1, "created_at", {
+      ascending: true,
+    });
+    expect(mocks.order).toHaveBeenNthCalledWith(2, "id", {
+      ascending: true,
+    });
+    expect(result.events.map((event) => event.id)).toEqual(
+      Array.from({ length: 50 }, (_, index) => String(102 - index)),
+    );
+    expect(result).toMatchObject({
+      page: 1,
+      hasMore: true,
+      nextCursor: { createdAt: "2026-10-09T10:00:00.123Z", id: "53" },
+      previousCursor: null,
+    });
   });
 
   it("should_return_no_next_cursor_when_the_first_page_is_complete", async () => {
@@ -221,7 +264,7 @@ describe("administrative audit repository", () => {
       actorId: null,
       page: 1,
       cursor: null,
-      cursorHistory: [],
+      cursorDirection: "after",
     });
 
     expect(result.nextCursor).toBeNull();
@@ -246,20 +289,31 @@ describe("administrative audit repository", () => {
       const cursorFilter = mocks.or.mock.calls.at(-1)?.[0] as
         string | undefined;
       const cursor = cursorFilter?.match(
-        /^created_at\.lt\.(.+),and\(created_at\.eq\.(.+),id\.lt\.(\d+)\)$/,
+        /^created_at\.(lt|gt)\.(.+),and\(created_at\.eq\.(.+),id\.(lt|gt)\.(\d+)\)$/,
       );
+      const ascending = mocks.order.mock.calls.at(-2)?.[1]?.ascending === true;
       const rows = persistedRows
         .filter((row) =>
           cursor
-            ? row.created_at < cursor[1] ||
-              (row.created_at === cursor[2] &&
-                BigInt(row.id) < BigInt(cursor[3]))
+            ? cursor[1] === "lt"
+              ? row.created_at < cursor[2] ||
+                (row.created_at === cursor[3] &&
+                  (cursor[4] === "lt"
+                    ? BigInt(row.id) < BigInt(cursor[5])
+                    : BigInt(row.id) > BigInt(cursor[5])))
+              : row.created_at > cursor[2] ||
+                (row.created_at === cursor[3] &&
+                  (cursor[4] === "gt"
+                    ? BigInt(row.id) > BigInt(cursor[5])
+                    : BigInt(row.id) < BigInt(cursor[5])))
             : true,
         )
-        .sort((left, right) =>
-          left.created_at === right.created_at
-            ? Number(BigInt(right.id) - BigInt(left.id))
-            : right.created_at.localeCompare(left.created_at),
+        .sort(
+          (left, right) =>
+            (left.created_at === right.created_at
+              ? Number(BigInt(left.id) - BigInt(right.id))
+              : left.created_at.localeCompare(right.created_at)) *
+            (ascending ? 1 : -1),
         );
       return { data: rows.slice(0, end + 1), error: null };
     });
@@ -273,7 +327,7 @@ describe("administrative audit repository", () => {
       actorId: null,
       page: 1,
       cursor: null,
-      cursorHistory: [],
+      cursorDirection: "after",
     });
     expect(firstPage.events).toHaveLength(50);
     expect(firstPage.hasMore).toBe(true);
@@ -289,7 +343,7 @@ describe("administrative audit repository", () => {
       actorId: null,
       page: 2,
       cursor: firstPage.nextCursor,
-      cursorHistory: [],
+      cursorDirection: "after",
     });
 
     const firstPageIds = new Set(firstPage.events.map((event) => event.id));
@@ -303,6 +357,27 @@ describe("administrative audit repository", () => {
     expect(mocks.or).toHaveBeenCalledWith(
       "created_at.lt.2026-10-09T10:00:00.123Z,and(created_at.eq.2026-10-09T10:00:00.123Z,id.lt.11)",
     );
+
+    const previousPage = await listAdministrativeAudit({
+      from: null,
+      through: null,
+      module: "todos",
+      entityType: null,
+      action: null,
+      actorId: null,
+      page: 1,
+      cursor: nextPage.previousCursor,
+      cursorDirection: "before",
+    });
+
+    expect(previousPage.events.map((event) => event.id)).toEqual(
+      firstPage.events.map((event) => event.id),
+    );
+    expect(
+      previousPage.events.some((event) =>
+        nextPage.events.some((nextEvent) => nextEvent.id === event.id),
+      ),
+    ).toBe(false);
   });
 
   it("should_restart_at_page_one_when_the_cursor_is_missing", async () => {
@@ -315,7 +390,7 @@ describe("administrative audit repository", () => {
       actorId: null,
       page: 2,
       cursor: null,
-      cursorHistory: [],
+      cursorDirection: "after",
     });
 
     expect(result.page).toBe(1);

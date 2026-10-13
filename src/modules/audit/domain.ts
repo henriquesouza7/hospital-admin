@@ -6,41 +6,21 @@ export type AuditCursor = Readonly<{
   id: string;
 }>;
 
+export type AuditCursorDirection = "after" | "before";
+
 export function buildAuditCursorFilter(cursor: AuditCursor): string {
   return `created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`;
 }
 
-export function parseAuditCursorHistory(
-  value: string | null,
-  page: number,
-): AuditCursor[] | null {
-  const expectedHistoryLength = page === 1 ? 0 : page - 2;
-  if (expectedHistoryLength === 0 && !value) return [];
-  if (!value || value.length > AUDIT_MAX_PAGE * 64) return null;
-
-  const cursors = value.split("~").map((entry) => {
-    const separator = entry.lastIndexOf("|");
-    if (separator < 1) return null;
-    return {
-      createdAt: entry.slice(0, separator),
-      id: entry.slice(separator + 1),
-    };
-  });
-
-  if (
-    cursors.length !== expectedHistoryLength ||
-    cursors.some((cursor) => cursor === null)
-  ) {
-    return null;
-  }
-  return cursors as AuditCursor[];
+export function buildAuditReverseCursorFilter(cursor: AuditCursor): string {
+  return `created_at.gt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.gt.${cursor.id})`;
 }
 
 export function buildAuditPageHref(
   search: Record<string, string | string[] | undefined>,
   page: number,
   cursor: AuditCursor | null,
-  cursorHistory: readonly AuditCursor[],
+  direction: AuditCursorDirection = "after",
 ): string {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(search)) {
@@ -52,7 +32,8 @@ export function buildAuditPageHref(
       key !== "page" &&
       key !== "cursor_at" &&
       key !== "cursor_id" &&
-      key !== "cursor_history"
+      key !== "cursor_history" &&
+      key !== "cursor_direction"
     ) {
       params.set(key, normalized);
     }
@@ -62,12 +43,8 @@ export function buildAuditPageHref(
     params.set("cursor_at", cursor.createdAt);
     params.set("cursor_id", cursor.id);
   }
-  if (cursorHistory.length > 0) {
-    params.set(
-      "cursor_history",
-      cursorHistory.map(({ createdAt, id }) => `${createdAt}|${id}`).join("~"),
-    );
-  }
+  if (cursor && direction === "before")
+    params.set("cursor_direction", direction);
   return `/auditoria?${params.toString()}`;
 }
 

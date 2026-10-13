@@ -7,8 +7,10 @@ import {
   AUDIT_MAX_PAGE,
   AUDIT_PAGE_SIZE,
   buildAuditCursorFilter,
+  buildAuditReverseCursorFilter,
   entityTypesForModule,
   type AuditCursor,
+  type AuditCursorDirection,
   type AuditModule,
 } from "./domain";
 
@@ -33,7 +35,7 @@ export type AuditFilters = Readonly<{
   actorId: string | null;
   page: number;
   cursor: AuditCursor | null;
-  cursorHistory: readonly AuditCursor[];
+  cursorDirection: AuditCursorDirection;
 }>;
 
 export async function listAdministrativeAudit(filters: AuditFilters) {
@@ -46,21 +48,21 @@ export async function listAdministrativeAudit(filters: AuditFilters) {
     /^(?:0|[1-9]\d*)$/.test(cursor.id) &&
     BigInt(cursor.id) <= maxCursorId;
   const validCursor = isValidCursor(filters.cursor) ? filters.cursor : null;
-  const expectedHistoryLength = filters.page === 1 ? 0 : filters.page - 2;
-  const validHistory =
-    filters.cursorHistory.length === expectedHistoryLength &&
-    filters.cursorHistory.length < AUDIT_MAX_PAGE &&
-    filters.cursorHistory.every(isValidCursor);
+  const validDirection =
+    filters.cursorDirection === "after" || filters.cursorDirection === "before";
   const validNavigation =
     filters.page <= AUDIT_MAX_PAGE &&
-    ((filters.page === 1 && filters.cursor === null && validHistory) ||
-      (filters.page > 1 && validCursor !== null && validHistory));
+    validDirection &&
+    ((filters.page === 1 && validCursor === null) ||
+      (validCursor !== null &&
+        (filters.page > 1 || filters.cursorDirection === "before")));
   const page = Math.min(
     Math.max(validNavigation ? filters.page : 1, 1),
     AUDIT_MAX_PAGE,
   );
-  const cursor = page === 1 ? null : validCursor;
-  const cursorHistory = page === 1 ? [] : filters.cursorHistory;
+  const cursor = validNavigation ? validCursor : null;
+  const direction = validNavigation ? filters.cursorDirection : "after";
+  const reverse = direction === "before" && cursor !== null;
   if (
     filters.module !== "todos" &&
     filters.entityType &&
@@ -72,20 +74,24 @@ export async function listAdministrativeAudit(filters: AuditFilters) {
       hasMore: false,
       limitReached: false,
       cursor,
-      cursorHistory,
       nextCursor: null,
+      previousCursor: null,
     };
   }
   let query = getNeonDataApiClient()
     .from("audit_logs")
     .select("id,actor_id,entity_type,entity_id,action,payload,created_at")
-    .order("created_at", { ascending: false })
-    .order("id", { ascending: false });
+    .order("created_at", { ascending: reverse })
+    .order("id", { ascending: reverse });
 
   if (filters.from) query = query.gte("created_at", filters.from);
   if (filters.through) query = query.lt("created_at", filters.through);
   if (cursor) {
-    query = query.or(buildAuditCursorFilter(cursor));
+    query = query.or(
+      reverse
+        ? buildAuditReverseCursorFilter(cursor)
+        : buildAuditCursorFilter(cursor),
+    );
   }
   if (filters.actorId) query = query.eq("actor_id", filters.actorId);
   if (filters.action) query = query.eq("action", filters.action);
@@ -99,8 +105,8 @@ export async function listAdministrativeAudit(filters: AuditFilters) {
         hasMore: false,
         limitReached: false,
         cursor,
-        cursorHistory,
         nextCursor: null,
+        previousCursor: null,
       };
     query = query.in("entity_type", [...entities]);
   }
@@ -110,19 +116,25 @@ export async function listAdministrativeAudit(filters: AuditFilters) {
     throw new Error("Não foi possível carregar a auditoria administrativa.");
   }
   const rows = z.array(rowSchema).parse(data);
-  const hasMore = rows.length > AUDIT_PAGE_SIZE;
+  const hasMore = reverse || rows.length > AUDIT_PAGE_SIZE;
   const events = rows.slice(0, AUDIT_PAGE_SIZE);
+  if (reverse) events.reverse();
   const lastEvent = events.at(-1);
+  const firstEvent = events.at(0);
   return {
     events,
     page,
     hasMore: page < AUDIT_MAX_PAGE && hasMore,
-    limitReached: page === AUDIT_MAX_PAGE && hasMore,
+    limitReached:
+      page === AUDIT_MAX_PAGE && !reverse && rows.length > AUDIT_PAGE_SIZE,
     cursor,
-    cursorHistory,
     nextCursor:
       hasMore && lastEvent
         ? { createdAt: lastEvent.created_at, id: lastEvent.id }
+        : null,
+    previousCursor:
+      page > 1 && firstEvent
+        ? { createdAt: firstEvent.created_at, id: firstEvent.id }
         : null,
   };
 }

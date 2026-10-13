@@ -5,7 +5,6 @@ import {
   auditModules,
   buildAuditPageHref,
   moduleForEntity,
-  parseAuditCursorHistory,
   parseAuditDate,
   type AuditModule,
 } from "@/modules/audit/domain";
@@ -47,6 +46,8 @@ export default async function AuditPage({ searchParams }: Props) {
     Number.isSafeInteger(rawPage) && rawPage > 0 ? rawPage : 1;
   const cursorAt = one(search.cursor_at);
   const cursorId = one(search.cursor_id);
+  const cursorDirection =
+    one(search.cursor_direction) === "before" ? "before" : "after";
   const filters: AuditFilters = {
     from: parseAuditDate(one(search.from)),
     through: parseAuditDate(one(search.through), true),
@@ -59,8 +60,7 @@ export default async function AuditPage({ searchParams }: Props) {
       cursorAt !== null && cursorId !== null
         ? { createdAt: cursorAt, id: cursorId }
         : null,
-    cursorHistory:
-      parseAuditCursorHistory(one(search.cursor_history), requestedPage) ?? [],
+    cursorDirection,
   };
   const result = await listAdministrativeAudit(filters);
   return (
@@ -207,8 +207,8 @@ export default async function AuditPage({ searchParams }: Props) {
               href={buildAuditPageHref(
                 search,
                 result.page - 1,
-                result.cursorHistory.at(-1) ?? null,
-                result.cursorHistory.slice(0, -1),
+                result.previousCursor,
+                "before",
               )}
             >
               Eventos mais recentes
@@ -226,9 +226,7 @@ export default async function AuditPage({ searchParams }: Props) {
                 search,
                 result.page + 1,
                 result.nextCursor,
-                result.page > 1 && result.cursor
-                  ? [...result.cursorHistory, result.cursor]
-                  : result.cursorHistory,
+                "after",
               )}
             >
               Eventos anteriores
