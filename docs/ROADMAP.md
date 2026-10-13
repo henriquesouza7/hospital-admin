@@ -167,3 +167,27 @@ foi escrito no Neon demo e production não foi alterada.
   atores legítimos distintos para testar negações, autorização específica antes
   de qualquer escrita sintética, persistência e auditoria após mutações, CSVs
   com dados de teste não nulos e inspeção visual autenticada em 390 px e 1440 px.
+
+### Rechecagem responsiva e E2E autenticado — 12/10/2026
+
+- A inspeção em 390 px reproduziu overflow horizontal de 598 px em `/internacoes`.
+  A causa foi a grade implícita `auto` nos wrappers do dashboard. Os wrappers
+  agora usam uma coluna expansível (`grid-cols-1`) e o cabeçalho compartilhado
+  permite encolhimento mínimo. O novo E2E autenticado verifica overflow e
+  posição do título em 390 px e 1440 px; passou.
+- As sete rotas autenticadas `/`, `/auditoria`, `/exportacoes`,
+  `/pequenas-cirurgias`, `/financeiro/indicadores`, `/internacoes` e
+  `/producao/indicadores` renderizaram com título, fonte Geist, sem overflow e
+  sem erros de página nos dois tamanhos. As capturas visuais do Dashboard em
+  1440 px e Internações em 390 px mostram estados vazios e nenhum dado pessoal.
+- O Dashboard apresentou uma falha intermitente separada: uma rodada paralela
+  do E2E marcou 9/10, sem renderizar o título; em três repetições isoladas, uma
+  passou e duas falharam. A causa/SQLSTATE não foi determinada. As duas suítes
+  completas seguintes passaram: execução serial e `pnpm test:e2e` padrão,
+  ambas com 10/10 (5 E2E públicos e 5 autenticados). Não houve alteração para
+  mascarar a falha nem para gerar valores substitutos.
+- Com a correção visual, os gates rápidos (formatação, lint, typecheck e 341
+  testes unitários em 46 arquivos) passaram; `pnpm build` passou e a última
+  execução de `pnpm test:e2e` passou 10/10. O PR #25 continua draft, sem merge;
+  a Fase 7 continua aberta devido às validações de banco, persistência e
+  auditoria ainda pendentes.

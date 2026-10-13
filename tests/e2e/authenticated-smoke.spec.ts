@@ -37,6 +37,35 @@ test.describe("smokes administrativos autenticados", () => {
     await expect(page.getByLabel("Módulo")).toBeVisible();
   });
 
+  test("should_keep_admissions_dashboard_within_supported_viewports", async ({
+    page,
+  }) => {
+    for (const width of [390, 1440]) {
+      await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
+      await page.goto("/internacoes");
+      await expect(page).not.toHaveURL(/\/login/);
+      await expect(
+        page.getByRole("heading", { level: 1, name: "Dashboard" }),
+      ).toBeVisible();
+
+      const layout = await page.evaluate(() => {
+        const heading = document.querySelector("main h1");
+        const bounds = heading?.getBoundingClientRect();
+        return {
+          horizontalOverflow:
+            document.documentElement.scrollWidth > window.innerWidth,
+          headingOutsideViewport:
+            !bounds || bounds.left < 0 || bounds.right > window.innerWidth,
+        };
+      });
+
+      expect(layout).toEqual({
+        horizontalOverflow: false,
+        headingOutsideViewport: false,
+      });
+    }
+  });
+
   test("should_download_aggregate_csv_reports_with_a_real_admin_session", async ({
     page,
   }) => {

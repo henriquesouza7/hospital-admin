@@ -38,7 +38,7 @@ export function AdmissionsDashboardView({
     timeZone: "UTC",
   }).format(new Date(Date.UTC(dashboard.year, selectedMonth - 1, 1)));
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-1 gap-6">
       <nav
         aria-label="Navegação de Internações"
         className="flex flex-wrap gap-2"
