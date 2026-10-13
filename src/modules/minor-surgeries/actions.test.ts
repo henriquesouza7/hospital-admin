@@ -32,12 +32,12 @@ vi.mock("./repository", () => ({
 
 import {
   createSurgeryDayAction,
-  initialMinorSurgeryActionState,
   searchSurgeryPatientsAction,
   transferSurgeryWaitlistEntryAction,
   updateSurgeryDayCapacityAction,
   updateSurgeryAppointmentStatusAction,
 } from "./actions";
+import { initialMinorSurgeryActionState } from "./action-state";
 
 describe("minor surgeries actions", () => {
   beforeEach(() => {

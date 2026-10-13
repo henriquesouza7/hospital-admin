@@ -28,11 +28,6 @@ export type MinorSurgeryActionState = Readonly<{
   message: string;
 }>;
 
-export const initialMinorSurgeryActionState: MinorSurgeryActionState = {
-  status: "idle",
-  message: "",
-};
-
 export type PatientSearchActionResult =
   | { ok: true; patients: SurgeryPatient[]; hasMore: boolean }
   | { ok: false; message: string };

@@ -5,13 +5,13 @@ import {
   createSurgeryAppointmentAction,
   createSurgeryDayAction,
   createSurgeryWaitlistEntryAction,
-  initialMinorSurgeryActionState,
   searchSurgeryPatientsAction,
   transferSurgeryWaitlistEntryAction,
   updateSurgeryAppointmentStatusAction,
   updateSurgeryDayCapacityAction,
   updateSurgeryPatientAction,
 } from "./actions";
+import { initialMinorSurgeryActionState } from "./action-state";
 import type { SurgeryDaySummary, SurgeryPatient } from "./domain";
 
 const fieldClass =
