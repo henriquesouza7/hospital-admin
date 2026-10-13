@@ -4,12 +4,13 @@
 
 O registro abaixo substitui as afirmações anteriores sobre ausência de dados e
 smokes autenticados; as seções de estabilização antigas permanecem como
-histórico. A homologação ocorreu no projeto Neon temporário e vazio
+histórico. A homologação ocorreu no projeto Neon temporário isolado
 `hospital-homologacao-20261013` (branch `main`, banco `neondb`), usando somente
 dados sintéticos. Production e o Neon demo compartilhado não foram alterados.
-O conector Neon está desconectado nesta atualização, então o estado do banco e
-o consumo não puderam ser reconsultados agora. Os resultados abaixo são as
-últimas evidências locais registradas; não representam uma nova leitura ao vivo.
+Uma consulta read-only ao Neon em 13/10/2026 às 15:39 UTC confirmou projeto,
+branch, PostgreSQL 18, RLS, policies, funções, grants, índices e contagens.
+Não foi encontrado ledger de migrations; presença de objetos não prova quando
+foram aplicadas. O plano era `free_v3`, mas nenhuma fatura foi disponibilizada.
 
 - Corrigido erro real do Next.js 16: estado inicial exportado de um módulo
   `"use server"` foi movido para `action-state.ts`. Regressão AST verifica que o
@@ -46,15 +47,48 @@ o consumo não puderam ser reconsultados agora. Os resultados abaixo são as
   `is_admin()` e `is_finance_admin()` retornaram `true`; esses resultados não
   explicam retrospectivamente o `42501` anterior. Nenhum erro apareceu nos logs
   do servidor durante a última suíte E2E e a repetição 30+6.
+- Na leitura atual, 20/20 tabelas públicas têm RLS habilitada. As oito RPCs
+  inspecionadas são `SECURITY DEFINER`, usam `search_path=pg_catalog`, concedem
+  EXECUTE a `authenticated` e negam a role `anonymous`. As policies de auditoria
+  limitam a leitura global a `is_finance_admin()`; Financeiro também usa esse
+  guard, enquanto os módulos administrativos usam `is_admin()`.
+- A auditoria de catálogo das 44 funções `SECURITY DEFINER` do aplicativo não
+  encontrou caminhos sem `search_path=pg_catalog` nem EXECUTE anônimo. As duas
+  funções sem EXECUTE para `authenticated` são triggers de auditoria; a função
+  auxiliar de catálogo teve o EXECUTE público revogado pela migration citada.
+- A consulta observou 5 identidades Auth, 17 sessões, zero verificações pendentes,
+  133 auditorias, 93 pedidos, 3 pacientes sintéticos, 2 lançamentos de
+  Internações e 3 agendamentos de Cirurgias. Foram consultados somente totais,
+  sem ler conteúdo pessoal. O usuário da inspeção tem `BYPASSRLS`, então a
+  inspeção de catálogo não é prova da matriz funcional de políticas.
+- O índice de data de pedidos está presente; `EXPLAIN` escolheu sequential scan
+  para a tabela atual, pequena (93 pedidos), sem demonstrar plano em volume
+  representativo.
+- A função auxiliar `public.show_db_tree()` existia fora das migrations e tinha
+  EXECUTE herdado de `PUBLIC`. A migration versionada
+  `20261013154000_revoke_public_access_to_database_tree_helper.sql` foi aplicada
+  somente no branch isolado; a checagem confirmou execução negada às roles
+  `anonymous` e `authenticated`, preservada apenas para a role proprietária.
+- O `.env.local` ignorado apontava para hosts antigos; as URLs locais de Auth e
+  Data API foram corrigidas para os endpoints desse projeto, preservando o
+  segredo de cookie. Não havia storage state Playwright autenticado no worktree.
+  A tentativa anônima ao Data API respondeu HTTP 400, resultado inconclusivo para
+  RLS; não foram feitas novas chamadas autenticadas.
+- A reexecução após a migration passou instalação congelada, formatação, lint,
+  typecheck, 345/345 testes unitários em 49 arquivos, build e `git diff --check`.
+  O E2E rodou 11 cenários:
+  5 públicos passaram e os 6 smokes autenticados foram pulados por falta de
+  sessão; não contar esses seis como aprovados.
 
-O plano Neon foi observado anteriormente como `free_v3`, com autosuspend
-imediato e consumo registrado de 6.546.212 bytes de transferência e 823 segundos
-de compute; aquela consulta não expôs uma fatura. A conexão atual não permite
-confirmar novamente plano ou cobrança. Portanto, não há evidência de cobrança
-adicional, mas o valor faturado permanece **não confirmado**. Nenhuma migration
-foi aplicada nesta rodada; a preparação isolada já tinha 44 migrations
-versionadas aplicadas em execução anterior. Não excluir o projeto temporário
-sem confirmação do usuário, pois ele preserva as evidências.
+O plano Neon continua observado como `free_v3`, com autosuspend imediato e
+consumo registrado de 6.546.212 bytes de transferência, 823 segundos de compute,
+3.284 segundos ativos e zero bytes escritos. A API não expôs fatura; cobrança
+faturada permanece **não confirmada**. Foi aplicada somente a migration
+incremental de privilégio citada acima. A alegação anterior de 44 migrations
+não foi confirmada por ledger. O
+índice da migration `20261009030000_index_purchase_orders_by_order_date.sql`
+está presente, mas isso não identifica quando foi instalado. Não excluir o
+projeto temporário sem confirmação do usuário, pois ele preserva evidências.
 
 ### Matriz estrita de prontidão
 
@@ -265,9 +299,10 @@ foi escrito no Neon demo e production não foi alterada.
   `search_path=pg_catalog`, EXECUTE concedido a `authenticated` e revogado de
   `PUBLIC`; o runtime validou apenas caminhos positivos da sessão admin atual,
   não atores sem permissão nem políticas RLS negativas.
-- Nenhum SQL, migration ou dado foi escrito no Neon. A migration de índice
-  `20261009030000_index_purchase_orders_by_order_date.sql` segue não verificada
-  nesta rodada; a última evidência registrada dizia que não estava aplicada.
+- Na rodada anterior documentada nesta seção, nenhum SQL, migration ou dado foi
+  escrito no Neon. A migration de índice
+  `20261009030000_index_purchase_orders_by_order_date.sql` ainda não tinha sido
+  verificada naquele ponto; a seção mais recente acima registra o estado atual.
   `production` não foi alterada.
 - Após as alterações, passaram `pnpm install --frozen-lockfile`,
   `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test` (341 testes em
