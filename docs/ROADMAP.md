@@ -1,5 +1,84 @@
 # Roadmap
 
+## Homologação isolada — 13/10/2026 (atualização)
+
+O registro abaixo substitui as afirmações anteriores sobre ausência de dados e
+smokes autenticados; as seções de estabilização antigas permanecem como
+histórico. A homologação ocorreu no projeto Neon temporário e vazio
+`hospital-homologacao-20261013` (branch `main`, banco `neondb`), usando somente
+dados sintéticos. Production e o Neon demo compartilhado não foram alterados.
+O conector Neon está desconectado nesta atualização, então o estado do banco e
+o consumo não puderam ser reconsultados agora. Os resultados abaixo são as
+últimas evidências locais registradas; não representam uma nova leitura ao vivo.
+
+- Corrigido erro real do Next.js 16: estado inicial exportado de um módulo
+  `"use server"` foi movido para `action-state.ts`. Regressão AST verifica que o
+  módulo de ações não exporta valores de runtime incompatíveis.
+- Corrigido overflow horizontal causado por valores monetários grandes nos
+  cards de KPI. A regressão E2E cobre dashboard geral, indicadores financeiros e
+  Internações em 390 px e 1440 px.
+- Após todas as mudanças: `pnpm format:check`, `pnpm lint`,
+  `pnpm typecheck`, `pnpm test` (344 testes/48 arquivos), `pnpm build`,
+  `pnpm test:e2e` (11/11) e `git diff --check` passaram. Os E2E foram apontados
+  explicitamente ao servidor local `localhost:3006` no Neon temporário.
+- A regressão E2E de viewport passou para `/`, `/financeiro/indicadores` e
+  `/internacoes` em 390 px e 1440 px. A checagem separada de dashboard passou
+  30/30 carregamentos sequenciais e 6/6 requests em pares.
+- Evidências reais anteriores: criação e leitura após reload de registros
+  sintéticos em Financeiro, Internações, Produção e Pequenas Cirurgias; tentativa
+  rejeitada por capacidade excedida; concorrência real de dois agendamentos para
+  uma vaga resultou em exatamente um ativo; importação SUS duplicada foi
+  recusada; auditoria preservou ator; seis tipos de CSV foram baixados e
+  inspecionados, incluindo total monetário exato e neutralização de fórmula.
+- Um usuário sem papel administrativo foi bloqueado pelas rotas testadas; uma
+  checagem direta anterior confirmou leituras protegidas vazias e RPCs negadas
+  (`42501`). Isso não equivale a uma matriz completa de RLS por módulo, por
+  mutação e para todos os quatro atores exigidos.
+- Auditoria por cursor foi exercitada com inserção entre páginas e sem
+  sobreposição na navegação observada. O teste não foi feito em transações
+  PostgreSQL concorrentes nem promete snapshot imutável do histórico.
+- Dashboard: 30/30 carregamentos sequenciais e 6/6 pares concorrentes passaram
+  após novo login. Uma rodada paralela anterior teve `42501`; a causa raiz não
+  foi comprovada. E2E autenticado foi serializado por compartilhar um estado de
+  sessão rotativo, mas a suíte atual também contém um teste explícito com duas
+  páginas concorrentes.
+- Na análise final, o token de sessão da conta sintética tinha subject e as RPCs
+  `is_admin()` e `is_finance_admin()` retornaram `true`; esses resultados não
+  explicam retrospectivamente o `42501` anterior. Nenhum erro apareceu nos logs
+  do servidor durante a última suíte E2E e a repetição 30+6.
+
+O plano Neon foi observado anteriormente como `free_v3`, com autosuspend
+imediato e consumo registrado de 6.546.212 bytes de transferência e 823 segundos
+de compute; aquela consulta não expôs uma fatura. A conexão atual não permite
+confirmar novamente plano ou cobrança. Portanto, não há evidência de cobrança
+adicional, mas o valor faturado permanece **não confirmado**. Nenhuma migration
+foi aplicada nesta rodada; a preparação isolada já tinha 44 migrations
+versionadas aplicadas em execução anterior. Não excluir o projeto temporário
+sem confirmação do usuário, pois ele preserva as evidências.
+
+### Matriz estrita de prontidão
+
+Pontuação conforme os dez marcos de aceite: 10 pontos somente para marco
+integralmente homologado; 0 para qualquer marco incompleto.
+
+| Marco | Pontos | Situação e lacuna determinante |
+|---|---:|---|
+| Login, logout e sessões | 0 | Login/logout e proteção testados; expiração e renovação ainda não. |
+| Recuperação e redefinição de senha | 0 | Houve redefinição real solicitada pelo usuário; token inválido, expirado e reutilizado não foram testados. |
+| Autorização, RLS e proteção de dados | 0 | Testes negativos parciais; falta matriz de papéis e operações em todos os módulos. |
+| Financeiro e precisão monetária | 0 | Total exato `90071992547409.93` conferido no CSV; demais fluxos/atores e cenários completos pendentes. |
+| Internações | 10 | CRUD, histórico de médico inativo, metas, importação CSV válida/inválida, persistência, auditoria e exportação exercitados com dados sintéticos. |
+| Produção | 0 | CRUD, importação/reconciliação e CSV exercitados; matriz completa de unidades, classificações, permissões e concorrência pendente. |
+| Pequenas Cirurgias | 0 | Fluxo e concorrência/capacidade exercitados; duplicidade e matriz completa de autorização ainda sem prova. |
+| Dashboard geral e auditoria | 0 | Continuidade por cursor e carga observadas; causa do `42501` intermitente e snapshot PostgreSQL não validados. |
+| Exportações e integridade CSV | 0 | Seis tipos verificados; todos os filtros, limites, paginação, nulos e mutações concorrentes ainda não cobertos ao vivo. |
+| Responsividade, qualidade visual e gates | 0 | Overflow corrigido; gates completos após a mudança e inspeção visual/acessibilidade de todas as telas pendentes. |
+
+**Pontuação estrita atual: 10/100. Meta de 90%: não atingida.** Não existem
+evidências suficientes para declarar homologação completa ou remover o draft.
+Consulte `docs/HOMOLOGACAO_2026-10-13.md` para o inventário de evidências e
+pendências detalhadas.
+
 ## Estado de estabilização — 13/10/2026
 
 O PR #25 segue aberto em draft, sem merge, no branch `feat/consolidacao-final-demo`.
