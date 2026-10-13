@@ -18,6 +18,7 @@ vi.mock("@/modules/finance/pharmacy/access", () => ({
 import {
   listMonthlyExpenseTotals,
   loadIndicatorsSource,
+  MonthlyExpenseTotalsQueryError,
   MonthlyExpenseTotalsRpcUnavailableError,
 } from "./repository";
 import { amountToCents } from "./domain";
@@ -65,6 +66,28 @@ describe("financial indicators repository", () => {
       },
     );
     expect(mocks.requireFinanceAdmin).toHaveBeenCalledOnce();
+  });
+
+  it("should_await_a_data_api_rpc_thenable_without_promise_methods", async () => {
+    const rows = [
+      {
+        competence: "2026-10-01",
+        pharmacy_total: "0.00",
+        laboratory_total: "0.00",
+        fair_total: "0.00",
+        pharmacy_item_count: 0,
+        laboratory_item_count: 0,
+        has_fair_record: false,
+      },
+    ];
+    mocks.rpc.mockReturnValue({
+      then: (resolve: (value: unknown) => unknown) =>
+        Promise.resolve({ data: rows, error: null }).then(resolve),
+    });
+
+    await expect(
+      listMonthlyExpenseTotals("2026-10", "2026-10"),
+    ).resolves.toEqual(rows);
   });
 
   it("should_preserve_exact_totals_through_sql_and_serialized_json", async () => {
@@ -134,6 +157,49 @@ describe("financial indicators repository", () => {
     await expect(
       listMonthlyExpenseTotals("2026-10", "2026-10"),
     ).rejects.toBeInstanceOf(MonthlyExpenseTotalsRpcUnavailableError);
+  });
+
+  it("should_preserve_a_safe_authorization_code_without_leaking_database_details", async () => {
+    mocks.rpc.mockResolvedValue({
+      data: null,
+      error: {
+        code: "42501",
+        message: "synthetic-private-database-detail",
+      },
+    });
+
+    const error = await listMonthlyExpenseTotals("2026-10", "2026-10").catch(
+      (caught: unknown) => caught,
+    );
+
+    expect(error).toBeInstanceOf(MonthlyExpenseTotalsQueryError);
+    expect(error).toMatchObject({ code: "42501" });
+    expect((error as Error).message).not.toContain(
+      "synthetic-private-database-detail",
+    );
+  });
+
+  it("should_report_an_invalid_rpc_response_without_using_fake_totals", async () => {
+    mocks.rpc.mockResolvedValue({ data: null, error: null });
+
+    await expect(
+      listMonthlyExpenseTotals("2026-10", "2026-10"),
+    ).rejects.toMatchObject({
+      code: "INVALID_RESPONSE",
+      message: "Não foi possível consultar os totais financeiros.",
+    });
+  });
+
+  it("should_keep_transport_failures_in_the_finance_unavailable_state", async () => {
+    mocks.rpc.mockRejectedValue(new Error("synthetic-network-detail"));
+
+    const error = await listMonthlyExpenseTotals("2026-10", "2026-10").catch(
+      (caught: unknown) => caught,
+    );
+
+    expect(error).toBeInstanceOf(MonthlyExpenseTotalsQueryError);
+    expect(error).toMatchObject({ code: null });
+    expect((error as Error).message).not.toContain("synthetic-network-detail");
   });
 
   it("should_use_one_snapshot_rpc_for_capped_purchase_exports", async () => {

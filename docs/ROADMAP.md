@@ -84,17 +84,16 @@ a migration não deve ser reaplicada enquanto a RPC existir. A nova migration
 `20261009030000_index_purchase_orders_by_order_date.sql` está versionada no PR,
 mas não foi aplicada no Neon demo; a validação com histórico populado também
 permanece pendente. A autenticação manual real e a leitura dos indicadores no
-dashboard foram verificadas em 12/10/2026; exportação/download, smoke automatizado
-com estado Playwright e demais verificações ainda não estão homologados. O PR #25
-continua sem merge.
+dashboard foram verificadas em 12/10/2026; os quatro smokes autenticados passaram
+em 13/10/2026. A inspeção manual do CSV e demais verificações ainda pendem. O PR
+#25 continua sem merge.
 
-Fase 7 permanece aberta até executar os quatro smokes automatizados com um
-estado Playwright real, testar RLS/RPCs usando atores autenticados, validar
-persistência e auditoria ponta a ponta, inspecionar downloads e terminar
-homologação visual em 1440 px e 390 px. O estado autenticado do Chrome não é
-reutilizado automaticamente pelo Playwright; sem `PLAYWRIGHT_AUTH_STORAGE_STATE`,
-os quatro smokes são ignorados. Os dados de negócio continuam vazios e nenhum
-dado sintético foi inserido.
+Fase 7 permanece aberta: os quatro smokes automatizados agora passaram com uma
+sessão Playwright administrativa real. Ainda faltam testar RLS/RPCs com atores
+distintos, validar persistência e auditoria após operações sintéticas,
+inspecionar o conteúdo dos CSVs e terminar a homologação visual autenticada em
+1440 px e 390 px. Os dados de negócio continuam vazios; nenhum dado sintético
+foi inserido.
 
 Em 12/10/2026, após login manual real no Neon demo, o dashboard, a auditoria e a
 página de Pequenas Cirurgias renderizaram sem erro e exibiram estados vazios
@@ -118,3 +117,12 @@ para `/login`. Em 12/10/2026, o operador confirmou a redefinição da senha e fe
 login manual real. Neon Auth demo tem SMTP compartilhado e
 `allow_localhost=true`; nenhum novo email de recuperação foi enviado. O login
 real foi aceito e a sessão administrativa abriu as rotas protegidas.
+
+Em 13/10/2026, uma captura mostrou erro transitório na leitura dos totais do
+Financeiro. A RPC exata e suas permissões continuaram presentes; o SQLSTATE
+original não foi recuperado. O dashboard agora preserva os demais indicadores
+quando essa consulta falha e informa o código seguro, sem preencher zeros. Após
+reiniciar o servidor local, o painel voltou a exibir os totais persistidos. Os
+quatro smokes autenticados passaram, incluindo eventos de download dos CSVs de
+Gastos e Cirurgias. Os arquivos ainda precisam de inspeção manual. Nenhum dado
+foi escrito no Neon demo e production não foi alterada.

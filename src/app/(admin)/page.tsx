@@ -25,6 +25,7 @@ import { MonthlyEvolutionCharts } from "@/modules/production/indicators/indicato
 import { buildProductionIndicatorData } from "@/modules/production/indicators/domain";
 import {
   listMonthlyExpenseTotals,
+  MonthlyExpenseTotalsQueryError,
   MonthlyExpenseTotalsRpcUnavailableError,
 } from "@/modules/finance/indicators/repository";
 import {
@@ -64,10 +65,17 @@ export default async function Home({ searchParams }: HomeProps) {
   const financeRowsPromise = listMonthlyExpenseTotals(
     `${period.year}-01`,
     `${period.year}-12`,
-  ).catch((error: unknown) => {
-    if (error instanceof MonthlyExpenseTotalsRpcUnavailableError) return null;
-    throw error;
-  });
+  )
+    .then((rows) => ({ kind: "available" as const, rows }))
+    .catch((error: unknown) => {
+      if (error instanceof MonthlyExpenseTotalsRpcUnavailableError) {
+        return { kind: "rpc_unavailable" as const, code: null };
+      }
+      if (error instanceof MonthlyExpenseTotalsQueryError) {
+        return { kind: "query_error" as const, code: error.code };
+      }
+      throw error;
+    });
   const [
     admissionTotals,
     targets,
@@ -86,7 +94,15 @@ export default async function Home({ searchParams }: HomeProps) {
     listProductionImports(3),
     getSurgerySummary(todayDate, surgeryThrough.toISOString().slice(0, 10), 5),
   ]);
-  const financeUnavailable = financeRows === null;
+  const financeUnavailable = financeRows.kind !== "available";
+  const financeUnavailableMessage =
+    financeRows.kind === "rpc_unavailable"
+      ? "A consulta de totais exatos não está disponível neste ambiente."
+      : financeRows.kind === "query_error"
+        ? financeRows.code === "42501"
+          ? "A consulta financeira foi negada pelo banco (42501). Verifique a autorização administrativa."
+          : `Não foi possível consultar os totais financeiros${financeRows.code ? ` (código ${financeRows.code})` : ""}.`
+        : null;
   const admissions = summarizeAdmissionTotals(
     admissionTotals,
     targets,
@@ -94,7 +110,9 @@ export default async function Home({ searchParams }: HomeProps) {
     period.month,
     today,
   );
-  const finance = (financeRows ?? []).map((row) => {
+  const finance = (
+    financeRows.kind === "available" ? financeRows.rows : []
+  ).map((row) => {
     const pharmacyCents = amountToCents(row.pharmacy_total);
     const laboratoryCents = amountToCents(row.laboratory_total);
     const fairCents = amountToCents(row.fair_total);
@@ -212,7 +230,7 @@ export default async function Home({ searchParams }: HomeProps) {
             }
             detail={
               financeUnavailable
-                ? "Migration de totais exatos pendente neste ambiente"
+                ? "Consulte o aviso de disponibilidade abaixo"
                 : `${selectedMonth?.pharmacyItemCount ?? 0} itens de Farmácia · ${selectedMonth?.laboratoryItemCount ?? 0} de Laboratório`
             }
           />
@@ -249,8 +267,8 @@ export default async function Home({ searchParams }: HomeProps) {
         >
           {financeUnavailable ? (
             <p role="status" className="text-sm text-muted-foreground">
-              Os totais financeiros exatos aguardam a migration 20261009020000
-              neste ambiente. Os demais indicadores continuam disponíveis.
+              {financeUnavailableMessage} Os demais indicadores continuam
+              disponíveis; nenhum valor financeiro foi substituído por zero.
             </p>
           ) : (
             <MonthlyChart
@@ -312,8 +330,7 @@ export default async function Home({ searchParams }: HomeProps) {
         />
         {financeUnavailable ? (
           <p role="status" className="text-sm text-muted-foreground">
-            Totais indisponíveis até a instalação autorizada da migration
-            20261009020000 neste ambiente.
+            {financeUnavailableMessage}
           </p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-3">

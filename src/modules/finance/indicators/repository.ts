@@ -69,11 +69,31 @@ export class MonthlyExpenseTotalsRpcUnavailableError extends Error {
   }
 }
 
+export class MonthlyExpenseTotalsQueryError extends Error {
+  constructor(readonly code: string | null) {
+    super("Não foi possível consultar os totais financeiros.");
+    this.name = "MonthlyExpenseTotalsQueryError";
+  }
+}
+
 function isMissingExactTotalsRpc(error: unknown) {
   if (typeof error !== "object" || error === null || !("code" in error)) {
     return false;
   }
   return error.code === "PGRST202" || error.code === "42883";
+}
+
+function getSafeDataApiErrorCode(error: unknown): string | null {
+  if (
+    typeof error !== "object" ||
+    error === null ||
+    !("code" in error) ||
+    typeof error.code !== "string" ||
+    !/^[A-Z0-9]{3,12}$/.test(error.code)
+  ) {
+    return null;
+  }
+  return error.code;
 }
 
 export async function loadIndicatorsSource(
@@ -200,12 +220,28 @@ export async function listMonthlyExpenseTotals(
   const throughExclusive = new Date(Date.UTC(endYear, endMonthNumber, 1))
     .toISOString()
     .slice(0, 10);
-  const { data, error } = await getNeonDataApiClient().rpc(
-    "list_monthly_expense_totals_exact",
-    { p_start: from, p_through_exclusive: throughExclusive },
-  );
+  const response = await (async () => {
+    try {
+      return await getNeonDataApiClient().rpc(
+        "list_monthly_expense_totals_exact",
+        { p_start: from, p_through_exclusive: throughExclusive },
+      );
+    } catch (error) {
+      throw new MonthlyExpenseTotalsQueryError(getSafeDataApiErrorCode(error));
+    }
+  })();
+  const { data, error } = response;
   if (isMissingExactTotalsRpc(error)) {
     throw new MonthlyExpenseTotalsRpcUnavailableError();
   }
-  return assertData(data, error, monthlyTotalsSchema);
+  if (error || data === null || data === undefined) {
+    const code = error ? getSafeDataApiErrorCode(error) : "INVALID_RESPONSE";
+    throw new MonthlyExpenseTotalsQueryError(code);
+  }
+
+  try {
+    return monthlyTotalsSchema.parse(data);
+  } catch {
+    throw new MonthlyExpenseTotalsQueryError("INVALID_RESPONSE");
+  }
 }

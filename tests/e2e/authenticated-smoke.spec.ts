@@ -20,6 +20,9 @@ test.describe("smokes administrativos autenticados", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: "Painel administrativo" }),
     ).toBeVisible();
+    await expect(
+      page.locator("article").filter({ hasText: "Gastos registrados" }),
+    ).toContainText(/R\$/);
   });
 
   test("should_render_audit_filters_with_a_real_admin_session", async ({
