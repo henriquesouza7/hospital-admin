@@ -5,6 +5,9 @@ const storageState = process.env.PLAYWRIGHT_AUTH_STORAGE_STATE;
 const hasStorageState = Boolean(storageState && existsSync(storageState));
 
 test.describe("smokes administrativos autenticados", () => {
+  // The suite reuses one rotating Auth storage state; concurrency is covered
+  // explicitly inside the concurrent-request test below.
+  test.describe.configure({ mode: "serial" });
   test.skip(
     !hasStorageState,
     "Exporte uma sessão administrativa real para PLAYWRIGHT_AUTH_STORAGE_STATE; não há login automatizado neste smoke.",
@@ -61,32 +64,32 @@ test.describe("smokes administrativos autenticados", () => {
     await expect(page.getByLabel("Módulo")).toBeVisible();
   });
 
-  test("should_keep_admissions_dashboard_within_supported_viewports", async ({
+  test("should_keep_administrative_dashboards_within_supported_viewports", async ({
     page,
   }) => {
     for (const width of [390, 1440]) {
       await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
-      await page.goto("/internacoes");
-      await expect(page).not.toHaveURL(/\/login/);
-      await expect(
-        page.getByRole("heading", { level: 1, name: "Dashboard" }),
-      ).toBeVisible();
+      for (const route of ["/", "/financeiro/indicadores", "/internacoes"]) {
+        await page.goto(route);
+        await expect(page).not.toHaveURL(/\/login/);
+        await expect(page.locator("main h1")).toBeVisible();
 
-      const layout = await page.evaluate(() => {
-        const heading = document.querySelector("main h1");
-        const bounds = heading?.getBoundingClientRect();
-        return {
-          horizontalOverflow:
-            document.documentElement.scrollWidth > window.innerWidth,
-          headingOutsideViewport:
-            !bounds || bounds.left < 0 || bounds.right > window.innerWidth,
-        };
-      });
+        const layout = await page.evaluate(() => {
+          const heading = document.querySelector("main h1");
+          const bounds = heading?.getBoundingClientRect();
+          return {
+            horizontalOverflow:
+              document.documentElement.scrollWidth > window.innerWidth,
+            headingOutsideViewport:
+              !bounds || bounds.left < 0 || bounds.right > window.innerWidth,
+          };
+        });
 
-      expect(layout).toEqual({
-        horizontalOverflow: false,
-        headingOutsideViewport: false,
-      });
+        expect(layout).toEqual({
+          horizontalOverflow: false,
+          headingOutsideViewport: false,
+        });
+      }
     }
   });
 

@@ -371,7 +371,7 @@ export default async function Home({ searchParams }: HomeProps) {
       </section>
 
       <section className="grid gap-4 xl:grid-cols-2">
-        <div className="rounded-xl border bg-card p-5 shadow-sm sm:p-6">
+        <div className="min-w-0 rounded-xl border bg-card p-5 shadow-sm sm:p-6">
           <SectionHeader
             title="Produção por procedimento"
             description={`Competência ${periodLabel}; classificações e unidades permanecem separadas.`}
@@ -405,7 +405,7 @@ export default async function Home({ searchParams }: HomeProps) {
             </div>
           )}
         </div>
-        <div className="rounded-xl border bg-card p-5 shadow-sm sm:p-6">
+        <div className="min-w-0 rounded-xl border bg-card p-5 shadow-sm sm:p-6">
           <SectionHeader
             title="Evolução da produção"
             description={
@@ -427,7 +427,7 @@ export default async function Home({ searchParams }: HomeProps) {
             </p>
           )}
         </div>
-        <div className="rounded-xl border bg-card p-5 shadow-sm sm:p-6">
+        <div className="min-w-0 rounded-xl border bg-card p-5 shadow-sm sm:p-6">
           <SectionHeader
             title="Pequenas Cirurgias"
             description="Datas futuras, capacidade e status agregados; sem nomes de pacientes nesta visão."

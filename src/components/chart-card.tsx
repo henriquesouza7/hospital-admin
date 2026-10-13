@@ -14,7 +14,7 @@ export function ChartCard({
   badge = "Demonstração",
 }: ChartCardProps) {
   return (
-    <section className="rounded-xl border bg-card p-5 shadow-sm shadow-slate-200/40 sm:p-6">
+    <section className="min-w-0 rounded-xl border bg-card p-5 shadow-sm shadow-slate-200/40 sm:p-6">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-base font-semibold text-foreground">{title}</h2>
