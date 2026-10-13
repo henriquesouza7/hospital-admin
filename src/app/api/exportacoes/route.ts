@@ -102,6 +102,9 @@ export async function GET(request: Request) {
   const from = params.get("inicio");
   const through = params.get("fim");
   if (
+    ["tipo", "inicio", "fim"].some(
+      (parameter) => params.getAll(parameter).length !== 1,
+    ) ||
     !exportTypes.some((item) => item === type) ||
     !isMonth(from) ||
     !isMonth(through)

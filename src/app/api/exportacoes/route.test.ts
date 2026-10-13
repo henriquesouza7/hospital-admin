@@ -92,6 +92,17 @@ beforeEach(() => {
 });
 
 describe("administrative exports", () => {
+  it("should_reject_ambiguous_duplicate_filter_parameters", async () => {
+    const response = await GET(
+      new Request(
+        "http://localhost/api/exportacoes?tipo=gastos&inicio=2026-10&inicio=2099-10&fim=2026-10",
+      ),
+    );
+
+    expect(response.status).toBe(400);
+    expect(mocks.listMonthlyExpenseTotals).not.toHaveBeenCalled();
+  });
+
   it("should_report_financial_authorization_denial_without_database_details", async () => {
     mocks.listMonthlyExpenseTotals.mockRejectedValue(
       new MonthlyExpenseTotalsQueryError("42501"),
