@@ -95,7 +95,11 @@ test.describe("smokes administrativos autenticados", () => {
       "/financeiro/laboratorio",
       "/financeiro/feira",
       "/internacoes",
+      "/internacoes/lancamentos",
+      "/internacoes/metas",
       "/producao",
+      "/producao/lancamentos",
+      "/producao/indicadores",
       "/pequenas-cirurgias",
     ];
 
@@ -111,6 +115,9 @@ test.describe("smokes administrativos autenticados", () => {
           const bounds = heading?.getBoundingClientRect();
           return {
             horizontalOverflow: document.body.scrollWidth > window.innerWidth,
+            mainOverflow:
+              (document.querySelector("main")?.scrollWidth ?? 0) >
+              (document.querySelector("main")?.clientWidth ?? 0),
             headingOutsideViewport:
               !bounds || bounds.left < 0 || bounds.right > window.innerWidth,
           };
@@ -121,6 +128,7 @@ test.describe("smokes administrativos autenticados", () => {
           `Layout fora do viewport em ${route} (${width}px).`,
         ).toEqual({
           horizontalOverflow: false,
+          mainOverflow: false,
           headingOutsideViewport: false,
         });
       }

@@ -226,8 +226,8 @@ export function AdmissionCsvImportForm() {
     initialImportState,
   );
   return (
-    <section className="grid gap-4 rounded-xl border bg-card p-5">
-      <div>
+    <section className="grid min-w-0 gap-4 rounded-xl border bg-card p-5">
+      <div className="min-w-0">
         <h2 className="font-semibold">Importar histórico CSV</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Arquivo UTF-8 com as colunas <code>data,medico,quantidade</code>. O
@@ -237,9 +237,9 @@ export function AdmissionCsvImportForm() {
       </div>
       <form
         action={previewAction}
-        className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end"
+        className="grid min-w-0 gap-3 sm:grid-cols-[1fr_auto] sm:items-end"
       >
-        <label className="grid gap-1.5 text-sm font-medium">
+        <label className="grid min-w-0 gap-1.5 text-sm font-medium">
           Arquivo CSV
           <input
             type="file"
@@ -247,7 +247,7 @@ export function AdmissionCsvImportForm() {
             accept=".csv,text/csv"
             required
             disabled={previewPending}
-            className="h-10 rounded-lg border bg-background px-3 py-1.5 font-normal file:mr-3 file:rounded-md file:border-0 file:bg-muted file:px-2 file:py-1"
+            className="h-10 w-full min-w-0 rounded-lg border bg-background px-3 py-1.5 font-normal file:mr-3 file:rounded-md file:border-0 file:bg-muted file:px-2 file:py-1"
           />
         </label>
         <Button type="submit" variant="outline" disabled={previewPending}>
@@ -308,17 +308,17 @@ export function AdmissionCsvImportForm() {
           {preview.rows.every((row) => !row.error) ? (
             <form
               action={confirmAction}
-              className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end"
+              className="grid min-w-0 gap-3 sm:grid-cols-[1fr_auto] sm:items-end"
             >
               <input type="hidden" name="preview_token" value={preview.token} />
-              <label className="grid gap-1.5 text-sm font-medium">
+              <label className="grid min-w-0 gap-1.5 text-sm font-medium">
                 Selecione novamente o mesmo arquivo para confirmar
                 <input
                   type="file"
                   name="csv"
                   accept=".csv,text/csv"
                   required
-                  className="h-10 rounded-lg border bg-background px-3 py-1.5 font-normal file:mr-3 file:rounded-md file:border-0 file:bg-muted file:px-2 file:py-1"
+                  className="h-10 w-full min-w-0 rounded-lg border bg-background px-3 py-1.5 font-normal file:mr-3 file:rounded-md file:border-0 file:bg-muted file:px-2 file:py-1"
                 />
               </label>
               <Button type="submit" disabled={confirmPending}>
