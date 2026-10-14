@@ -16,11 +16,7 @@ import {
   parseYearMonth,
   saoPauloToday,
 } from "@/modules/admissions/period";
-import { summarizeAdmissionTotals } from "@/modules/admissions/domain";
-import {
-  getAdmissionDashboardTotals,
-  listAdmissionTargets,
-} from "@/modules/admissions/repository";
+import { loadAdmissionDashboard } from "@/modules/admin-dashboard/admissions";
 import { MonthlyEvolutionCharts } from "@/modules/production/indicators/indicator-charts";
 import { buildProductionIndicatorData } from "@/modules/production/indicators/domain";
 import {
@@ -97,15 +93,19 @@ export default async function Home({ searchParams }: HomeProps) {
     `${period.year}-12`,
   );
   const [
-    admissionTotals,
-    targets,
+    admissionResult,
     financeRows,
     productionSource,
     productionImports,
     surgeryResult,
   ] = await Promise.all([
-    getAdmissionDashboardTotals(startDate, endDate),
-    listAdmissionTargets(startDate, endDate),
+    loadAdmissionDashboard({
+      startDate,
+      endDate,
+      year: period.year,
+      month: period.month,
+      today,
+    }),
     financeRowsPromise,
     loadProductionIndicatorSource({
       from: `${period.year}-01`,
@@ -135,13 +135,9 @@ export default async function Home({ searchParams }: HomeProps) {
           ? "A consulta financeira foi negada pelo banco (42501). Verifique a autorização administrativa."
           : `Não foi possível consultar os totais financeiros${financeRows.code ? ` (código ${financeRows.code})` : ""}.`
         : null;
-  const admissions = summarizeAdmissionTotals(
-    admissionTotals,
-    targets,
-    period.year,
-    period.month,
-    today,
-  );
+  const admissions =
+    admissionResult.kind === "available" ? admissionResult.dashboard : null;
+  const admissionsUnavailable = admissions === null;
   const finance = (
     financeRows.kind === "available" ? financeRows.rows : []
   ).map((row) => {
@@ -271,11 +267,17 @@ export default async function Home({ searchParams }: HomeProps) {
           <KpiCard
             icon={CalendarDays}
             label="Internações no mês"
-            value={formatInteger(admissions.monthlyTotal)}
+            value={
+              admissionsUnavailable
+                ? "Indisponível"
+                : formatInteger(admissions.monthlyTotal)
+            }
             detail={
-              admissions.monthTarget === null
-                ? "Meta mensal não configurada"
-                : `${formatInteger(admissions.monthTarget)} de meta mensal`
+              admissionsUnavailable
+                ? "Consulte o aviso no gráfico de internações"
+                : admissions.monthTarget === null
+                  ? "Meta mensal não configurada"
+                  : `${formatInteger(admissions.monthTarget)} de meta mensal`
             }
           />
           <KpiCard
@@ -341,25 +343,36 @@ export default async function Home({ searchParams }: HomeProps) {
           title={`Internações por mês · ${period.year}`}
           description="Quantidade administrativa; o mês atual e os períodos encerrados são diferenciados no gráfico."
         >
-          <AdmissionDashboardChart dashboard={admissions} />
-          <p className="mt-3 text-sm text-muted-foreground">
-            Meta mensal:{" "}
-            {admissions.monthTarget === null
-              ? "não configurada"
-              : formatInteger(admissions.monthTarget)}
-            {admissions.monthTarget && admissions.monthTarget > 0
-              ? ` · ${Math.round((admissions.monthlyTotal / admissions.monthTarget) * 100)}% realizado`
-              : ""}
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Total anual: {formatInteger(admissions.annualTotal)} · meta anual:{" "}
-            {admissions.yearTarget === null
-              ? "não configurada"
-              : formatInteger(admissions.yearTarget)}
-            {admissions.yearTarget && admissions.yearTarget > 0
-              ? ` · ${Math.round((admissions.annualTotal / admissions.yearTarget) * 100)}% realizado`
-              : ""}
-          </p>
+          {admissions ? (
+            <AdmissionDashboardChart dashboard={admissions} />
+          ) : (
+            <p role="status" className="text-sm text-muted-foreground">
+              Não foi possível consultar o resumo de Internações. Nenhum total
+              foi substituído por zero.
+            </p>
+          )}
+          {admissions ? (
+            <p className="mt-3 text-sm text-muted-foreground">
+              Meta mensal:{" "}
+              {admissions.monthTarget === null
+                ? "não configurada"
+                : formatInteger(admissions.monthTarget)}
+              {admissions.monthTarget && admissions.monthTarget > 0
+                ? ` · ${Math.round((admissions.monthlyTotal / admissions.monthTarget) * 100)}% realizado`
+                : ""}
+            </p>
+          ) : null}
+          {admissions ? (
+            <p className="mt-1 text-sm text-muted-foreground">
+              Total anual: {formatInteger(admissions.annualTotal)} · meta anual:{" "}
+              {admissions.yearTarget === null
+                ? "não configurada"
+                : formatInteger(admissions.yearTarget)}
+              {admissions.yearTarget && admissions.yearTarget > 0
+                ? ` · ${Math.round((admissions.annualTotal / admissions.yearTarget) * 100)}% realizado`
+                : ""}
+            </p>
+          ) : null}
         </ChartCard>
       </section>
 
