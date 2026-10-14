@@ -64,10 +64,13 @@ function requireData<T>(
   return parsed.data;
 }
 
-export async function listProductionImports() {
+export async function listProductionImports(maxRows?: number) {
   await requireProductionAdmin();
   const rows: z.infer<typeof importSchema>[] = [];
-  for (let offset = 0; ; offset += PAGE_SIZE) {
+  const rowLimit =
+    maxRows === undefined ? Number.POSITIVE_INFINITY : Math.max(0, maxRows);
+  for (let offset = 0; offset < rowLimit; offset += PAGE_SIZE) {
+    const pageEnd = Math.min(offset + PAGE_SIZE, rowLimit) - 1;
     const { data, error } = await getNeonDataApiClient()
       .from("production_imports")
       .select(
@@ -75,7 +78,7 @@ export async function listProductionImports() {
       )
       .order("created_at", { ascending: false })
       .order("id", { ascending: false })
-      .range(offset, offset + PAGE_SIZE - 1);
+      .range(offset, pageEnd);
     const page = requireData(
       data,
       error,
@@ -83,8 +86,9 @@ export async function listProductionImports() {
       z.array(importSchema),
     );
     rows.push(...page);
-    if (page.length < PAGE_SIZE) return rows;
+    if (page.length < pageEnd - offset + 1) return rows;
   }
+  return rows;
 }
 
 export async function listPendingProductionImportRows() {

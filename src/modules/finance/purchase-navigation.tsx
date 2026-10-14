@@ -14,6 +14,7 @@ export function PurchaseNavigation({ sector }: { sector: FinanceSector }) {
     >
       {links.map((link) => (
         <Button
+          role="link"
           key={link.href}
           variant="outline"
           size="sm"

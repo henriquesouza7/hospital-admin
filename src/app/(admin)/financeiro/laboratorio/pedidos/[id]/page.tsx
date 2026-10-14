@@ -29,6 +29,7 @@ export default async function LaboratoryPurchaseOrderDetailPage({
         description={order.supplier.name}
         actions={
           <Button
+            role="link"
             variant="outline"
             nativeButton={false}
             render={<Link href="/financeiro/laboratorio" />}

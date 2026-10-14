@@ -1,4 +1,5 @@
 "use client";
+import { ScrollableRegion } from "@/components/scrollable-region";
 
 import { BarChart3, TrendingUp } from "lucide-react";
 import {
@@ -127,7 +128,11 @@ export function MonthlyEvolutionCharts({
                       return `${String(label)} · ${String(period ?? "competência")}`;
                     }}
                   />
-                  <Legend />
+                  <Legend
+                    formatter={(value) => (
+                      <span className="text-foreground">{value}</span>
+                    )}
+                  />
                   {unitSeries.map((item, index) => (
                     <Line
                       key={item.key}
@@ -222,7 +227,11 @@ export function ComparisonCharts({
                       `Origem: ${String(label)} · ${unit}`
                     }
                   />
-                  <Legend />
+                  <Legend
+                    formatter={(value) => (
+                      <span className="text-foreground">{value}</span>
+                    )}
+                  />
                   <Bar
                     dataKey="previous"
                     name={previousLabel}
@@ -236,7 +245,10 @@ export function ComparisonCharts({
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <div className="mt-4 overflow-x-auto rounded-lg border">
+            <ScrollableRegion
+              aria-label="Comparação de indicadores de produção"
+              className="mt-4 overflow-x-auto rounded-lg border"
+            >
               <table className="w-full min-w-[560px] text-left text-sm">
                 <caption className="sr-only">
                   {title}: {procedureName}, unidade {unit}, com períodos e
@@ -290,7 +302,7 @@ export function ComparisonCharts({
                   })}
                 </tbody>
               </table>
-            </div>
+            </ScrollableRegion>
           </ChartCard>
         );
       })}

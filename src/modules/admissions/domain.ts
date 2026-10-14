@@ -26,6 +26,24 @@ export type AdmissionTarget = Readonly<{
   updated_at: string;
 }>;
 
+export type AdmissionMonthlyTotal = Readonly<{
+  month: number;
+  quantity: number;
+}>;
+
+export type AdmissionDoctorTotal = Readonly<{
+  doctorId: string;
+  doctorName: string;
+  active: boolean;
+  quantity: number;
+}>;
+
+export type AdmissionDashboardTotals = Readonly<{
+  monthlyTotals: readonly AdmissionMonthlyTotal[];
+  annualTotal: number;
+  byDoctor: readonly AdmissionDoctorTotal[];
+}>;
+
 export type AdmissionDashboard = Readonly<{
   year: number;
   month: number;
@@ -58,13 +76,58 @@ export function summarizeAdmissions(
   month: number,
   today: Date,
 ): AdmissionDashboard {
-  const monthKey = `${year}-${String(month).padStart(2, "0")}`;
-  const monthEntries = entries.filter((entry) =>
-    entry.entry_date.startsWith(monthKey),
-  );
   const yearEntries = entries.filter((entry) =>
     entry.entry_date.startsWith(`${year}-`),
   );
+  const monthlyTotals = Array.from({ length: 12 }, (_, index) => {
+    const currentMonth = index + 1;
+    return {
+      month: currentMonth,
+      quantity: yearEntries
+        .filter(
+          (entry) => Number(entry.entry_date.slice(5, 7)) === currentMonth,
+        )
+        .reduce((sum, entry) => sum + entry.quantity, 0),
+    };
+  });
+  const byDoctorMap = new Map<string, AdmissionDoctorTotal>();
+  for (const entry of yearEntries) {
+    const current = byDoctorMap.get(entry.doctor_id);
+    if (current) {
+      byDoctorMap.set(entry.doctor_id, {
+        ...current,
+        quantity: current.quantity + entry.quantity,
+      });
+    } else {
+      byDoctorMap.set(entry.doctor_id, {
+        doctorId: entry.doctor_id,
+        doctorName: entry.doctor_name,
+        active: entry.doctor_active,
+        quantity: entry.quantity,
+      });
+    }
+  }
+  return summarizeAdmissionTotals(
+    {
+      monthlyTotals,
+      annualTotal: monthlyTotals.reduce((sum, item) => sum + item.quantity, 0),
+      byDoctor: [...byDoctorMap.values()],
+    },
+    targets,
+    year,
+    month,
+    today,
+  );
+}
+
+export function summarizeAdmissionTotals(
+  totals: AdmissionDashboardTotals,
+  targets: readonly AdmissionTarget[],
+  year: number,
+  month: number,
+  today: Date,
+): AdmissionDashboard {
+  const monthKey = `${year}-${String(month).padStart(2, "0")}`;
   const monthTarget =
     targets.find(
       (target) =>
@@ -77,20 +140,6 @@ export function summarizeAdmissions(
         target.period_type === "year" &&
         target.reference_period === `${year}-01-01`,
     )?.target_quantity ?? null;
-  const byDoctorMap = new Map<
-    string,
-    { doctorName: string; active: boolean; quantity: number }
-  >();
-  for (const entry of yearEntries) {
-    const current = byDoctorMap.get(entry.doctor_id);
-    if (current) current.quantity += entry.quantity;
-    else
-      byDoctorMap.set(entry.doctor_id, {
-        doctorName: entry.doctor_name,
-        active: entry.doctor_active,
-        quantity: entry.quantity,
-      });
-  }
   const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
   const daysInYear =
     (Date.UTC(year + 1, 0, 1) - Date.UTC(year, 0, 1)) / 86_400_000;
@@ -112,11 +161,9 @@ export function summarizeAdmissions(
     const currentMonth = index + 1;
     return {
       month: currentMonth,
-      quantity: yearEntries
-        .filter(
-          (entry) => Number(entry.entry_date.slice(5, 7)) === currentMonth,
-        )
-        .reduce((sum, entry) => sum + entry.quantity, 0),
+      quantity:
+        totals.monthlyTotals.find((item) => item.month === currentMonth)
+          ?.quantity ?? 0,
       isCurrentMonth:
         year === today.getUTCFullYear() &&
         currentMonth === today.getUTCMonth() + 1,
@@ -129,19 +176,20 @@ export function summarizeAdmissions(
   return {
     year,
     month,
-    monthlyTotal: monthEntries.reduce((sum, entry) => sum + entry.quantity, 0),
-    annualTotal: yearEntries.reduce((sum, entry) => sum + entry.quantity, 0),
+    monthlyTotal:
+      totals.monthlyTotals.find((item) => item.month === month)?.quantity ?? 0,
+    annualTotal: totals.annualTotal,
     monthTarget,
     yearTarget,
     elapsedDays,
     daysInMonth,
     daysInYear,
     periodStatus,
-    byDoctor: [...byDoctorMap.entries()]
-      .map(([doctorId, value]) => ({ doctorId, ...value }))
-      .sort((left, right) =>
-        left.doctorName.localeCompare(right.doctorName, "pt-BR"),
-      ),
+    byDoctor: [...totals.byDoctor].sort(
+      (left, right) =>
+        left.doctorName.localeCompare(right.doctorName, "pt-BR") ||
+        left.doctorId.localeCompare(right.doctorId),
+    ),
     monthlyEvolution,
   };
 }

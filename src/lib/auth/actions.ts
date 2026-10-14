@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getPasswordResetRedirectUrl, loginPath } from "@/lib/auth/redirect";
+import { getSafeAuthErrorDetails } from "@/lib/auth/safe-error-log";
 import { getNeonAuth } from "@/lib/neon/auth-server";
 
 export type PasswordResetState = Readonly<{
@@ -49,9 +50,17 @@ export async function resetPassword(
     });
 
     if (error) {
+      console.warn(
+        "auth.reset_password_failed",
+        getSafeAuthErrorDetails("reset_password", error),
+      );
       return { error: "O link de recuperação é inválido ou expirou." };
     }
-  } catch {
+  } catch (error) {
+    console.warn(
+      "auth.reset_password_failed",
+      getSafeAuthErrorDetails("reset_password", error),
+    );
     return { error: "O link de recuperação é inválido ou expirou." };
   }
 
@@ -80,9 +89,17 @@ export async function requestPasswordReset(
     });
 
     if (error) {
+      console.warn(
+        "auth.request_password_reset_failed",
+        getSafeAuthErrorDetails("request_password_reset", error),
+      );
       return { error: "Não foi possível solicitar a recuperação agora." };
     }
-  } catch {
+  } catch (error) {
+    console.warn(
+      "auth.request_password_reset_failed",
+      getSafeAuthErrorDetails("request_password_reset", error),
+    );
     return { error: "Não foi possível solicitar a recuperação agora." };
   }
 

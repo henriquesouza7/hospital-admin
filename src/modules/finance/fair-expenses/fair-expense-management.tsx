@@ -1,4 +1,5 @@
 "use client";
+import { ScrollableRegion } from "@/components/scrollable-region";
 
 import { useActionState } from "react";
 import { ShoppingBasket } from "lucide-react";
@@ -122,7 +123,10 @@ export function FairExpenseHistory({
 
   return (
     <div className="overflow-hidden rounded-xl border bg-card">
-      <div className="overflow-x-auto">
+      <ScrollableRegion
+        aria-label="Despesas mensais da Feira"
+        className="overflow-x-auto"
+      >
         <table className="w-full min-w-[760px] text-left text-sm">
           <thead className="bg-muted/70 text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
@@ -188,7 +192,7 @@ export function FairExpenseHistory({
             })}
           </tbody>
         </table>
-      </div>
+      </ScrollableRegion>
     </div>
   );
 }

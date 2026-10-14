@@ -141,7 +141,7 @@ export function IndicatorFilterForm({
           id="indicator-source"
           name="origem"
           defaultValue={filters.source}
-          className="h-10 rounded-md border bg-background px-3 font-normal"
+          className="h-10 w-full min-w-0 rounded-md border bg-background px-3 font-normal"
         >
           <option value="">Todas, sem somar origens</option>
           {sources.map((source) => (

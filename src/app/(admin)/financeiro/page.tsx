@@ -30,6 +30,7 @@ export default function FinancePage() {
           </p>
         </div>
         <Button
+          role="link"
           nativeButton={false}
           render={<Link href="/financeiro/farmacia" />}
         >
@@ -49,6 +50,7 @@ export default function FinancePage() {
           </p>
         </div>
         <Button
+          role="link"
           nativeButton={false}
           render={<Link href="/financeiro/importacao-fiscal" />}
         >
@@ -68,6 +70,7 @@ export default function FinancePage() {
           </p>
         </div>
         <Button
+          role="link"
           nativeButton={false}
           render={<Link href="/financeiro/laboratorio" />}
         >
@@ -86,7 +89,11 @@ export default function FinancePage() {
             anual.
           </p>
         </div>
-        <Button nativeButton={false} render={<Link href="/financeiro/feira" />}>
+        <Button
+          role="link"
+          nativeButton={false}
+          render={<Link href="/financeiro/feira" />}
+        >
           Abrir Feira
           <ArrowRight aria-hidden="true" />
         </Button>
@@ -105,6 +112,7 @@ export default function FinancePage() {
           </p>
         </div>
         <Button
+          role="link"
           nativeButton={false}
           render={<Link href="/financeiro/indicadores" />}
         >

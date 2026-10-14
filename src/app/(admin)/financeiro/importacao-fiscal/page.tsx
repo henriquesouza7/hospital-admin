@@ -38,6 +38,7 @@ export default async function FiscalImportPage({
         description="Revise uma NF-e em XML e associe manualmente o fornecedor e os produtos antes de criar um pedido."
         actions={
           <Button
+            role="link"
             variant="outline"
             nativeButton={false}
             render={<Link href="/financeiro" />}

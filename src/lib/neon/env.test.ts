@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import { getNeonServerEnv } from "./env";
 
 const validEnvironment = {
-  NEON_AUTH_BASE_URL: "https://auth.example.neon.tech/neondb/auth",
+  NEON_AUTH_BASE_URL:
+    "https://ep-project-branch.neonauth.c-1.aws.neon.tech/neondb/auth",
   NEON_AUTH_COOKIE_SECRET: "a-secret-with-at-least-thirty-two-characters",
-  NEON_DATA_API_URL: "https://data.example.neon.tech",
+  NEON_DATA_API_URL:
+    "https://ep-project-branch.apirest.c-1.aws.neon.tech/neondb/rest/v1",
 };
 
 describe("Neon environment", () => {
@@ -16,7 +18,101 @@ describe("Neon environment", () => {
     });
   });
 
+  it("should_accept_official_neon_hosts_without_cell_labels", () => {
+    expect(() =>
+      getNeonServerEnv({
+        ...validEnvironment,
+        NEON_AUTH_BASE_URL:
+          "https://ep-project-branch.neonauth.us-east-2.aws.neon.tech/neondb/auth",
+        NEON_DATA_API_URL:
+          "https://ep-project-branch.apirest.us-east-2.aws.neon.tech/neondb/rest/v1",
+      }),
+    ).not.toThrow();
+  });
+
   it("rejects incomplete configuration", () => {
     expect(() => getNeonServerEnv({})).toThrow("Neon server não configurado");
+  });
+
+  it("should_reject_auth_and_data_api_from_different_neon_endpoints", () => {
+    expect(() =>
+      getNeonServerEnv({
+        ...validEnvironment,
+        NEON_DATA_API_URL:
+          "https://ep-other-branch.apirest.c-1.aws.neon.tech/neondb/rest/v1",
+      }),
+    ).toThrow("mesmo endpoint Neon");
+  });
+
+  it("should_reject_hosts_that_only_mimic_neon_service_names", () => {
+    expect(() =>
+      getNeonServerEnv({
+        ...validEnvironment,
+        NEON_AUTH_BASE_URL:
+          "https://ep-project-branch.neonauth.attacker.example/neondb/auth",
+        NEON_DATA_API_URL:
+          "https://ep-project-branch.apirest.attacker.example/neondb/rest/v1",
+      }),
+    ).toThrow("mesmo endpoint Neon");
+  });
+
+  it("should_reject_neon_domain_suffixes_nested_under_external_hosts", () => {
+    expect(() =>
+      getNeonServerEnv({
+        ...validEnvironment,
+        NEON_DATA_API_URL:
+          "https://ep-project-branch.apirest.c-1.aws.neon.tech.attacker.example/neondb/rest/v1",
+      }),
+    ).toThrow("mesmo endpoint Neon");
+  });
+
+  it("should_reject_auth_and_data_api_from_different_databases", () => {
+    expect(() =>
+      getNeonServerEnv({
+        ...validEnvironment,
+        NEON_DATA_API_URL:
+          "https://ep-project-branch.apirest.c-1.aws.neon.tech/otherdb/rest/v1",
+      }),
+    ).toThrow("mesmo endpoint Neon");
+  });
+
+  it("should_reject_auth_and_data_api_from_different_regions", () => {
+    expect(() =>
+      getNeonServerEnv({
+        ...validEnvironment,
+        NEON_DATA_API_URL:
+          "https://ep-project-branch.apirest.c-2.aws.neon.tech/neondb/rest/v1",
+      }),
+    ).toThrow("mesmo endpoint Neon");
+  });
+
+  it("should_reject_auth_and_data_api_on_different_ports", () => {
+    expect(() =>
+      getNeonServerEnv({
+        ...validEnvironment,
+        NEON_DATA_API_URL:
+          "https://ep-project-branch.apirest.c-1.aws.neon.tech:8443/neondb/rest/v1",
+      }),
+    ).toThrow("mesmo endpoint Neon");
+  });
+
+  it("should_reject_unexpected_neon_endpoint_paths", () => {
+    expect(() =>
+      getNeonServerEnv({
+        ...validEnvironment,
+        NEON_DATA_API_URL:
+          "https://ep-project-branch.apirest.c-1.aws.neon.tech/neondb/other",
+      }),
+    ).toThrow("mesmo endpoint Neon");
+  });
+
+  it("should_reject_non_https_neon_endpoints", () => {
+    expect(() =>
+      getNeonServerEnv({
+        ...validEnvironment,
+        NEON_AUTH_BASE_URL:
+          "http://ep-project-branch.neonauth.c-1.aws.neon.tech/neondb/auth",
+      }),
+    ).toThrow("mesmo endpoint Neon");
   });
 });

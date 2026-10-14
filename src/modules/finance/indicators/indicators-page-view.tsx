@@ -1,3 +1,4 @@
+import { ScrollableRegion } from "@/components/scrollable-region";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -11,6 +12,7 @@ import { KpiCard } from "@/components/kpi-card";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDate } from "@/modules/finance/pharmacy/format";
+import { currencyChartScale, currencyChartValue } from "./domain";
 import type {
   IndicatorsData,
   IndicatorPurchase,
@@ -78,13 +80,25 @@ export function IndicatorsPageView({
   const availableProducts = products.filter(
     (product) => filters.setor === "todos" || product.sector === filters.setor,
   );
+  const chartScale = currencyChartScale(
+    data.monthly.flatMap((month) => [
+      month.pharmacyCents,
+      month.laboratoryCents,
+      month.fairCents,
+      month.totalCents,
+    ]),
+  );
   const points = data.monthly.map((month) => ({
     month: month.month,
     label: monthLabel(month.month),
-    pharmacy: Number(month.pharmacyCents) / 100,
-    laboratory: Number(month.laboratoryCents) / 100,
-    fair: Number(month.fairCents) / 100,
-    total: Number(month.totalCents) / 100,
+    pharmacy: currencyChartValue(month.pharmacyCents, chartScale),
+    pharmacyExact: formatCurrency(month.pharmacyCents),
+    laboratory: currencyChartValue(month.laboratoryCents, chartScale),
+    laboratoryExact: formatCurrency(month.laboratoryCents),
+    fair: currencyChartValue(month.fairCents, chartScale),
+    fairExact: formatCurrency(month.fairCents),
+    total: currencyChartValue(month.totalCents, chartScale),
+    totalExact: formatCurrency(month.totalCents),
     hasRecords: month.hasRecords,
   }));
   const selectedProduct = products.find(
@@ -101,6 +115,7 @@ export function IndicatorsPageView({
         description="Análises derivadas dos pedidos e dos totais mensais já registrados."
         actions={
           <Button
+            role="link"
             nativeButton={false}
             variant="outline"
             render={<Link href="/financeiro" />}
@@ -241,8 +256,11 @@ export function IndicatorsPageView({
         description="Meses sem registros aparecem com zero apenas na série; isso não afirma ausência de gastos."
         badge="Período consultado"
       >
-        <MonthlyChart points={points} />
-        <div className="mt-4 overflow-x-auto">
+        <MonthlyChart points={points} scale={chartScale.toString()} />
+        <ScrollableRegion
+          aria-label="Evolução mensal dos gastos"
+          className="mt-4 overflow-x-auto"
+        >
           <table className="w-full min-w-[680px] text-left text-sm">
             <caption className="sr-only">
               Valores mensais de Farmácia, Laboratório, Feira e total
@@ -297,7 +315,7 @@ export function IndicatorsPageView({
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollableRegion>
       </ChartCard>
 
       <section className="space-y-4" aria-labelledby="history-title">
@@ -323,7 +341,10 @@ export function IndicatorsPageView({
             icon={PackageSearch}
           />
         ) : (
-          <div className="overflow-x-auto rounded-xl border bg-card">
+          <ScrollableRegion
+            aria-label="Histórico de preços por produto"
+            className="overflow-x-auto rounded-xl border bg-card"
+          >
             <table className="w-full min-w-[1000px] text-left text-sm">
               <caption className="sr-only">
                 Histórico de preços de {selectedProduct.name}
@@ -367,7 +388,7 @@ export function IndicatorsPageView({
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollableRegion>
         )}
       </section>
 
@@ -388,7 +409,10 @@ export function IndicatorsPageView({
             icon={TrendingUp}
           />
         ) : (
-          <div className="overflow-x-auto rounded-xl border bg-card">
+          <ScrollableRegion
+            aria-label="Comparação de preços por produto"
+            className="overflow-x-auto rounded-xl border bg-card"
+          >
             <table className="w-full min-w-[900px] text-left text-sm">
               <caption className="sr-only">
                 Comparação de preços por produto e apresentação equivalentes
@@ -447,7 +471,7 @@ export function IndicatorsPageView({
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollableRegion>
         )}
         <p className="text-xs text-muted-foreground">
           Grupos com um fornecedor observado não representam comparação entre
@@ -472,7 +496,10 @@ export function IndicatorsPageView({
             icon={TrendingUp}
           />
         ) : (
-          <div className="overflow-x-auto rounded-xl border bg-card">
+          <ScrollableRegion
+            aria-label="Maiores aumentos por produto"
+            className="overflow-x-auto rounded-xl border bg-card"
+          >
             <table className="w-full min-w-[1100px] text-left text-sm">
               <caption className="sr-only">
                 Até dez maiores aumentos observados
@@ -538,7 +565,7 @@ export function IndicatorsPageView({
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollableRegion>
         )}
       </section>
 
@@ -572,7 +599,10 @@ export function IndicatorsPageView({
             icon={TrendingUp}
           />
         ) : (
-          <div className="overflow-x-auto rounded-xl border bg-card">
+          <ScrollableRegion
+            aria-label="Oportunidades de economia"
+            className="overflow-x-auto rounded-xl border bg-card"
+          >
             <table className="w-full min-w-[800px] text-left text-sm">
               <caption className="sr-only">
                 Produtos com maior oportunidade retrospectiva, limitado a dez
@@ -614,7 +644,7 @@ export function IndicatorsPageView({
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollableRegion>
         )}
       </section>
     </div>
