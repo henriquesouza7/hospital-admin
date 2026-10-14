@@ -18,6 +18,18 @@ describe("Neon environment", () => {
     });
   });
 
+  it("should_accept_official_neon_hosts_without_cell_labels", () => {
+    expect(() =>
+      getNeonServerEnv({
+        ...validEnvironment,
+        NEON_AUTH_BASE_URL:
+          "https://ep-project-branch.neonauth.us-east-2.aws.neon.tech/neondb/auth",
+        NEON_DATA_API_URL:
+          "https://ep-project-branch.apirest.us-east-2.aws.neon.tech/neondb/rest/v1",
+      }),
+    ).not.toThrow();
+  });
+
   it("rejects incomplete configuration", () => {
     expect(() => getNeonServerEnv({})).toThrow("Neon server não configurado");
   });

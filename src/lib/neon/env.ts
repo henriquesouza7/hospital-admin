@@ -18,7 +18,7 @@ const serverEnvSchema = z
       service: "neonauth" | "apirest",
     ) =>
       new RegExp(
-        `^ep-[a-z0-9-]+\\.${service}\\.c-\\d+(?:\\.[a-z]{2,3}(?:-[a-z]+)+-\\d+)?\\.aws\\.neon\\.tech$`,
+        `^ep-[a-z0-9-]+\\.${service}\\.(?:c-\\d+(?:\\.[a-z]{2,3}(?:-[a-z]+)+-\\d+)?|[a-z]{2,3}(?:-[a-z]+)+-\\d+)\\.aws\\.neon\\.tech$`,
       ).test(hostname);
 
     if (
