@@ -1,4 +1,5 @@
 "use client";
+import { ScrollableRegion } from "@/components/scrollable-region";
 
 import { useActionState, useState } from "react";
 import { FileSpreadsheet, UserRoundPlus } from "lucide-react";
@@ -159,7 +160,10 @@ export function AdmissionEntriesTable({
     );
   return (
     <div className="overflow-hidden rounded-xl border bg-card">
-      <div className="overflow-x-auto">
+      <ScrollableRegion
+        aria-label="Lançamentos de internações"
+        className="overflow-x-auto"
+      >
         <table className="w-full min-w-[760px] text-left text-sm">
           <thead className="bg-muted/70 text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
@@ -206,7 +210,7 @@ export function AdmissionEntriesTable({
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollableRegion>
     </div>
   );
 }
@@ -265,7 +269,10 @@ export function AdmissionCsvImportForm() {
           <p role="status" className="text-sm text-muted-foreground">
             {preview.message}
           </p>
-          <div className="overflow-x-auto rounded-lg border">
+          <ScrollableRegion
+            aria-label="Prévia de importação de internações"
+            className="overflow-x-auto rounded-lg border"
+          >
             <table className="w-full min-w-[600px] text-left text-sm">
               <thead className="bg-muted/70 text-xs uppercase text-muted-foreground">
                 <tr>
@@ -304,7 +311,7 @@ export function AdmissionCsvImportForm() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollableRegion>
           {preview.rows.every((row) => !row.error) ? (
             <form
               action={confirmAction}
@@ -370,7 +377,10 @@ export function AdmissionTargetsTable({
 }) {
   return (
     <div className="overflow-hidden rounded-xl border bg-card">
-      <div className="overflow-x-auto">
+      <ScrollableRegion
+        aria-label="Metas de internações"
+        className="overflow-x-auto"
+      >
         <table className="w-full min-w-[580px] text-left text-sm">
           <thead className="bg-muted/70 text-xs uppercase text-muted-foreground">
             <tr>
@@ -425,7 +435,7 @@ export function AdmissionTargetsTable({
             ) : null}
           </tbody>
         </table>
-      </div>
+      </ScrollableRegion>
     </div>
   );
 }

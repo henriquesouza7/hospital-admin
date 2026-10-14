@@ -10,6 +10,7 @@ import { ChartCard } from "@/components/chart-card";
 import { KpiCard } from "@/components/kpi-card";
 import { PageHeader } from "@/components/page-header";
 import { SectionHeader } from "@/components/section-header";
+import { ScrollableRegion } from "@/components/scrollable-region";
 import { StatusBadge } from "@/components/status-badge";
 import {
   addMonthsClamped,
@@ -414,7 +415,10 @@ export default async function Home({ searchParams }: HomeProps) {
               Sem lançamentos nesta competência.
             </p>
           ) : (
-            <div className="mt-4 overflow-x-auto">
+            <ScrollableRegion
+              aria-label="Lançamentos recentes de produção"
+              className="mt-4"
+            >
               <table className="w-full min-w-[28rem] text-left text-sm">
                 <thead>
                   <tr className="border-b text-muted-foreground">
@@ -435,7 +439,7 @@ export default async function Home({ searchParams }: HomeProps) {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </ScrollableRegion>
           )}
         </div>
         <div className="min-w-0 rounded-xl border bg-card p-5 shadow-sm sm:p-6">
@@ -536,7 +540,7 @@ export default async function Home({ searchParams }: HomeProps) {
             description="Competência, volume e estado das últimas importações administrativas."
           />
           <Link
-            className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+            className="text-sm font-medium text-link underline-offset-4 hover:underline"
             href="/producao/importacoes"
           >
             Abrir importações

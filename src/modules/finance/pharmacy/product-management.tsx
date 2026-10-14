@@ -1,4 +1,5 @@
 "use client";
+import { ScrollableRegion } from "@/components/scrollable-region";
 
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
@@ -89,7 +90,10 @@ export function ProductList({ products }: { products: Product[] }) {
     );
   return (
     <div className="overflow-hidden rounded-xl border bg-card">
-      <div className="overflow-x-auto">
+      <ScrollableRegion
+        aria-label="Produtos cadastrados"
+        className="overflow-x-auto"
+      >
         <table className="w-full min-w-[700px] text-left text-sm">
           <thead className="bg-muted/70 text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
@@ -116,7 +120,7 @@ export function ProductList({ products }: { products: Product[] }) {
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollableRegion>
     </div>
   );
 }

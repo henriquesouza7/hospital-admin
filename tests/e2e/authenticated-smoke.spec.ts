@@ -137,6 +137,183 @@ test.describe("smokes administrativos autenticados", () => {
     expect(buttonSemanticsWarnings).toEqual([]);
   });
 
+  test("should_make_horizontal_data_regions_accessible_by_keyboard", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/internacoes");
+
+    const region = page.getByRole("region", {
+      name: "Valores mensais de internações",
+    });
+    await expect(region).toBeVisible();
+    await expect(region).toHaveAttribute("tabindex", "0");
+    await expect(region).toHaveClass(/focus-visible:ring-2/);
+
+    const dimensions = await region.evaluate((element) => ({
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+    }));
+    expect(dimensions.scrollWidth).toBeGreaterThan(dimensions.clientWidth);
+
+    await page.evaluate(() => {
+      if (document.activeElement instanceof HTMLElement)
+        document.activeElement.blur();
+    });
+    let reachedByTab = false;
+    for (let step = 0; step < 45 && !reachedByTab; step += 1) {
+      await page.keyboard.press("Tab");
+      reachedByTab = await region.evaluate(
+        (element) => document.activeElement === element,
+      );
+    }
+    expect(reachedByTab).toBe(true);
+    const focusVisible = await region.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return (
+        (style.outlineStyle !== "none" && parseFloat(style.outlineWidth) > 0) ||
+        style.boxShadow !== "none"
+      );
+    });
+    expect(focusVisible).toBe(true);
+
+    await page.keyboard.press("ArrowRight");
+    await expect
+      .poll(() => region.evaluate((element) => element.scrollLeft))
+      .toBeGreaterThan(0);
+  });
+
+  test("should_keep_mobile_navigation_links_visible_when_focused", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/");
+    const navigation = page.getByRole("navigation", {
+      name: "Navegação principal",
+    });
+    await page.locator("body").click({ position: { x: 2, y: 2 }, force: true });
+
+    const focusedNavigationLinks: Array<{ href: string; visible: boolean }> =
+      [];
+    for (let step = 0; step < 50; step += 1) {
+      await page.keyboard.press("Tab");
+      const focusedLink = await navigation.evaluate((element) => {
+        const active = document.activeElement;
+        if (!(active instanceof HTMLAnchorElement) || !element.contains(active))
+          return null;
+        const bounds = active.getBoundingClientRect();
+        return {
+          href: active.getAttribute("href") ?? "",
+          visible: bounds.left >= -1 && bounds.right <= window.innerWidth + 1,
+        };
+      });
+      if (focusedLink) focusedNavigationLinks.push(focusedLink);
+      if (
+        focusedNavigationLinks.length ===
+        (await navigation.getByRole("link").count())
+      )
+        break;
+    }
+
+    expect(focusedNavigationLinks.length).toBeGreaterThan(0);
+    expect(focusedNavigationLinks.every((link) => link.visible)).toBe(true);
+  });
+
+  test("should_render_pharmacy_navigation_links_with_link_semantics", async ({
+    page,
+  }) => {
+    const buttonWarnings: string[] = [];
+    page.on("console", (message) => {
+      if (
+        message.type() === "warning" &&
+        message.text().includes("nativeButton")
+      ) {
+        buttonWarnings.push(message.text());
+      }
+    });
+
+    for (const route of [
+      "/financeiro/farmacia/produtos",
+      "/financeiro/farmacia/pedidos/novo",
+    ]) {
+      await page.goto(route);
+      await expect(page.locator("main h1")).toBeVisible();
+      await expect(
+        page.getByRole("link", { name: "Voltar aos pedidos" }),
+      ).toBeVisible();
+    }
+
+    await expect.poll(() => buttonWarnings).toEqual([]);
+  });
+
+  test("should_keep_finance_forms_within_mobile_and_tablet_viewports", async ({
+    page,
+  }) => {
+    for (const width of [390, 768]) {
+      await page.setViewportSize({ width, height: 900 });
+      for (const route of [
+        "/financeiro/farmacia/pedidos/novo",
+        "/financeiro/laboratorio/pedidos/novo",
+        "/financeiro/importacao-fiscal",
+      ]) {
+        await page.goto(route);
+        await expect(page.locator("main h1")).toBeVisible();
+
+        const layout = await page.evaluate(() => ({
+          bodyWidth: document.body.scrollWidth,
+          mainWidth: document.querySelector("main")?.scrollWidth ?? 0,
+          mainClientWidth: document.querySelector("main")?.clientWidth ?? 0,
+        }));
+        expect(
+          layout.bodyWidth,
+          `A página ${route} excedeu ${width}px no corpo.`,
+        ).toBeLessThanOrEqual(width);
+        expect(
+          layout.mainWidth,
+          `A página ${route} excedeu a área principal em ${width}px.`,
+        ).toBeLessThanOrEqual(layout.mainClientWidth);
+      }
+    }
+  });
+
+  test("should_keep_production_chart_legend_text_readable", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await expect(page.locator("main h1")).toBeVisible();
+
+    const legendLabels = page.locator(
+      ".recharts-legend-item-text > span.text-foreground",
+    );
+    await expect(legendLabels.first()).toBeVisible();
+    const contrastRatios = await legendLabels.evaluateAll((elements) =>
+      elements.map((element) => {
+        const foreground = getComputedStyle(element).color.match(/\d+/g);
+        const background = [255, 255, 255];
+        if (!foreground || foreground.length < 3) return 0;
+        const luminance = (rgb: number[]) => {
+          const channels = rgb.slice(0, 3).map((value) => {
+            const channel = value / 255;
+            return channel <= 0.04045
+              ? channel / 12.92
+              : ((channel + 0.055) / 1.055) ** 2.4;
+          });
+          return (
+            channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722
+          );
+        };
+        const text = luminance(foreground.map(Number));
+        const surface = luminance(background);
+        return (
+          (Math.max(text, surface) + 0.05) / (Math.min(text, surface) + 0.05)
+        );
+      }),
+    );
+
+    expect(contrastRatios.length).toBeGreaterThan(0);
+    expect(contrastRatios.every((ratio) => ratio >= 4.5)).toBe(true);
+  });
+
   test("should_download_aggregate_csv_reports_with_a_real_admin_session", async ({
     page,
   }) => {

@@ -1,4 +1,5 @@
 "use client";
+import { ScrollableRegion } from "@/components/scrollable-region";
 
 import {
   useActionState,
@@ -139,7 +140,7 @@ export function FiscalImportForm({
           previewAction(formData);
         });
       }}
-      className="space-y-6"
+      className="min-w-0 space-y-6"
     >
       {error ? (
         <p
@@ -149,8 +150,8 @@ export function FiscalImportForm({
           {error}
         </p>
       ) : null}
-      <section className="grid gap-4 rounded-xl border bg-card p-5 sm:grid-cols-2">
-        <label className="grid gap-1.5 text-sm font-medium">
+      <section className="grid min-w-0 gap-4 rounded-xl border bg-card p-5 sm:grid-cols-2">
+        <label className="grid min-w-0 gap-1.5 text-sm font-medium">
           Setor{" "}
           <span className="text-destructive" aria-hidden="true">
             *
@@ -172,7 +173,7 @@ export function FiscalImportForm({
             <option value="laboratorio">Laboratório</option>
           </select>
         </label>
-        <label className="grid gap-1.5 text-sm font-medium">
+        <label className="grid min-w-0 gap-1.5 text-sm font-medium">
           Arquivo NF-e XML{" "}
           <span className="text-destructive" aria-hidden="true">
             *
@@ -204,7 +205,7 @@ export function FiscalImportForm({
                   .catch(() => setSelectedFileHash(""));
               }
             }}
-            className="min-h-10 rounded-lg border bg-background px-3 py-2 font-normal file:mr-3 file:border-0 file:bg-transparent"
+            className="min-h-10 w-full min-w-0 max-w-full rounded-lg border bg-background px-3 py-2 font-normal file:mr-3 file:border-0 file:bg-transparent"
           />
           {selectedFile ? (
             <span className="text-xs font-normal text-muted-foreground">
@@ -382,7 +383,10 @@ export function FiscalImportForm({
               value={state.previewToken}
             />
             <input type="hidden" name="items" value={itemsJson} />
-            <div className="overflow-x-auto rounded-xl border bg-card">
+            <ScrollableRegion
+              aria-label="Prévia de importação fiscal"
+              className="overflow-x-auto rounded-xl border bg-card"
+            >
               <table className="w-full min-w-[1100px] text-left text-sm">
                 <caption className="sr-only">
                   Itens lidos do XML e dados revisáveis para o pedido
@@ -558,7 +562,7 @@ export function FiscalImportForm({
                   })}
                 </tbody>
               </table>
-            </div>
+            </ScrollableRegion>
           </section>
           <section className="grid gap-3 rounded-xl border bg-card p-5 sm:grid-cols-2">
             <div>

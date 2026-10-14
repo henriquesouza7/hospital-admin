@@ -21,6 +21,7 @@ export default async function LaboratoryProductsPage() {
         description="Cadastre materiais e insumos do laboratório. O preço pertence a cada item de compra."
         actions={
           <Button
+            role="link"
             variant="outline"
             nativeButton={false}
             render={<Link href="/financeiro/laboratorio" />}

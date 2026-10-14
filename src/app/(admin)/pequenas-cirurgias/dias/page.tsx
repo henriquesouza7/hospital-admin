@@ -1,3 +1,4 @@
+import { ScrollableRegion } from "@/components/scrollable-region";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -60,7 +61,10 @@ export default async function SurgeryDaysPage({
               : "Nenhuma data encontrada nesta página."}
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border bg-card">
+          <ScrollableRegion
+            aria-label="Dias de pequenas cirurgias"
+            className="overflow-x-auto rounded-xl border bg-card"
+          >
             <table className="w-full min-w-[42rem] text-left text-sm">
               <thead className="bg-muted/60 text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
@@ -108,7 +112,7 @@ export default async function SurgeryDaysPage({
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollableRegion>
         )}
         {days.length > 0 || page > 1 ? (
           <nav

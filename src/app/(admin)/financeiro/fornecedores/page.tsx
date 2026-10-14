@@ -50,6 +50,7 @@ export default async function SuppliersPage({
 function BackToOrders({ sector }: { sector: FinanceSector }) {
   return (
     <Button
+      role="link"
       variant="outline"
       nativeButton={false}
       render={<Link href={`/financeiro/${sector}`} />}

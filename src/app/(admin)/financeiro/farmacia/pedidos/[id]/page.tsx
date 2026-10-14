@@ -29,7 +29,9 @@ export default async function PurchaseOrderDetailPage({
         description={`${order.supplier.name}`}
         actions={
           <Button
+            role="link"
             variant="outline"
+            nativeButton={false}
             render={<Link href="/financeiro/farmacia" />}
           >
             <ArrowLeft aria-hidden="true" />

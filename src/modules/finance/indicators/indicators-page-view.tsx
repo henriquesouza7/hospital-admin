@@ -1,3 +1,4 @@
+import { ScrollableRegion } from "@/components/scrollable-region";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -114,6 +115,7 @@ export function IndicatorsPageView({
         description="Análises derivadas dos pedidos e dos totais mensais já registrados."
         actions={
           <Button
+            role="link"
             nativeButton={false}
             variant="outline"
             render={<Link href="/financeiro" />}
@@ -255,7 +257,10 @@ export function IndicatorsPageView({
         badge="Período consultado"
       >
         <MonthlyChart points={points} scale={chartScale.toString()} />
-        <div className="mt-4 overflow-x-auto">
+        <ScrollableRegion
+          aria-label="Evolução mensal dos gastos"
+          className="mt-4 overflow-x-auto"
+        >
           <table className="w-full min-w-[680px] text-left text-sm">
             <caption className="sr-only">
               Valores mensais de Farmácia, Laboratório, Feira e total
@@ -310,7 +315,7 @@ export function IndicatorsPageView({
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollableRegion>
       </ChartCard>
 
       <section className="space-y-4" aria-labelledby="history-title">
@@ -336,7 +341,10 @@ export function IndicatorsPageView({
             icon={PackageSearch}
           />
         ) : (
-          <div className="overflow-x-auto rounded-xl border bg-card">
+          <ScrollableRegion
+            aria-label="Histórico de preços por produto"
+            className="overflow-x-auto rounded-xl border bg-card"
+          >
             <table className="w-full min-w-[1000px] text-left text-sm">
               <caption className="sr-only">
                 Histórico de preços de {selectedProduct.name}
@@ -380,7 +388,7 @@ export function IndicatorsPageView({
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollableRegion>
         )}
       </section>
 
@@ -401,7 +409,10 @@ export function IndicatorsPageView({
             icon={TrendingUp}
           />
         ) : (
-          <div className="overflow-x-auto rounded-xl border bg-card">
+          <ScrollableRegion
+            aria-label="Comparação de preços por produto"
+            className="overflow-x-auto rounded-xl border bg-card"
+          >
             <table className="w-full min-w-[900px] text-left text-sm">
               <caption className="sr-only">
                 Comparação de preços por produto e apresentação equivalentes
@@ -460,7 +471,7 @@ export function IndicatorsPageView({
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollableRegion>
         )}
         <p className="text-xs text-muted-foreground">
           Grupos com um fornecedor observado não representam comparação entre
@@ -485,7 +496,10 @@ export function IndicatorsPageView({
             icon={TrendingUp}
           />
         ) : (
-          <div className="overflow-x-auto rounded-xl border bg-card">
+          <ScrollableRegion
+            aria-label="Maiores aumentos por produto"
+            className="overflow-x-auto rounded-xl border bg-card"
+          >
             <table className="w-full min-w-[1100px] text-left text-sm">
               <caption className="sr-only">
                 Até dez maiores aumentos observados
@@ -551,7 +565,7 @@ export function IndicatorsPageView({
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollableRegion>
         )}
       </section>
 
@@ -585,7 +599,10 @@ export function IndicatorsPageView({
             icon={TrendingUp}
           />
         ) : (
-          <div className="overflow-x-auto rounded-xl border bg-card">
+          <ScrollableRegion
+            aria-label="Oportunidades de economia"
+            className="overflow-x-auto rounded-xl border bg-card"
+          >
             <table className="w-full min-w-[800px] text-left text-sm">
               <caption className="sr-only">
                 Produtos com maior oportunidade retrospectiva, limitado a dez
@@ -627,7 +644,7 @@ export function IndicatorsPageView({
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollableRegion>
         )}
       </section>
     </div>

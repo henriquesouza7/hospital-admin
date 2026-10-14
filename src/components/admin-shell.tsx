@@ -47,6 +47,12 @@ export function AdminShell({ children }: AdminShellProps) {
                 <Link
                   href={group.href}
                   aria-current={group.href === pathname ? "page" : undefined}
+                  onFocus={(event) =>
+                    event.currentTarget.scrollIntoView({
+                      block: "nearest",
+                      inline: "nearest",
+                    })
+                  }
                   className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring ${isGroupActive ? activeLinkClasses : inactiveLinkClasses}`}
                 >
                   <group.icon aria-hidden="true" className="size-4" />
@@ -66,6 +72,12 @@ export function AdminShell({ children }: AdminShellProps) {
                           key={item.href}
                           href={item.href}
                           aria-current={isActive ? "page" : undefined}
+                          onFocus={(event) =>
+                            event.currentTarget.scrollIntoView({
+                              block: "nearest",
+                              inline: "nearest",
+                            })
+                          }
                           className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring ${isActive ? activeLinkClasses : inactiveLinkClasses}`}
                         >
                           <item.icon aria-hidden="true" className="size-3.5" />

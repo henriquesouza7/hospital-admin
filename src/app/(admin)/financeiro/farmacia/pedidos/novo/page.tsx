@@ -35,7 +35,9 @@ export default async function NewPurchaseOrderPage({
         description="Registre fornecedor, data, itens e preços praticados nesta compra."
         actions={
           <Button
+            role="link"
             variant="outline"
+            nativeButton={false}
             render={<Link href="/financeiro/farmacia" />}
           >
             <ArrowLeft aria-hidden="true" />

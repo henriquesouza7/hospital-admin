@@ -181,10 +181,14 @@ export default async function AuditPage({ searchParams }: Props) {
                       Responsável (ID): {event.actor_id ?? "Sistema"}
                     </p>
                     <details className="mt-2 text-xs">
-                      <summary className="cursor-pointer text-primary">
+                      <summary className="cursor-pointer text-link">
                         Detalhes da alteração
                       </summary>
-                      <pre className="mt-2 max-h-56 overflow-auto whitespace-pre-wrap rounded-md bg-muted p-3">
+                      <pre
+                        aria-label="Detalhes da alteração"
+                        className="mt-2 max-h-56 overflow-auto whitespace-pre-wrap rounded-md bg-muted p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        tabIndex={0}
+                      >
                         {safePayload}
                       </pre>
                     </details>

@@ -1,3 +1,4 @@
+import { ScrollableRegion } from "@/components/scrollable-region";
 import Link from "next/link";
 import { ArrowUpRight, PackagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -45,7 +46,10 @@ export function PurchaseOrderList({
       </div>
       {orders.length ? (
         <div className="overflow-hidden rounded-xl border bg-card">
-          <div className="overflow-x-auto">
+          <ScrollableRegion
+            aria-label="Pedidos de compra"
+            className="overflow-x-auto"
+          >
             <table className="w-full min-w-[650px] text-left text-sm">
               <thead className="bg-muted/70 text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
@@ -96,7 +100,7 @@ export function PurchaseOrderList({
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollableRegion>
         </div>
       ) : (
         <EmptyState
@@ -196,7 +200,10 @@ export function PurchaseOrderDetailView({
       ) : null}
       {order.items.length ? (
         <div className="overflow-hidden rounded-xl border bg-card">
-          <div className="overflow-x-auto">
+          <ScrollableRegion
+            aria-label="Itens do pedido de compra"
+            className="overflow-x-auto"
+          >
             <table className="w-full min-w-[760px] text-left text-sm">
               <thead className="bg-muted/70 text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
@@ -250,7 +257,7 @@ export function PurchaseOrderDetailView({
                 </tr>
               </tfoot>
             </table>
-          </div>
+          </ScrollableRegion>
         </div>
       ) : (
         <EmptyState

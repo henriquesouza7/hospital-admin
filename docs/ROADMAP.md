@@ -149,25 +149,45 @@ projeto temporário sem confirmação do usuário, pois ele preserva evidências
 Pontuação conforme os dez marcos de aceite: 10 pontos somente para marco
 integralmente homologado; 0 para qualquer marco incompleto.
 
-| Marco | Pontos | Situação e lacuna determinante |
-|---|---:|---|
-| Login, logout e sessões | 10 | Login, restauração, logout, expiração e renovação foram exercitados com sessão real sintética; JWT já emitido permanece válido até expirar. |
-| Recuperação e redefinição de senha | 0 | Token de recuperação válido, expirado e reutilizado não foi testado nesta rodada sem email. |
-| Autorização, RLS e proteção de dados | 10 | JWTs reais admin, user e anonymous cobriram as 20 tabelas e 42 RPCs SECURITY DEFINER expostas. |
-| Financeiro e precisão monetária | 0 | Precisão e exportações foram confirmadas; o conjunto funcional completo de Laboratório, fornecedores e validações permanece incompleto. |
-| Internações | 10 | CRUD, histórico de médico inativo, metas, importação CSV válida/inválida, persistência, auditoria e exportação exercitados com dados sintéticos. |
-| Produção | 0 | Operações e importação têm evidências anteriores; matriz de unidades e classificações não foi concluída nesta rodada. |
-| Pequenas Cirurgias | 0 | Fluxos e concorrência foram exercitados; a duplicidade ainda não tem evidência funcional explícita. |
-| Dashboard geral e auditoria | 10 | A suíte passou 13 E2E; o dashboard passou 10 cargas sequenciais e 3 concorrentes; paginação keyset e autorização global foram exercitadas. A falha histórica de dashboard não teve causa raiz confirmada. |
-| Exportações e integridade CSV | 10 | Seis formatos passaram filtros válidos e inválidos, 24 meses, estrutura, valores exatos, nulos, privacidade e fórmula CSV; limite máximo de linhas permanece coberto pelos testes automatizados. |
-| Responsividade, qualidade visual e gates | 0 | Gates e checks responsivos passaram; inspeção visual/acessibilidade manual das telas não foi realizada nesta rodada. |
+| Marco                                    | Pontos | Situação e lacuna determinante                                                                                                                                                                            |
+| ---------------------------------------- | -----: | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Login, logout e sessões                  |     10 | Login, restauração, logout, expiração e renovação foram exercitados com sessão real sintética; JWT já emitido permanece válido até expirar.                                                               |
+| Recuperação e redefinição de senha       |      0 | Token de recuperação válido, expirado e reutilizado não foi testado nesta rodada sem email.                                                                                                               |
+| Autorização, RLS e proteção de dados     |     10 | JWTs reais admin, user e anonymous cobriram as 20 tabelas e 42 RPCs SECURITY DEFINER expostas.                                                                                                            |
+| Financeiro e precisão monetária          |      0 | Precisão e exportações foram confirmadas; o conjunto funcional completo de Laboratório, fornecedores e validações permanece incompleto.                                                                   |
+| Internações                              |     10 | CRUD, histórico de médico inativo, metas, importação CSV válida/inválida, persistência, auditoria e exportação exercitados com dados sintéticos.                                                          |
+| Produção                                 |      0 | Operações e importação têm evidências anteriores; matriz de unidades e classificações não foi concluída nesta rodada.                                                                                     |
+| Pequenas Cirurgias                       |      0 | Fluxos e concorrência foram exercitados; a duplicidade ainda não tem evidência funcional explícita.                                                                                                       |
+| Dashboard geral e auditoria              |     10 | A suíte passou 13 E2E; o dashboard passou 10 cargas sequenciais e 3 concorrentes; paginação keyset e autorização global foram exercitadas. A falha histórica de dashboard não teve causa raiz confirmada. |
+| Exportações e integridade CSV            |     10 | Seis formatos passaram filtros válidos e inválidos, 24 meses, estrutura, valores exatos, nulos, privacidade e fórmula CSV; limite máximo de linhas permanece coberto pelos testes automatizados.          |
+| Responsividade, qualidade visual e gates |     10 | 30 rotas autenticadas e 3 públicas foram inspecionadas em quatro larguras; varredura axe sem violações, sem overflow horizontal e com foco/rolagem por teclado.                                           |
 
-**Pontuação estrita atual: 50/100. Meta de 90%: não atingida.** Cinco marcos
+**Pontuação estrita atual: 60/100. Meta de 90%: não atingida. Quatro marcos
 permanecem incompletos pelos critérios integrais acima. Esta pontuação não
 impede aprovar tecnicamente o escopo do PR #25, mas não comprova prontidão do
 sistema completo para liberação.
 Consulte `docs/HOMOLOGACAO_2026-10-13.md` para o inventário de evidências e
 pendências detalhadas.
+
+### Inspeção visual e acessibilidade — 14/10/2026
+
+- Foram verificadas 33 rotas (30 autenticadas e três públicas) em 390, 768,
+  1024 e 1440 px: 132 combinações rota/largura e 162 capturas. Todas usaram
+  Geist; não houve overflow horizontal, corte de título ou erro de console. A
+  rota antiga de fornecedores redirecionou para a rota canônica com HTTP 200.
+- axe-core não apontou violações WCAG nas 132 combinações. Seis rotas passaram
+  por 24 passos reais de Tab cada, com foco visível e nenhum link fora da tela;
+  E2E confirmou a rolagem horizontal de Internações por teclado. Não há
+  diálogos ou sheets no código atual.
+- A revisão de contraste encontrou legenda azul de Produção em 3,88:1. O texto
+  da legenda agora usa a cor de texto do tema, preservando as cores das séries;
+  a regressão verifica mínimo de 4,5:1. O botão desabilitado “Gerar prévia”
+  sem arquivo selecionado foi o único outro sinalizador (2,88:1).
+- As regressões também impedem overflow nos formulários de Farmácia,
+  Laboratório e importação fiscal em 390/768 px e verificam a semântica de link
+  na navegação da Farmácia. Gates: 388 testes unitários, build, lint,
+  formatação, typecheck e E2E (15 passaram; quatro cenários condicionais foram
+  ignorados).
 
 ## Estado de estabilização — 13/10/2026
 
@@ -201,6 +221,7 @@ atingida**. Manter o PR em draft até concluir a homologação isolada autorizad
 a revisão final.
 
 ## Fase 0 — Fundação
+
 - [x] Criar repositório
 - [x] Criar documentação-base
 - [x] Definir stack final
@@ -208,6 +229,7 @@ a revisão final.
 - [x] Preparar ambiente do Codex
 
 ## Fase 1 — Bootstrap
+
 - [x] Criar aplicação Next.js
 - [x] Configurar TypeScript
 - [x] Configurar ESLint e formatter
@@ -221,6 +243,7 @@ a revisão final.
 - [x] Validar lint, typecheck e testes
 
 ## Fase 2 — Infraestrutura de dados
+
 - [x] Definir Neon Postgres como fonte de verdade
 - [x] Integrar Neon Auth e Neon Data API
 - [x] Configurar variáveis de ambiente local
@@ -231,6 +254,7 @@ a revisão final.
 - [x] Configurar projeto Neon e primeiro usuário manualmente
 
 ## Fase 3 — Financeiro (concluída no escopo atual)
+
 - [x] Farmácia — fornecedores, produtos e pedidos de compra
 - [x] Laboratório
 - [x] Feira — total mensal consolidado, histórico e comparativo anual
@@ -238,12 +262,14 @@ a revisão final.
 - [x] Importação fiscal
 
 ## Fase 4 — Internações
+
 - [x] Médicos
 - [x] Lançamentos
 - [x] Metas
 - [x] Dashboards
 
 ## Fase 5 — Produção
+
 - [x] Procedimentos e categorias
 - [x] Lançamentos
 - [x] Dashboards
@@ -251,6 +277,7 @@ a revisão final.
 - [x] Reconciliação de importações
 
 ## Fase 6 — Pequenas Cirurgias
+
 - [ ] Dias de cirurgia
 - [ ] Capacidade
 - [ ] Pacientes/agendamentos
@@ -262,6 +289,7 @@ O núcleo de Pequenas Cirurgias foi integrado. Os itens desta fase permanecem ab
 Em 08/10/2026, os fluxos da Fase 6 continuam sem homologação autenticada no banco de demonstração; os itens permanecem abertos.
 
 ## Fase 7 — Consolidação
+
 - [ ] Dashboard geral
 - [ ] Auditoria
 - [x] Backup/restauração — snapshot manual e restauração validados em branch isolada em 08/10/2026; procedimento registrado em `DEMO_2026-10-08.md`.

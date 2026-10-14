@@ -18,6 +18,7 @@ export default async function LaboratoryPage() {
         description="Acompanhe compras de materiais e insumos do laboratório com histórico por fornecedor."
         actions={
           <Button
+            role="link"
             nativeButton={false}
             render={<Link href="/financeiro/laboratorio/pedidos/novo" />}
           >

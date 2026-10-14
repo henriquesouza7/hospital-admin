@@ -1,4 +1,5 @@
 "use client";
+import { ScrollableRegion } from "@/components/scrollable-region";
 
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
@@ -289,7 +290,10 @@ export function ProcedureList({
   }
   return (
     <div className="overflow-hidden rounded-xl border bg-card">
-      <div className="overflow-x-auto">
+      <ScrollableRegion
+        aria-label="Procedimentos cadastrados"
+        className="overflow-x-auto"
+      >
         <table className="w-full min-w-[780px] text-left text-sm">
           <thead className="bg-muted/70 text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
@@ -320,7 +324,7 @@ export function ProcedureList({
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollableRegion>
     </div>
   );
 }
@@ -623,7 +627,10 @@ export function ProductionEntryList({
     );
   return (
     <div className="overflow-hidden rounded-xl border bg-card">
-      <div className="overflow-x-auto">
+      <ScrollableRegion
+        aria-label="Histórico de lançamentos de produção"
+        className="overflow-x-auto"
+      >
         <table className="w-full min-w-[900px] text-left text-sm">
           <thead className="bg-muted/70 text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
@@ -657,7 +664,7 @@ export function ProductionEntryList({
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollableRegion>
     </div>
   );
 }
