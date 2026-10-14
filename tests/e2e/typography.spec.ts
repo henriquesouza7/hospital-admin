@@ -10,14 +10,17 @@ const viewports = [
 ];
 const administrativeRoutes = [
   "/",
+  "/configuracoes",
   "/financeiro",
   "/financeiro/farmacia",
   "/financeiro/laboratorio",
   "/internacoes",
+  "/internacoes/lancamentos",
+  "/internacoes/medicos",
+  "/internacoes/metas",
   "/producao",
+  "/producao/indicadores",
   "/pequenas-cirurgias",
-  "/auditoria",
-  "/exportacoes",
 ];
 
 async function expectGeistTypography(page: import("@playwright/test").Page) {
