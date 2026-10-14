@@ -7,14 +7,20 @@ const baseURL = process.env.PLAYWRIGHT_BASE_URL;
 const canWriteSyntheticData =
   Boolean(storageState && existsSync(storageState)) &&
   baseURL === "http://localhost:3006" &&
-  process.env.PLAYWRIGHT_EXPECTED_ENVIRONMENT_LABEL === "Homologação isolada" &&
   process.env.PLAYWRIGHT_ENABLE_SYNTHETIC_MUTATION_TESTS === "true";
-
-test.skip(
-  !canWriteSyntheticData,
-  "Este cenário grava somente dados sintéticos no ambiente isolado em localhost:3006.",
-);
 test.use({ storageState: storageState ?? undefined });
+
+test.beforeEach(async ({ request }) => {
+  test.skip(
+    !canWriteSyntheticData,
+    "Ative explicitamente os testes mutativos com uma sessão autenticada em localhost:3006.",
+  );
+  const response = await request.get("/api/e2e/neon-isolation");
+  test.skip(
+    response.status() !== 204,
+    "O servidor não confirmou o endpoint Neon isolado aprovado para escrita sintética.",
+  );
+});
 
 test("should_keep_production_units_and_classifications_separate_after_catalog_change", async ({
   page,

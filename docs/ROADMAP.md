@@ -156,8 +156,8 @@ integralmente homologado; 0 para qualquer marco incompleto.
 | Autorização, RLS e proteção de dados     |     10 | JWTs reais admin, user e anonymous cobriram as 20 tabelas e 42 RPCs SECURITY DEFINER expostas.                                                                                                            |
 | Financeiro e precisão monetária          |      0 | Precisão e exportações foram confirmadas; o conjunto funcional completo de Laboratório, fornecedores e validações permanece incompleto.                                                                   |
 | Internações                              |     10 | CRUD, histórico de médico inativo, metas, importação CSV válida/inválida, persistência, auditoria e exportação exercitados com dados sintéticos.                                                          |
-| Produção                                 |      0 | Operações e importação têm evidências anteriores; matriz de unidades e classificações não foi concluída nesta rodada.                                                                                     |
-| Pequenas Cirurgias                       |      0 | Fluxos e concorrência foram exercitados; a duplicidade ainda não tem evidência funcional explícita.                                                                                                       |
+| Produção                                 |      0 | O E2E de unidade/classificação criado em `3aa4953` não foi executado; a matriz de autorização por papel também está incompleta.                                                                           |
+| Pequenas Cirurgias                       |      0 | O E2E de recusa de duplicidade criado em `3aa4953` não foi executado; a matriz de autorização por papel também está incompleta.                                                                            |
 | Dashboard geral e auditoria              |     10 | A suíte passou 13 E2E; o dashboard passou 10 cargas sequenciais e 3 concorrentes; paginação keyset e autorização global foram exercitadas. A falha histórica de dashboard não teve causa raiz confirmada. |
 | Exportações e integridade CSV            |     10 | Seis formatos passaram filtros válidos e inválidos, 24 meses, estrutura, valores exatos, nulos, privacidade e fórmula CSV; limite máximo de linhas permanece coberto pelos testes automatizados.          |
 | Responsividade, qualidade visual e gates |     10 | 30 rotas autenticadas e 3 públicas foram inspecionadas em quatro larguras; varredura axe sem violações, sem overflow horizontal e com foco/rolagem por teclado.                                           |
@@ -168,6 +168,27 @@ impede aprovar tecnicamente o escopo do PR #25, mas não comprova prontidão do
 sistema completo para liberação.
 Consulte `docs/HOMOLOGACAO_2026-10-13.md` para o inventário de evidências e
 pendências detalhadas.
+
+### Reconciliação dos commits `3aa4953` e `0df6a58` — 14/10/2026
+
+Os dois testes mutativos adicionados em `3aa4953` são código de regressão, mas
+não evidência de execução; o opt-in de escrita não estava habilitado. A revisão
+Codex de `0df6a58` abriu P1 porque os guards originais confiavam em valores do
+runner sem confirmar o Neon usado pelo servidor. A porta `3006` está atendida
+por outro worktree (`hospital-isolated-qa`, HEAD `4a03641`), com alterações
+locais preexistentes; por isso, nenhum E2E mutativo foi apontado a esse
+processo. A nova verificação local falha fechada para qualquer origem ou par
+Auth/Data API diferente do endpoint isolado autorizado.
+
+O registro de `0df6a58` informa quatro E2E condicionais ignorados, mas não
+preserva os títulos individuais. Os guards versionados condicionam o login e
+o teste de papel básico à presença de fixtures locais; os cenários de Produção
+e Cirurgias exigem sessão, porta `3006` e opt-in de mutação. Os dois últimos
+afetam diretamente os critérios daqueles módulos; nenhum dos quatro pode ser
+contado como aprovado. Financeiro continua em zero porque os cenários completos
+de Laboratório, fornecedores e validações não estão cobertos pela evidência
+anterior. Assim, os três marcos questionados não atingem 10/10 e a pontuação
+estrita permanece **60/100**.
 
 ### Inspeção visual e acessibilidade — 14/10/2026
 

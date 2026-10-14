@@ -4,19 +4,23 @@ import { expect, test } from "@playwright/test";
 
 const storageState = process.env.PLAYWRIGHT_AUTH_STORAGE_STATE;
 const baseURL = process.env.PLAYWRIGHT_BASE_URL;
-const expectedEnvironmentLabel =
-  process.env.PLAYWRIGHT_EXPECTED_ENVIRONMENT_LABEL;
 const canWriteSyntheticData =
   Boolean(storageState && existsSync(storageState)) &&
   baseURL === "http://localhost:3006" &&
-  expectedEnvironmentLabel === "Homologação isolada" &&
   process.env.PLAYWRIGHT_ENABLE_SYNTHETIC_MUTATION_TESTS === "true";
-
-test.skip(
-  !canWriteSyntheticData,
-  "Este cenário grava somente dados sintéticos no ambiente isolado em localhost:3006.",
-);
 test.use({ storageState: storageState ?? undefined });
+
+test.beforeEach(async ({ request }) => {
+  test.skip(
+    !canWriteSyntheticData,
+    "Ative explicitamente os testes mutativos com uma sessão autenticada em localhost:3006.",
+  );
+  const response = await request.get("/api/e2e/neon-isolation");
+  test.skip(
+    response.status() !== 204,
+    "O servidor não confirmou o endpoint Neon isolado aprovado para escrita sintética.",
+  );
+});
 
 function formatDate(date: Date) {
   const year = date.getFullYear();
