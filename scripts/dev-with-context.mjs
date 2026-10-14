@@ -8,8 +8,13 @@ const branch = git("branch", "--show-current") || "detached";
 const commit = git("rev-parse", "--short", "HEAD");
 const args = process.argv.slice(2);
 const portIndex = args.findIndex((arg) => arg === "--port" || arg === "-p");
-const port =
-  process.env.PORT ?? (portIndex >= 0 ? args[portIndex + 1] : "3000");
+const inlinePort = args.find(
+  (arg) => arg.startsWith("--port=") || arg.startsWith("-p="),
+);
+const cliPort =
+  inlinePort?.split("=")[1] ??
+  (portIndex >= 0 ? args[portIndex + 1] : undefined);
+const port = cliPort ?? process.env.PORT ?? "3000";
 
 console.info(
   "Hospital Admin dev | worktree: " +
