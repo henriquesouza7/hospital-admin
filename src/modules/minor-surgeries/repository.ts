@@ -88,6 +88,26 @@ const transferDestinationSchema = z.object({
 
 type QueryResult = { data: unknown; error: unknown };
 
+export class SurgerySummaryQueryError extends Error {
+  constructor(readonly code: string | null) {
+    super("Não foi possível carregar o resumo de pequenas cirurgias.");
+    this.name = "SurgerySummaryQueryError";
+  }
+}
+
+function getSafeDataApiErrorCode(error: unknown): string | null {
+  if (
+    typeof error !== "object" ||
+    error === null ||
+    !("code" in error) ||
+    typeof error.code !== "string" ||
+    !/^[A-Z0-9]{3,12}$/.test(error.code)
+  ) {
+    return null;
+  }
+  return error.code;
+}
+
 function ensureResult<T>(
   data: unknown,
   error: unknown,
@@ -253,9 +273,7 @@ export async function getSurgerySummary(
       error,
       durationMs: performance.now() - startedAt,
     });
-    throw new Error(
-      "Não foi possível carregar os dados de pequenas cirurgias.",
-    );
+    throw new SurgerySummaryQueryError(getSafeDataApiErrorCode(error));
   }
   const result = surgeryExportSummarySchema.safeParse(data);
   if (!result.success) {
@@ -264,11 +282,25 @@ export async function getSurgerySummary(
       stage: "response_validation",
       durationMs: performance.now() - startedAt,
     });
-    throw new Error(
-      "Não foi possível carregar os dados de pequenas cirurgias.",
-    );
+    throw new SurgerySummaryQueryError("INVALID_RESPONSE");
   }
   return result.data;
+}
+
+export async function loadSurgerySummaryForDashboard(
+  startDate: string,
+  throughExclusive: string,
+  maxRows: number,
+) {
+  try {
+    return {
+      kind: "available" as const,
+      summary: await getSurgerySummary(startDate, throughExclusive, maxRows),
+    };
+  } catch (error) {
+    if (!(error instanceof SurgerySummaryQueryError)) throw error;
+    return { kind: "unavailable" as const, code: error.code };
+  }
 }
 
 export async function listSurgeryDaysPage(

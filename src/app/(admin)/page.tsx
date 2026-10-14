@@ -37,7 +37,7 @@ import { AdmissionDashboardChart } from "@/modules/admissions/admission-dashboar
 import { MonthlyChart } from "@/modules/finance/indicators/monthly-chart";
 import { loadProductionIndicatorSource } from "@/modules/production/repository";
 import { listProductionImports } from "@/modules/production-import/repository";
-import { getSurgerySummary } from "@/modules/minor-surgeries/repository";
+import { loadSurgerySummaryForDashboard } from "@/modules/minor-surgeries/repository";
 import { logDashboardQueryFailure } from "@/lib/neon/dashboard-diagnostics";
 import {
   formatCurrency,
@@ -102,7 +102,7 @@ export default async function Home({ searchParams }: HomeProps) {
     financeRows,
     productionSource,
     productionImports,
-    surgery,
+    surgeryResult,
   ] = await Promise.all([
     getAdmissionDashboardTotals(startDate, endDate),
     listAdmissionTargets(startDate, endDate),
@@ -112,9 +112,21 @@ export default async function Home({ searchParams }: HomeProps) {
       to: `${period.year}-12`,
     }),
     listProductionImports(3),
-    getSurgerySummary(todayDate, surgeryThrough.toISOString().slice(0, 10), 5),
+    loadSurgerySummaryForDashboard(
+      todayDate,
+      surgeryThrough.toISOString().slice(0, 10),
+      5,
+    ),
   ]);
   const financeUnavailable = financeRows.kind !== "available";
+  const surgery =
+    surgeryResult.kind === "available" ? surgeryResult.summary : null;
+  const surgeryUnavailableMessage =
+    surgeryResult.kind === "unavailable"
+      ? surgeryResult.code === "42501"
+        ? "A consulta de Pequenas Cirurgias foi negada pelo banco (42501). Verifique a autorização administrativa."
+        : `Não foi possível consultar o resumo de Pequenas Cirurgias${surgeryResult.code ? ` (${surgeryResult.code})` : ""}. Nenhum total foi substituído por zero.`
+      : null;
   const financeUnavailableMessage =
     financeRows.kind === "rpc_unavailable"
       ? "A consulta de totais exatos não está disponível neste ambiente."
@@ -169,7 +181,9 @@ export default async function Home({ searchParams }: HomeProps) {
         source: "",
       }).monthlyEvolution
     : [];
-  const available = Math.max(0, surgery.capacity - surgery.occupied);
+  const available = surgery
+    ? Math.max(0, surgery.capacity - surgery.occupied)
+    : null;
   const chartScale = currencyChartScale(
     finance.flatMap((month) => [
       month.pharmacyCents,
@@ -273,8 +287,14 @@ export default async function Home({ searchParams }: HomeProps) {
           <KpiCard
             icon={ClipboardPlus}
             label="Vagas disponíveis · próximos 2 anos"
-            value={formatInteger(available)}
-            detail={`${surgery.occupied} ocupadas · ${surgery.waiting_count} na fila`}
+            value={
+              available === null ? "Indisponível" : formatInteger(available)
+            }
+            detail={
+              surgery
+                ? `${surgery.occupied} ocupadas · ${surgery.waiting_count} na fila`
+                : "Confira o aviso de disponibilidade abaixo"
+            }
           />
         </div>
       </section>
@@ -436,33 +456,35 @@ export default async function Home({ searchParams }: HomeProps) {
             <p className="rounded-lg bg-muted/60 p-3">
               Datas futuras · próximos 2 anos
               <strong className="mt-1 block text-xl">
-                {surgery.day_count}
+                {surgery?.day_count ?? "Indisponível"}
               </strong>
             </p>
             <p className="rounded-lg bg-muted/60 p-3">
               Vagas livres
-              <strong className="mt-1 block text-xl">{available}</strong>
+              <strong className="mt-1 block text-xl">
+                {available ?? "Indisponível"}
+              </strong>
             </p>
             <p className="rounded-lg bg-muted/60 p-3">
               Aguardando confirmação
               <strong className="mt-1 block text-xl">
-                {surgery.awaiting_confirmation}
+                {surgery?.awaiting_confirmation ?? "Indisponível"}
               </strong>
             </p>
             <p className="rounded-lg bg-muted/60 p-3">
               Confirmados
               <strong className="mt-1 block text-xl">
-                {surgery.confirmed}
+                {surgery?.confirmed ?? "Indisponível"}
               </strong>
             </p>
             <p className="rounded-lg bg-muted/60 p-3">
               Fila de espera
               <strong className="mt-1 block text-xl">
-                {surgery.waiting_count}
+                {surgery?.waiting_count ?? "Indisponível"}
               </strong>
             </p>
           </div>
-          {surgery.days.length ? (
+          {surgery?.days.length ? (
             <ul className="mt-4 divide-y">
               {surgery.days.slice(0, 4).map((day) => (
                 <li
@@ -481,11 +503,16 @@ export default async function Home({ searchParams }: HomeProps) {
                 </li>
               ))}
             </ul>
-          ) : (
+          ) : surgery ? (
             <p className="mt-4 text-sm text-muted-foreground">
               Não há datas futuras cadastradas.
             </p>
-          )}
+          ) : null}
+          {!surgery ? (
+            <p role="status" className="mt-4 text-sm text-muted-foreground">
+              {surgeryUnavailableMessage}
+            </p>
+          ) : null}
         </div>
       </section>
 

@@ -26,6 +26,7 @@ import {
   createSurgeryWaitlistEntry,
   getSurgeryDay,
   getSurgerySummary,
+  loadSurgerySummaryForDashboard,
   listDayAppointments,
   listSurgeryDaysPage,
   listMinorSurgeryAudit,
@@ -169,9 +170,32 @@ describe("minor surgeries repository", () => {
 
     await expect(
       getSurgerySummary("2026-10-12", "2028-10-12", 5),
-    ).rejects.toThrow(
-      "Não foi possível carregar os dados de pequenas cirurgias.",
+    ).rejects.toMatchObject({
+      name: "SurgerySummaryQueryError",
+      code: "42501",
+    });
+  });
+
+  it("should_keep_the_dashboard_available_when_the_surgery_rpc_is_denied", async () => {
+    mocks.rpc.mockResolvedValueOnce({
+      data: null,
+      error: { code: "42501", message: "Administrator access required" },
+    });
+
+    await expect(
+      loadSurgerySummaryForDashboard("2026-10-12", "2028-10-12", 5),
+    ).resolves.toEqual({ kind: "unavailable", code: "42501" });
+  });
+
+  it("should_not_swallow_a_local_administrator_guard_redirect_for_the_dashboard", async () => {
+    mocks.requireMinorSurgeriesAdmin.mockRejectedValueOnce(
+      new Error("redirect:/login?error=forbidden"),
     );
+
+    await expect(
+      loadSurgerySummaryForDashboard("2026-10-12", "2028-10-12", 5),
+    ).rejects.toThrow("redirect:/login?error=forbidden");
+    expect(mocks.rpc).not.toHaveBeenCalled();
   });
 
   it("should_reject_an_invalid_schema_when_the_summary_rpc_returns_incompatible_data", async () => {
