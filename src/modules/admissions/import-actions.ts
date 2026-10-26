@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { unstable_rethrow } from "next/navigation";
 import { getNeonServerEnv } from "@/lib/neon/env";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { importAdmissionEntries, listDoctors } from "./repository";
@@ -70,6 +71,7 @@ export async function previewAdmissionCsvAction(
           ),
     };
   } catch (error) {
+    unstable_rethrow(error);
     return {
       status: "error",
       message:
@@ -122,6 +124,7 @@ export async function confirmAdmissionCsvAction(
       token: "",
     };
   } catch (error) {
+    unstable_rethrow(error);
     return {
       status: "error",
       message:

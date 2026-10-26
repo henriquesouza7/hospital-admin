@@ -9,6 +9,12 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
+vi.mock("next/navigation", () => ({
+  unstable_rethrow: (error: unknown) => {
+    if (error instanceof Error && error.message === "NEXT_REDIRECT_TEST")
+      throw error;
+  },
+}));
 vi.mock("@/lib/auth/require-admin", () => ({
   requireAdmin: mocks.requireAdmin,
 }));
@@ -38,6 +44,17 @@ describe("admissions CSV import actions", () => {
       { id: doctorId, name: "Dra. Teste A", active: true },
     ]);
     mocks.importAdmissionEntries.mockResolvedValue(1);
+  });
+
+  it("should_preserve_login_redirect_when_preview_session_expires", async () => {
+    const redirectError = new Error("NEXT_REDIRECT_TEST");
+    mocks.listDoctors.mockRejectedValue(redirectError);
+    const formData = new FormData();
+    formData.set("csv", new File([csv], "internacoes.csv"));
+
+    await expect(
+      previewAdmissionCsvAction({ status: "idle", message: "" }, formData),
+    ).rejects.toBe(redirectError);
   });
 
   it("should_revalidate_doctor_details_when_csv_import_is_confirmed", async () => {

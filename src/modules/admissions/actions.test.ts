@@ -32,6 +32,12 @@ vi.mock("./repository", () => ({
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
+vi.mock("next/navigation", () => ({
+  unstable_rethrow: (error: unknown) => {
+    if (error instanceof Error && error.message === "NEXT_REDIRECT_TEST")
+      throw error;
+  },
+}));
 
 function form(values: Record<string, string>): FormData {
   const formData = new FormData();
@@ -95,6 +101,18 @@ describe("doctor server actions", () => {
       ),
     ).rejects.toThrow("Unauthorized");
     expect(mocks.createDoctor).not.toHaveBeenCalled();
+  });
+
+  it("should_preserve_login_redirect_when_doctor_session_expires", async () => {
+    const redirectError = new Error("NEXT_REDIRECT_TEST");
+    mocks.createDoctor.mockRejectedValue(redirectError);
+
+    await expect(
+      createDoctorAction(
+        { status: "idle", message: "" },
+        form({ name: "Dra. Pessoa Sintética" }),
+      ),
+    ).rejects.toBe(redirectError);
   });
 
   it("should_update_name_when_doctor_id_and_name_are_valid", async () => {

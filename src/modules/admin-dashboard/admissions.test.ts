@@ -7,6 +7,12 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../admissions/repository", () => mocks);
+vi.mock("next/navigation", () => ({
+  unstable_rethrow: (error: unknown) => {
+    if (error instanceof Error && error.message === "NEXT_REDIRECT_TEST")
+      throw error;
+  },
+}));
 
 describe("admin dashboard admissions loader", () => {
   beforeEach(() => {
@@ -46,5 +52,20 @@ describe("admin dashboard admissions loader", () => {
       kind: "available",
       dashboard: { monthlyTotal: 12, annualTotal: 12 },
     });
+  });
+
+  it("should_preserve_login_redirect_when_admissions_session_expires", async () => {
+    const redirectError = new Error("NEXT_REDIRECT_TEST");
+    mocks.getAdmissionDashboardTotals.mockRejectedValue(redirectError);
+
+    await expect(
+      loadAdmissionDashboard({
+        startDate: "2026-01-01",
+        endDate: "2027-01-01",
+        year: 2026,
+        month: 10,
+        today: new Date("2026-10-14T12:00:00Z"),
+      }),
+    ).rejects.toBe(redirectError);
   });
 });

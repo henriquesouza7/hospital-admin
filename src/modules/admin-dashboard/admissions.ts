@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import { summarizeAdmissionTotals } from "../admissions/domain";
 import {
   getAdmissionDashboardTotals,
@@ -27,7 +28,8 @@ export async function loadAdmissionDashboard(input: {
         input.today,
       ),
     };
-  } catch {
+  } catch (error) {
+    unstable_rethrow(error);
     return { kind: "unavailable" as const };
   }
 }
