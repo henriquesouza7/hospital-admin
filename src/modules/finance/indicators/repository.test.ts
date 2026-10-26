@@ -29,6 +29,86 @@ beforeEach(() => {
 });
 
 describe("financial indicators repository", () => {
+  it("should_exclude_non_operational_rows_from_indicator_source_queries", async () => {
+    const filters: Array<[string, string]> = [];
+    const purchaseRows = ["operational", "test"].map((classification) => ({
+      id:
+        classification === "operational"
+          ? "00000000-0000-4000-8000-000000000001"
+          : "00000000-0000-4000-8000-000000000002",
+      product_id: "00000000-0000-4000-8000-000000000003",
+      quantity: "1.000",
+      unit_price: "10.00",
+      line_total: "10.00",
+      product_name_snapshot: "Produto sintético",
+      product_presentation_snapshot: "Caixa",
+      product_category_snapshot: null,
+      purchase_order: {
+        sector: "farmacia",
+        order_date: "2026-10-08",
+        data_classification: classification,
+        supplier: {
+          id: "00000000-0000-4000-8000-000000000004",
+          name: "Fornecedor sintético",
+        },
+      },
+    }));
+    const fairRows = ["operational", "test"].map((classification) => ({
+      competence: "2026-10-01",
+      total_amount: "10.00",
+      data_classification: classification,
+    }));
+    mocks.from.mockImplementation((table: string) => {
+      const rows = table === "purchase_order_items" ? purchaseRows : fairRows;
+      const queryFilters: Array<[string, string]> = [];
+      const filteredRows = () =>
+        rows.filter((row) =>
+          queryFilters.every(([column, value]) => {
+            let actual: unknown = row;
+            for (const key of column.split(".")) {
+              if (typeof actual !== "object" || actual === null) return false;
+              actual = (actual as Record<string, unknown>)[key];
+            }
+            return actual === value;
+          }),
+        );
+      const query = {
+        select: () => query,
+        eq: (column: string, value: string) => {
+          filters.push([`${table}.${column}`, value]);
+          queryFilters.push([column, value]);
+          return query;
+        },
+        gte: () => query,
+        lt: () => query,
+        order: () => query,
+        range: () => Promise.resolve({ data: filteredRows(), error: null }),
+        then: (resolve: (value: unknown) => unknown) =>
+          Promise.resolve({ data: filteredRows(), error: null }).then(resolve),
+      };
+      return query;
+    });
+
+    const source = await loadIndicatorsSource("2026-10", "2026-10", {
+      includeProducts: false,
+    });
+
+    expect(filters).toContainEqual([
+      "purchase_order_items.purchase_order.data_classification",
+      "operational",
+    ]);
+    expect(filters).toContainEqual([
+      "monthly_fair_expenses.data_classification",
+      "operational",
+    ]);
+    expect(source.purchases).toHaveLength(1);
+    expect(source.purchases[0]?.id).toBe(
+      "00000000-0000-4000-8000-000000000001",
+    );
+    expect(source.fairExpenses).toHaveLength(1);
+    expect(mocks.requireFinanceAdmin).toHaveBeenCalledOnce();
+  });
+
   it("should_get_monthly_expense_totals_from_the_database", async () => {
     mocks.rpc.mockResolvedValue({
       data: [
@@ -215,6 +295,7 @@ describe("financial indicators repository", () => {
       purchase_order: {
         sector: "farmacia",
         order_date: "2026-10-08",
+        data_classification: "operational",
         supplier: {
           id: "00000000-0000-4000-8000-000000000004",
           name: "Fornecedor sintético",
@@ -227,6 +308,7 @@ describe("financial indicators repository", () => {
       tables.push(table);
       const query = {
         select: () => query,
+        eq: () => query,
         gte: () => query,
         lt: () => query,
         order: () => query,

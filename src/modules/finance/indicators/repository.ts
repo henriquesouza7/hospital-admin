@@ -23,6 +23,7 @@ const itemWithOrderSchema = itemSchema.extend({
   purchase_order: z.object({
     sector: z.enum(["farmacia", "laboratorio"]),
     order_date: z.iso.date(),
+    data_classification: z.enum(["operational", "demonstration", "test"]),
     supplier: supplierSchema,
   }),
 });
@@ -146,9 +147,10 @@ export async function loadIndicatorsSource(
         const { data, error } = await getNeonDataApiClient()
           .from("purchase_order_items")
           .select(
-            "id,product_id,quantity,unit_price,line_total,product_name_snapshot,product_presentation_snapshot,product_category_snapshot,purchase_order:purchase_orders!inner(sector,order_date,supplier:suppliers!inner(id,name))",
+            "id,product_id,quantity,unit_price,line_total,product_name_snapshot,product_presentation_snapshot,product_category_snapshot,purchase_order:purchase_orders!inner(sector,order_date,data_classification,supplier:suppliers!inner(id,name))",
           )
           .eq("purchase_order.sector", sector)
+          .eq("purchase_order.data_classification", "operational")
           .gte("purchase_order.order_date", from)
           .lt("purchase_order.order_date", throughExclusive)
           .order("id", { ascending: true })
@@ -180,6 +182,7 @@ export async function loadIndicatorsSource(
   const { data: fairData, error: fairError } = await getNeonDataApiClient()
     .from("monthly_fair_expenses")
     .select("competence,total_amount")
+    .eq("data_classification", "operational")
     .gte("competence", from)
     .lt("competence", throughExclusive)
     .order("competence", { ascending: true });
