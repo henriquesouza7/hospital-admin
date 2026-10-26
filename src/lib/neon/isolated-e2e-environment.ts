@@ -1,7 +1,7 @@
 const isolatedAuthHost =
-  "ep-small-river-b82tcab9.neonauth.c-14.us-east-1.aws.neon.tech";
+  "ep-noisy-breeze-b7j6fzqn.neonauth.c-13.us-east-1.aws.neon.tech";
 const isolatedDataApiHost =
-  "ep-small-river-b82tcab9.apirest.c-14.us-east-1.aws.neon.tech";
+  "ep-noisy-breeze-b7j6fzqn.apirest.c-13.us-east-1.aws.neon.tech";
 
 type E2eEnvironment = Readonly<{
   appOrigin?: string;

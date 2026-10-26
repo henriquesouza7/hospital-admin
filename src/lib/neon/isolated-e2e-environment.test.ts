@@ -4,9 +4,9 @@ import { isAuthorizedIsolatedE2eEnvironment } from "./isolated-e2e-environment";
 const isolatedEnvironment = {
   appOrigin: "http://localhost:3006",
   authBaseUrl:
-    "https://ep-small-river-b82tcab9.neonauth.c-14.us-east-1.aws.neon.tech/neondb/auth",
+    "https://ep-noisy-breeze-b7j6fzqn.neonauth.c-13.us-east-1.aws.neon.tech/neondb/auth",
   dataApiUrl:
-    "https://ep-small-river-b82tcab9.apirest.c-14.us-east-1.aws.neon.tech/neondb/rest/v1",
+    "https://ep-noisy-breeze-b7j6fzqn.apirest.c-13.us-east-1.aws.neon.tech/neondb/rest/v1",
   label: "isolated_homologation",
 };
 
@@ -21,6 +21,11 @@ describe("isolated E2E environment guard", () => {
     {
       ...isolatedEnvironment,
       authBaseUrl:
+        "https://ep-small-river-b82tcab9.neonauth.c-14.us-east-1.aws.neon.tech/neondb/auth",
+    },
+    {
+      ...isolatedEnvironment,
+      authBaseUrl:
         "https://ep-shared-demo.neonauth.c-14.us-east-1.aws.neon.tech/neondb/auth",
     },
     {
@@ -31,12 +36,12 @@ describe("isolated E2E environment guard", () => {
     {
       ...isolatedEnvironment,
       dataApiUrl:
-        "https://ep-small-river-b82tcab9.apirest.c-14.us-east-1.aws.neon.tech/other/rest/v1",
+        "https://ep-noisy-breeze-b7j6fzqn.apirest.c-13.us-east-1.aws.neon.tech/other/rest/v1",
     },
     {
       ...isolatedEnvironment,
       dataApiUrl:
-        "https://ep-small-river-b82tcab9.apirest.c-14.us-east-1.aws.neon.tech:8443/neondb/rest/v1",
+        "https://ep-noisy-breeze-b7j6fzqn.apirest.c-13.us-east-1.aws.neon.tech:8443/neondb/rest/v1",
     },
     { ...isolatedEnvironment, authBaseUrl: "not-a-url" },
   ])("rejects a mismatched or invalid runtime configuration", (environment) => {
