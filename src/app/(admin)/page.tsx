@@ -81,6 +81,45 @@ async function loadDashboardFinanceRows(startMonth: string, endMonth: string) {
   }
 }
 
+async function loadDashboardProductionSource(year: number) {
+  const startedAt = performance.now();
+  try {
+    return {
+      kind: "available" as const,
+      source: await loadProductionIndicatorSource({
+        from: `${year}-01`,
+        to: `${year}-12`,
+      }),
+    };
+  } catch (error: unknown) {
+    logDashboardQueryFailure({
+      operation: "production_indicators",
+      stage: "data_api",
+      error,
+      durationMs: performance.now() - startedAt,
+    });
+    return { kind: "unavailable" as const };
+  }
+}
+
+async function loadDashboardProductionImports() {
+  const startedAt = performance.now();
+  try {
+    return {
+      kind: "available" as const,
+      imports: await listProductionImports(3),
+    };
+  } catch (error: unknown) {
+    logDashboardQueryFailure({
+      operation: "production_imports",
+      stage: "data_api",
+      error,
+      durationMs: performance.now() - startedAt,
+    });
+    return { kind: "unavailable" as const };
+  }
+}
+
 export default async function Home({ searchParams }: HomeProps) {
   const period = parseYearMonth(await searchParams);
   const startDate = `${period.year}-01-01`;
@@ -93,11 +132,13 @@ export default async function Home({ searchParams }: HomeProps) {
     `${period.year}-01`,
     `${period.year}-12`,
   );
+  const productionPromise = loadDashboardProductionSource(period.year);
+  const productionImportsPromise = loadDashboardProductionImports();
   const [
     admissionResult,
     financeRows,
-    productionSource,
-    productionImports,
+    productionResult,
+    productionImportsResult,
     surgeryResult,
   ] = await Promise.all([
     loadAdmissionDashboard({
@@ -108,11 +149,8 @@ export default async function Home({ searchParams }: HomeProps) {
       today,
     }),
     financeRowsPromise,
-    loadProductionIndicatorSource({
-      from: `${period.year}-01`,
-      to: `${period.year}-12`,
-    }),
-    listProductionImports(3),
+    productionPromise,
+    productionImportsPromise,
     loadSurgerySummaryForDashboard(
       todayDate,
       surgeryThrough.toISOString().slice(0, 10),
@@ -160,24 +198,25 @@ export default async function Home({ searchParams }: HomeProps) {
     };
   });
   const selectedMonth = finance.find((item) => item.month === competence);
-  const production = getProductionForMonth(
-    productionSource.entries,
-    period.year,
-    period.month,
-  );
-  const selectedProcedure = production[0];
-  const productionHistory = selectedProcedure
-    ? buildProductionIndicatorData(productionSource.entries, {
-        mode: "intervalo",
-        competence,
-        from: `${period.year}-01`,
-        to: competence,
-        year: String(period.year),
-        categoryId: "",
-        procedureId: selectedProcedure.procedureId,
-        source: "",
-      }).monthlyEvolution
+  const productionSource =
+    productionResult.kind === "available" ? productionResult.source : null;
+  const production = productionSource
+    ? getProductionForMonth(productionSource.entries, period.year, period.month)
     : [];
+  const selectedProcedure = production[0];
+  const productionHistory =
+    selectedProcedure && productionSource
+      ? buildProductionIndicatorData(productionSource.entries, {
+          mode: "intervalo",
+          competence,
+          from: `${period.year}-01`,
+          to: competence,
+          year: String(period.year),
+          categoryId: "",
+          procedureId: selectedProcedure.procedureId,
+          source: "",
+        }).monthlyEvolution
+      : [];
   const available = surgery
     ? Math.max(0, surgery.capacity - surgery.occupied)
     : null;
@@ -284,8 +323,16 @@ export default async function Home({ searchParams }: HomeProps) {
           <KpiCard
             icon={FileChartColumn}
             label="Séries de produção"
-            value={formatInteger(production.length)}
-            detail="Procedimento, origem e unidade discriminados"
+            value={
+              productionSource
+                ? formatInteger(production.length)
+                : "Indisponível"
+            }
+            detail={
+              productionSource
+                ? "Procedimento, origem e unidade discriminados"
+                : "Consulta de Produção indisponível"
+            }
           />
           <KpiCard
             icon={ClipboardPlus}
@@ -410,7 +457,12 @@ export default async function Home({ searchParams }: HomeProps) {
             title="Produção por procedimento"
             description={`Competência ${periodLabel}; classificações e unidades permanecem separadas.`}
           />
-          {production.length === 0 ? (
+          {!productionSource ? (
+            <p role="status" className="mt-5 text-sm text-muted-foreground">
+              Não foi possível consultar a Produção. Nenhuma série foi
+              substituída por zero.
+            </p>
+          ) : production.length === 0 ? (
             <p className="mt-5 text-sm text-muted-foreground">
               Sem lançamentos nesta competência.
             </p>
@@ -446,12 +498,18 @@ export default async function Home({ searchParams }: HomeProps) {
           <SectionHeader
             title="Evolução da produção"
             description={
-              selectedProcedure
-                ? `Histórico de ${selectedProcedure.name}; cada origem e unidade forma uma série própria.`
-                : `Sem procedimento com registro em ${periodLabel}.`
+              !productionSource
+                ? "Dados de Produção indisponíveis."
+                : selectedProcedure
+                  ? `Histórico de ${selectedProcedure.name}; cada origem e unidade forma uma série própria.`
+                  : `Sem procedimento com registro em ${periodLabel}.`
             }
           />
-          {selectedProcedure ? (
+          {!productionSource ? (
+            <p role="status" className="mt-4 text-sm text-muted-foreground">
+              Não foi possível consultar a evolução da Produção.
+            </p>
+          ) : selectedProcedure ? (
             <div className="mt-4">
               <MonthlyEvolutionCharts
                 series={productionHistory}
@@ -546,13 +604,17 @@ export default async function Home({ searchParams }: HomeProps) {
             Abrir importações
           </Link>
         </div>
-        {productionImports.length === 0 ? (
+        {productionImportsResult.kind === "unavailable" ? (
+          <p role="status" className="mt-4 text-sm text-muted-foreground">
+            Não foi possível consultar as importações SUS recentes.
+          </p>
+        ) : productionImportsResult.imports.length === 0 ? (
           <p className="mt-4 text-sm text-muted-foreground">
             Nenhuma importação registrada.
           </p>
         ) : (
           <ul className="mt-4 divide-y">
-            {productionImports.slice(0, 3).map((item) => (
+            {productionImportsResult.imports.slice(0, 3).map((item) => (
               <li
                 key={item.id}
                 className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm"

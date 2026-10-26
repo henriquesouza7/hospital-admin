@@ -7,6 +7,8 @@ type DashboardDiagnostic = Readonly<{
     | "admission_totals"
     | "surgery_summary"
     | "finance_totals"
+    | "production_indicators"
+    | "production_imports"
     | "data_api_auth_token";
   stage: "auth_api" | "data_api" | "response_validation";
   error?: unknown;
