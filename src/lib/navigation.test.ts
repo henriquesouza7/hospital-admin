@@ -2,6 +2,12 @@ import { describe, expect, it } from "vitest";
 import { isNavigationItemActive, navigationGroups } from "./navigation";
 
 describe("navigation", () => {
+  it("should_hide_unfinished_settings_from_navigation", () => {
+    expect(navigationGroups.some(({ href }) => href === "/configuracoes")).toBe(
+      false,
+    );
+  });
+
   it("keeps finance subitems grouped under Financeiro", () => {
     const finance = navigationGroups.find(({ href }) => href === "/financeiro");
 
