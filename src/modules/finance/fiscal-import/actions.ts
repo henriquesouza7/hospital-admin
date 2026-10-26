@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import { getNeonServerEnv } from "@/lib/neon/env";
 import { MAX_XML_BYTES, parseNfeXml } from "./domain";
 import { requireFinanceAdmin } from "../pharmacy/access";
@@ -85,6 +85,7 @@ export async function previewFiscalXmlAction(
       duplicate,
     };
   } catch (error) {
+    unstable_rethrow(error);
     return {
       status: "error",
       message:
@@ -183,6 +184,7 @@ export async function confirmFiscalImportAction(formData: FormData) {
       xmlSha256,
     });
   } catch (error) {
+    unstable_rethrow(error);
     const message =
       error instanceof Error ? encodeURIComponent(error.message) : "save";
     redirect(`/financeiro/importacao-fiscal?setor=${sector}&erro=${message}`);

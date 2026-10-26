@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import { getSupplierRevalidationPaths } from "../supplier-context";
 import type { FinanceActionState } from "./action-state";
 import {
@@ -47,7 +47,8 @@ export async function createSupplierAction(
     await createSupplier(parsed.data);
     getSupplierRevalidationPaths().forEach((path) => revalidatePath(path));
     return { status: "success", message: "Fornecedor cadastrado." };
-  } catch {
+  } catch (error) {
+    unstable_rethrow(error);
     return {
       status: "error",
       message: "Não foi possível cadastrar o fornecedor.",
@@ -71,7 +72,8 @@ export async function updateSupplierAction(
     await updateSupplier(id, input);
     getSupplierRevalidationPaths().forEach((path) => revalidatePath(path));
     return { status: "success", message: "Fornecedor atualizado." };
-  } catch {
+  } catch (error) {
+    unstable_rethrow(error);
     return {
       status: "error",
       message: "Não foi possível atualizar o fornecedor.",
@@ -109,7 +111,8 @@ export async function createProductAction(
     revalidatePath(`/financeiro/${sector.data}/produtos`);
     revalidatePath(`/financeiro/${sector.data}/pedidos/novo`);
     return { status: "success", message: "Produto cadastrado." };
-  } catch {
+  } catch (error) {
+    unstable_rethrow(error);
     return {
       status: "error",
       message: "Não foi possível cadastrar o produto.",
@@ -136,7 +139,8 @@ export async function updateProductAction(
     revalidatePath(`/financeiro/${sector}/produtos`);
     revalidatePath(`/financeiro/${sector}/pedidos/novo`);
     return { status: "success", message: "Produto atualizado." };
-  } catch {
+  } catch (error) {
+    unstable_rethrow(error);
     return {
       status: "error",
       message: "Não foi possível atualizar o produto.",
@@ -175,7 +179,8 @@ export async function createPurchaseOrderAction(formData: FormData) {
   let id: string;
   try {
     id = await createPurchaseOrder(parsed.data);
-  } catch {
+  } catch (error) {
+    unstable_rethrow(error);
     redirect(`${basePath}/pedidos/novo?error=save`);
   }
 

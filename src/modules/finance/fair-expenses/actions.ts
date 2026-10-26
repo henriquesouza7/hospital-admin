@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { unstable_rethrow } from "next/navigation";
 import type { FinanceActionState } from "@/modules/finance/pharmacy/action-state";
 import {
   createFairExpense,
@@ -38,6 +39,7 @@ export async function createFairExpenseAction(
   try {
     await createFairExpense(parsed.data);
   } catch (error) {
+    unstable_rethrow(error);
     if (error instanceof DuplicateFairCompetenceError) {
       return errorState(error.message);
     }
@@ -72,7 +74,8 @@ export async function updateFairExpenseAction(
       total_amount: parsed.data.total_amount,
       notes: parsed.data.notes,
     });
-  } catch {
+  } catch (error) {
+    unstable_rethrow(error);
     return errorState(
       "Não foi possível atualizar o registro. Tente novamente.",
     );
