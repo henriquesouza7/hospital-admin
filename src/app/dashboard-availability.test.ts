@@ -11,6 +11,12 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("server-only", () => ({}));
+vi.mock("next/navigation", () => ({
+  unstable_rethrow: (error: unknown) => {
+    if (error instanceof Error && error.message === "NEXT_REDIRECT_TEST")
+      throw error;
+  },
+}));
 vi.mock("@/modules/admin-dashboard/admissions", () => ({
   loadAdmissionDashboard: mocks.loadAdmissionDashboard,
 }));
@@ -93,5 +99,14 @@ describe("dashboard availability", () => {
         ([entry]) => entry.operation,
       ),
     ).toEqual(["production_indicators", "production_imports"]);
+  });
+
+  it("should_preserve_login_redirect_when_production_session_expires", async () => {
+    const redirectError = new Error("NEXT_REDIRECT_TEST");
+    mocks.loadProductionIndicatorSource.mockRejectedValue(redirectError);
+
+    await expect(
+      Home({ searchParams: Promise.resolve({ year: "2026", month: "10" }) }),
+    ).rejects.toBe(redirectError);
   });
 });

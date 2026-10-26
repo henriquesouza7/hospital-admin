@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { unstable_rethrow } from "next/navigation";
 import {
   CalendarDays,
   ChartNoAxesCombined,
@@ -92,6 +93,7 @@ async function loadDashboardProductionSource(year: number) {
       }),
     };
   } catch (error: unknown) {
+    unstable_rethrow(error);
     logDashboardQueryFailure({
       operation: "production_indicators",
       stage: "data_api",
@@ -110,6 +112,7 @@ async function loadDashboardProductionImports() {
       imports: await listProductionImports(3),
     };
   } catch (error: unknown) {
+    unstable_rethrow(error);
     logDashboardQueryFailure({
       operation: "production_imports",
       stage: "data_api",

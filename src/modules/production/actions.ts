@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { unstable_rethrow } from "next/navigation";
 import type { ProductionActionState } from "./action-state";
 import { requireProductionAdmin } from "./access";
 import {
@@ -31,6 +32,7 @@ function invalidInput(): ProductionActionState {
 }
 
 function actionError(error: unknown): ProductionActionState {
+  unstable_rethrow(error);
   if (error instanceof DuplicateProductionRecordError) {
     return { status: "error", message: error.message };
   }
