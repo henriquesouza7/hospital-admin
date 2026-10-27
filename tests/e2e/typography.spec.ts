@@ -82,12 +82,12 @@ test.describe("authenticated application typography", () => {
   }) => {
     test.setTimeout(180_000);
 
-    for (const { width, height } of viewports) {
-      await page.setViewportSize({ width, height });
-      for (const route of administrativeRoutes) {
-        await page.goto(route);
-        await expect(page).not.toHaveURL(/\/login/);
-        await expect(page.locator("main h1")).toBeVisible();
+    for (const route of administrativeRoutes) {
+      await page.goto(route);
+      await expect(page).not.toHaveURL(/\/login/);
+      await expect(page.locator("main h1")).toBeVisible();
+      for (const { width, height } of viewports) {
+        await page.setViewportSize({ width, height });
         await expectGeistTypography(page);
       }
     }

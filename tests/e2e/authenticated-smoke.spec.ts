@@ -103,12 +103,12 @@ test.describe("smokes administrativos autenticados", () => {
       "/pequenas-cirurgias",
     ];
 
-    for (const [width, height] of viewportHeights) {
-      await page.setViewportSize({ width, height });
-      for (const route of routes) {
-        await page.goto(route);
-        await expect(page).not.toHaveURL(/\/login/);
-        await expect(page.locator("main h1")).toBeVisible();
+    for (const route of routes) {
+      await page.goto(route);
+      await expect(page).not.toHaveURL(/\/login/);
+      await expect(page.locator("main h1")).toBeVisible();
+      for (const [width, height] of viewportHeights) {
+        await page.setViewportSize({ width, height });
 
         const layout = await page.evaluate(() => {
           const heading = document.querySelector("main h1");
