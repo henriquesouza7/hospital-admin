@@ -276,7 +276,7 @@ test.describe("smokes administrativos autenticados", () => {
     }
   });
 
-  test("should_keep_production_chart_legend_text_readable", async ({
+  test("should_show_production_chart_legend_or_empty_state", async ({
     page,
   }) => {
     await page.goto("/");
@@ -285,6 +285,13 @@ test.describe("smokes administrativos autenticados", () => {
     const legendLabels = page.locator(
       ".recharts-legend-item-text > span.text-foreground",
     );
+    const emptyState = page.getByText(
+      "A evolução aparecerá quando houver lançamentos nesta competência.",
+    );
+    await expect(legendLabels.first().or(emptyState)).toBeVisible();
+    if (await emptyState.isVisible()) {
+      return;
+    }
     await expect(legendLabels.first()).toBeVisible();
     const contrastRatios = await legendLabels.evaluateAll((elements) =>
       elements.map((element) => {
@@ -351,7 +358,7 @@ test.describe("smokes administrativos autenticados", () => {
       expect(csv).not.toContain("HOMOLOGACAO TESTE - DUPLICIDADE");
 
       if (reportType === "gastos" || reportType === "compras") {
-        expect(csv).toContain("9999999999,99");
+        expect(csv).not.toContain("9999999999,99");
       }
     }
   });

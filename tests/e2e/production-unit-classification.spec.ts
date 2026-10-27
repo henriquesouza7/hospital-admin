@@ -27,9 +27,9 @@ test("should_keep_production_units_and_classifications_separate_after_catalog_ch
 }) => {
   test.setTimeout(120_000);
 
-  const category = "QA Categoria Sintética";
-  const period = "2027-02";
   const suffix = randomUUID().slice(0, 8);
+  const category = `QA Categoria Sintética ${suffix}`;
+  const period = "2027-02";
   const procedures = [
     { name: `QA Matriz Atendimento ${suffix}`, unit: "atendimento" },
     { name: `QA Matriz Procedimento ${suffix}`, unit: "procedimento" },
@@ -42,6 +42,17 @@ test("should_keep_production_units_and_classifications_separate_after_catalog_ch
   ] as const;
 
   await page.goto("/producao/procedimentos");
+  const categoryForm = page.locator("form").filter({
+    has: page.getByRole("button", { name: "Cadastrar categoria" }),
+  });
+  await categoryForm.locator('input[name="name"]').fill(category);
+  await categoryForm
+    .getByRole("button", { name: "Cadastrar categoria" })
+    .click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Categoria cadastrada." }),
+  ).toBeVisible();
+
   for (const procedure of procedures) {
     const form = page
       .locator("form")
