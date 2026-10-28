@@ -4,10 +4,8 @@ import "./admin-shell.css";
 import Link from "next/link";
 import {
   Bed,
-  Building2,
   ChevronRight,
   ChevronDown,
-  CircleUserRound,
   ClipboardList,
   DollarSign,
   HeartPulse,
@@ -43,7 +41,7 @@ export function AdminShell({ children, currentYear }: AdminShellProps) {
 
   useEffect(() => {
     const navigation = navigationRef.current;
-    if (!navigation || !isDashboard) {
+    if (!navigation) {
       setCanScrollNavigation(false);
       return;
     }
@@ -64,39 +62,31 @@ export function AdminShell({ children, currentYear }: AdminShellProps) {
       resizeObserver.disconnect();
       navigation.removeEventListener("scroll", updateScrollCue);
     };
-  }, [isDashboard]);
+  }, []);
 
   return (
     <div
       className={
-        isDashboard
-          ? "dashboard-shell admin-motion-safe min-h-screen bg-background min-[601px]:grid min-[601px]:grid-cols-[var(--dashboard-sidebar-width)_minmax(0,1fr)]"
-          : "module-shell admin-motion-safe min-h-screen bg-background min-[601px]:grid min-[601px]:grid-cols-[72px_minmax(0,1fr)] min-[861px]:grid-cols-[232px_minmax(0,1fr)]"
+        `${isDashboard ? "dashboard-shell" : "module-shell"} admin-motion-safe min-h-screen bg-background min-[601px]:grid min-[601px]:grid-cols-[72px_minmax(0,1fr)] min-[861px]:grid-cols-[var(--dashboard-sidebar-width)_minmax(0,1fr)]`
       }
       data-module={isDashboard ? undefined : moduleName}
     >
       <aside className="module-sidebar">
         <div className="module-brand flex items-center">
           <span className="module-brand-mark" aria-hidden="true">
-            {isDashboard ? (
-              <HeartPulse className="size-5" strokeWidth={1.8} />
-            ) : (
-              <Building2 className="size-5" strokeWidth={1.8} />
-            )}
+            <HeartPulse className="size-5" strokeWidth={1.8} />
           </span>
           <div className="module-brand-text">
             <p className="font-semibold tracking-tight">Hospital Admin</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {isDashboard ? getEnvironmentLabel() : "Gestão administrativa"}
+              {getEnvironmentLabel()}
             </p>
           </div>
         </div>
 
-        {isDashboard ? (
-          <p className="module-navigation-caption">Menu principal</p>
-        ) : null}
+        <p className="module-navigation-caption">Menu principal</p>
         <div
-          className={`module-navigation-viewport ${isDashboard ? "dashboard-navigation-viewport" : ""}`}
+          className="module-navigation-viewport dashboard-navigation-viewport"
         >
           <nav
             ref={navigationRef}
@@ -110,11 +100,11 @@ export function AdminShell({ children, currentYear }: AdminShellProps) {
                 group.href,
               );
               const NavigationIcon =
-                isDashboard && group.href === "/financeiro"
+                group.href === "/financeiro"
                   ? DollarSign
-                  : isDashboard && group.href === "/internacoes"
+                  : group.href === "/internacoes"
                     ? Bed
-                    : isDashboard && group.href === "/producao"
+                    : group.href === "/producao"
                       ? ClipboardList
                       : group.icon;
 
@@ -186,7 +176,7 @@ export function AdminShell({ children, currentYear }: AdminShellProps) {
               );
             })}
           </nav>
-          {isDashboard && canScrollNavigation ? (
+          {canScrollNavigation ? (
             <button
               type="button"
               aria-label="Rolar navegação para a direita"
@@ -215,24 +205,15 @@ export function AdminShell({ children, currentYear }: AdminShellProps) {
             aria-label="Menu da conta: administrador"
             className="module-account-trigger"
           >
-            {isDashboard ? (
-              <span className="dashboard-account-avatar" aria-hidden="true">
-                AD
-              </span>
-            ) : (
-              <CircleUserRound
-                aria-hidden="true"
-                className="module-account-icon"
-              />
-            )}
+            <span className="dashboard-account-avatar" aria-hidden="true">
+              AD
+            </span>
             <span
               className="module-account-label"
               title="Conta administrativa · Administrador"
             >
               Conta administrativa
-              {isDashboard ? (
-                <span className="dashboard-account-role">Administrador</span>
-              ) : null}
+              <span className="dashboard-account-role">Administrador</span>
             </span>
             <ChevronDown
               aria-hidden="true"
