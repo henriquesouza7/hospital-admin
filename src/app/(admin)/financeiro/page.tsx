@@ -1,6 +1,4 @@
-import Link from "next/link";
 import {
-  ArrowUpRight,
   ChartNoAxesCombined,
   FlaskConical,
   FileSpreadsheet,
@@ -8,7 +6,7 @@ import {
   ShoppingBasket,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import styles from "./page.module.css";
+import { ModuleAreaCard, ModuleAreaGrid } from "@/components/module-area";
 
 const areas = [
   {
@@ -56,20 +54,9 @@ export default function FinancePage() {
         title="Financeiro"
         description="Base compartilhada para compras, despesas e análises administrativas."
       />
-      <section className={styles.grid} aria-label="Áreas do Financeiro">
-        {areas.map(({ href, title, description, icon: Icon }) => (
-          <Link className={styles.card} href={href} key={href}>
-            <span className={styles.icon}>
-              <Icon aria-hidden="true" size={22} strokeWidth={1.8} />
-            </span>
-            <span className={styles.copy}>
-              <span className={styles.title}>{title}</span>
-              <span className={styles.description}>{description}</span>
-            </span>
-            <ArrowUpRight className={styles.arrow} aria-hidden="true" size={20} />
-          </Link>
-        ))}
-      </section>
+      <ModuleAreaGrid label="Áreas do Financeiro">
+        {areas.map((area) => <ModuleAreaCard key={area.href} {...area} />)}
+      </ModuleAreaGrid>
     </div>
   );
 }
