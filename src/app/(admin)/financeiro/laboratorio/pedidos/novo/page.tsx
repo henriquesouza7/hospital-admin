@@ -35,6 +35,7 @@ export default async function NewLaboratoryPurchaseOrderPage({
         description="Registre fornecedor, data, itens e preços praticados nesta compra."
         actions={
           <Button
+            role="link"
             variant="outline"
             nativeButton={false}
             render={<Link href="/financeiro/laboratorio" />}

@@ -9,6 +9,12 @@ import {
 } from "./repository";
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("next/navigation", () => ({
+  unstable_rethrow: (error: unknown) => {
+    if (error instanceof Error && error.message === "NEXT_REDIRECT_TEST")
+      throw error;
+  },
+}));
 vi.mock("./access", () => ({
   requireProductionAdmin: vi.fn().mockResolvedValue({ id: "admin" }),
 }));
@@ -63,6 +69,17 @@ describe("production server actions", () => {
       createCategoryAction(initialProductionActionState, new FormData()),
     ).rejects.toBe(redirectSignal);
     expect(mockedCreateCategory).not.toHaveBeenCalled();
+  });
+
+  it("should_preserve_login_redirect_when_production_session_expires", async () => {
+    const redirectError = new Error("NEXT_REDIRECT_TEST");
+    mockedCreateCategory.mockRejectedValue(redirectError);
+    const data = new FormData();
+    data.set("name", "Categoria sintética");
+
+    await expect(
+      createCategoryAction(initialProductionActionState, data),
+    ).rejects.toBe(redirectError);
   });
 
   it("maps duplicate monthly sources to a clear error", async () => {

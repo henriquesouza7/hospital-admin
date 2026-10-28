@@ -95,6 +95,7 @@ export function PurchaseOrderForm({
         <div className="mt-4 flex flex-wrap gap-2">
           {!suppliers.length ? (
             <Button
+              role="link"
               variant="outline"
               nativeButton={false}
               render={<Link href="/financeiro/farmacia/fornecedores" />}
@@ -104,6 +105,7 @@ export function PurchaseOrderForm({
           ) : null}
           {!products.length ? (
             <Button
+              role="link"
               variant="outline"
               nativeButton={false}
               render={<Link href={`${sectorPath}/produtos`} />}
@@ -117,7 +119,7 @@ export function PurchaseOrderForm({
   }
 
   return (
-    <form action={createPurchaseOrderAction} className="space-y-6">
+    <form action={createPurchaseOrderAction} className="min-w-0 space-y-6">
       <input type="hidden" name="sector" value={sector} />
       {error ? (
         <p
@@ -127,8 +129,8 @@ export function PurchaseOrderForm({
           {error}
         </p>
       ) : null}
-      <section className="grid gap-4 rounded-xl border bg-card p-5 sm:grid-cols-2">
-        <label className="grid gap-1.5 text-sm font-medium">
+      <section className="grid min-w-0 gap-4 rounded-xl border bg-card p-5 sm:grid-cols-2">
+        <label className="grid min-w-0 gap-1.5 text-sm font-medium">
           Fornecedor{" "}
           <span className="text-destructive" aria-hidden="true">
             *
@@ -137,7 +139,7 @@ export function PurchaseOrderForm({
             name="supplier_id"
             required
             defaultValue=""
-            className="h-10 rounded-lg border bg-background px-3 font-normal"
+            className="h-10 w-full min-w-0 rounded-lg border bg-background px-3 font-normal"
           >
             <option value="" disabled>
               Selecione um fornecedor
@@ -149,7 +151,7 @@ export function PurchaseOrderForm({
             ))}
           </select>
         </label>
-        <label className="grid gap-1.5 text-sm font-medium">
+        <label className="grid min-w-0 gap-1.5 text-sm font-medium">
           Data da compra{" "}
           <span className="text-destructive" aria-hidden="true">
             *
@@ -159,22 +161,22 @@ export function PurchaseOrderForm({
             type="date"
             required
             defaultValue={localOrderDate}
-            className="h-10 rounded-lg border bg-background px-3 font-normal"
+            className="h-10 w-full min-w-0 rounded-lg border bg-background px-3 font-normal"
           />
         </label>
-        <label className="grid gap-1.5 text-sm font-medium sm:col-span-2">
+        <label className="grid min-w-0 gap-1.5 text-sm font-medium sm:col-span-2">
           Observação{" "}
           <span className="font-normal text-muted-foreground">(opcional)</span>
           <textarea
             name="notes"
             maxLength={1000}
             rows={2}
-            className="rounded-lg border bg-background px-3 py-2 font-normal"
+            className="w-full min-w-0 rounded-lg border bg-background px-3 py-2 font-normal"
           />
         </label>
       </section>
 
-      <section className="space-y-3">
+      <section className="min-w-0 space-y-3">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="font-semibold">Itens do pedido</h2>
@@ -212,10 +214,10 @@ export function PurchaseOrderForm({
             return (
               <fieldset
                 key={item.key}
-                className="grid gap-3 rounded-xl border bg-card p-4 sm:grid-cols-[minmax(12rem,2fr)_minmax(6rem,0.7fr)_minmax(8rem,0.8fr)_minmax(7rem,0.8fr)_auto] sm:items-end"
+                className="grid min-w-0 gap-3 rounded-xl border bg-card p-4 lg:grid-cols-[minmax(12rem,2fr)_minmax(6rem,0.7fr)_minmax(8rem,0.8fr)_minmax(7rem,0.8fr)_auto] lg:items-end"
               >
                 <legend className="sr-only">Item {index + 1}</legend>
-                <label className="grid gap-1.5 text-sm font-medium">
+                <label className="grid min-w-0 gap-1.5 text-sm font-medium">
                   Produto{" "}
                   <span className="text-destructive" aria-hidden="true">
                     *
@@ -226,7 +228,7 @@ export function PurchaseOrderForm({
                     onChange={(event) =>
                       updateItem(item.key, "product_id", event.target.value)
                     }
-                    className="h-10 rounded-lg border bg-background px-3 font-normal"
+                    className="h-10 w-full min-w-0 rounded-lg border bg-background px-3 font-normal"
                   >
                     <option value="" disabled>
                       Selecione
@@ -245,7 +247,7 @@ export function PurchaseOrderForm({
                     ))}
                   </select>
                 </label>
-                <label className="grid gap-1.5 text-sm font-medium">
+                <label className="grid min-w-0 gap-1.5 text-sm font-medium">
                   Quantidade{" "}
                   <span className="text-destructive" aria-hidden="true">
                     *
@@ -257,10 +259,10 @@ export function PurchaseOrderForm({
                     onChange={(event) =>
                       updateItem(item.key, "quantity", event.target.value)
                     }
-                    className="h-10 rounded-lg border bg-background px-3 font-normal"
+                    className="h-10 w-full min-w-0 rounded-lg border bg-background px-3 font-normal"
                   />
                 </label>
-                <label className="grid gap-1.5 text-sm font-medium">
+                <label className="grid min-w-0 gap-1.5 text-sm font-medium">
                   Valor unitário{" "}
                   <span className="text-destructive" aria-hidden="true">
                     *
@@ -273,7 +275,7 @@ export function PurchaseOrderForm({
                       updateItem(item.key, "unit_price", event.target.value)
                     }
                     placeholder="0,00"
-                    className="h-10 rounded-lg border bg-background px-3 font-normal"
+                    className="h-10 w-full min-w-0 rounded-lg border bg-background px-3 font-normal"
                   />
                 </label>
                 <div>

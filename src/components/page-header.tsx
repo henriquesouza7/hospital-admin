@@ -14,8 +14,8 @@ export function PageHeader({
   actions,
 }: PageHeaderProps) {
   return (
-    <header className="flex flex-col gap-5 border-b pb-6 sm:flex-row sm:items-end sm:justify-between">
-      <div className="max-w-3xl">
+    <header className="flex min-w-0 flex-col gap-5 border-b pb-6 sm:flex-row sm:items-end sm:justify-between">
+      <div className="min-w-0 max-w-3xl">
         {eyebrow ? (
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary-foreground/70">
             {eyebrow}

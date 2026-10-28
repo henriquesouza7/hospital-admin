@@ -3,7 +3,7 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import { getNeonServerEnv } from "@/lib/neon/env";
 import { requireProductionAdmin } from "@/modules/production/access";
 import {
@@ -175,6 +175,7 @@ export async function confirmProductionSusImportAction(
       rows,
     });
   } catch (error) {
+    unstable_rethrow(error);
     const message =
       error instanceof Error
         ? error.message
@@ -209,6 +210,7 @@ export async function reconcileProductionSusImportAction(
   try {
     await reconcileProductionSusImport(parsed.data);
   } catch (error) {
+    unstable_rethrow(error);
     const message =
       error instanceof Error
         ? error.message

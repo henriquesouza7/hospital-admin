@@ -14,7 +14,13 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
-vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
+vi.mock("next/navigation", () => ({
+  redirect: mocks.redirect,
+  unstable_rethrow: (error: unknown) => {
+    if (error instanceof Error && error.message === "NEXT_REDIRECT_TEST")
+      throw error;
+  },
+}));
 vi.mock("../pharmacy/access", () => ({
   requireFinanceAdmin: mocks.requireFinanceAdmin,
 }));
@@ -105,6 +111,32 @@ describe("fiscal import actions", () => {
     mocks.requireFinanceAdmin.mockResolvedValue({ id: "admin-user-id" });
     mocks.getFiscalImportPreviewStatus.mockResolvedValue(false);
     mocks.createFiscalPurchaseOrder.mockResolvedValue(orderId);
+  });
+
+  it("should_preserve_login_redirect_when_preview_session_expires", async () => {
+    const redirectError = new Error("NEXT_REDIRECT_TEST");
+    mocks.getFiscalImportPreviewStatus.mockRejectedValue(redirectError);
+
+    await expect(
+      previewFiscalXmlAction({ status: "idle" }, fileForm(pharmacyXml)),
+    ).rejects.toBe(redirectError);
+  });
+
+  it("should_preserve_login_redirect_when_confirmation_session_expires", async () => {
+    const preview = await previewFiscalXmlAction(
+      { status: "idle" },
+      fileForm(pharmacyXml),
+    );
+    expect(preview.status).toBe("success");
+    if (preview.status !== "success") throw new Error("Preview failed.");
+    const redirectError = new Error("NEXT_REDIRECT_TEST");
+    mocks.createFiscalPurchaseOrder.mockRejectedValue(redirectError);
+
+    await expect(
+      confirmFiscalImportAction(
+        confirmationForm(pharmacyXml, preview.previewToken),
+      ),
+    ).rejects.toBe(redirectError);
   });
 
   it("should_persist_original_invoice_values_and_revised_order_values_after_preview", async () => {

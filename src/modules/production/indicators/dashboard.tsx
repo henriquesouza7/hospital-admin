@@ -1,3 +1,4 @@
+import { ScrollableRegion } from "@/components/scrollable-region";
 import { Activity, ClipboardList, Layers3 } from "lucide-react";
 import { ChartCard } from "@/components/chart-card";
 import { EmptyState } from "@/components/empty-state";
@@ -267,7 +268,10 @@ export function ProductionIndicatorDashboard({
                 description={`Período: ${selectedPeriodLabel}. Volume individual por procedimento, unidade histórica e origem; sem soma entre procedimentos.`}
                 badge="Agrupamento sem totalização"
               >
-                <div className="overflow-x-auto rounded-lg border">
+                <ScrollableRegion
+                  aria-label="Produção por categoria"
+                  className="overflow-x-auto rounded-lg border"
+                >
                   <table className="w-full min-w-[820px] text-left text-sm">
                     <caption className="sr-only">
                       Procedimentos da categoria {group.categoryName}, por
@@ -312,7 +316,7 @@ export function ProductionIndicatorDashboard({
                       ))}
                     </tbody>
                   </table>
-                </div>
+                </ScrollableRegion>
               </ChartCard>
             ))}
           </div>
@@ -336,7 +340,10 @@ export function ProductionIndicatorDashboard({
           </p>
         </div>
         {selectedProcedure && data.variations.length ? (
-          <div className="overflow-x-auto rounded-xl border bg-card">
+          <ScrollableRegion
+            aria-label="Histórico de variações do procedimento"
+            className="overflow-x-auto rounded-xl border bg-card"
+          >
             <table className="w-full min-w-[900px] text-left text-sm">
               <caption className="sr-only">
                 Histórico de variações de {selectedProcedure.name}, por
@@ -393,7 +400,7 @@ export function ProductionIndicatorDashboard({
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollableRegion>
         ) : (
           <EmptyState
             title={

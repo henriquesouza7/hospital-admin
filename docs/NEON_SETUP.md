@@ -43,8 +43,12 @@ copiados de produção.
 ## Desenvolvimento e branches
 
 Execute `pnpm dev` depois de configurar as variáveis. O padrão local é
-`http://localhost:3000`; não use outra porta sem atualizar também o callback e o
-ambiente de teste. Para testes e desenvolvimento isolado, prefira branches Neon
+`http://localhost:3000`. Se a porta estiver ocupada, defina `APP_BASE_URL` para
+a origem exata do servidor antes de iniciar o Next, por exemplo
+`APP_BASE_URL=http://localhost:3002`, e permita essa mesma URL de retorno no
+Neon Auth. A função de recuperação usa `APP_BASE_URL` para criar o link enviado
+por email; sem esse ajuste em outra porta, continuará apontando para
+`localhost:3000`. Para testes e desenvolvimento isolado, prefira branches Neon
 separadas e, quando dados existirem, branches sem dados (schema-only) ou dados
 sintéticos. Nunca replique dados reais de pacientes em branches locais, CI ou
 screenshots.

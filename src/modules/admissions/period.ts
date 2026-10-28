@@ -13,6 +13,18 @@ export function saoPauloToday(): Date {
   );
 }
 
+export function addMonthsClamped(date: Date, months: number): Date {
+  const targetMonth = date.getUTCMonth() + months;
+  const targetYear = date.getUTCFullYear() + Math.floor(targetMonth / 12);
+  const normalizedMonth = targetMonth % 12;
+  const lastDay = new Date(
+    Date.UTC(targetYear, normalizedMonth + 1, 0),
+  ).getUTCDate();
+  return new Date(
+    Date.UTC(targetYear, normalizedMonth, Math.min(date.getUTCDate(), lastDay)),
+  );
+}
+
 export function parseYearMonth(search: {
   year?: string | string[];
   month?: string | string[];

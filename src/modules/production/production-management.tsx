@@ -1,4 +1,5 @@
 "use client";
+import { ScrollableRegion } from "@/components/scrollable-region";
 
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
@@ -289,7 +290,10 @@ export function ProcedureList({
   }
   return (
     <div className="overflow-hidden rounded-xl border bg-card">
-      <div className="overflow-x-auto">
+      <ScrollableRegion
+        aria-label="Procedimentos cadastrados"
+        className="overflow-x-auto"
+      >
         <table className="w-full min-w-[780px] text-left text-sm">
           <thead className="bg-muted/70 text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
@@ -320,7 +324,7 @@ export function ProcedureList({
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollableRegion>
     </div>
   );
 }
@@ -504,16 +508,16 @@ export function ProductionEntryCreateForm({
   return (
     <form
       action={action}
-      className="grid gap-4 rounded-xl border bg-card p-5 sm:grid-cols-2 xl:grid-cols-5"
+      className="grid min-w-0 gap-4 rounded-xl border bg-card p-5 sm:grid-cols-2 xl:grid-cols-5"
     >
-      <div className="sm:col-span-2 xl:col-span-5">
+      <div className="min-w-0 sm:col-span-2 xl:col-span-5">
         <h2 className="font-semibold">Novo lançamento</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Informe o volume agregado por competência, sem dados individualizados.
         </p>
       </div>
       <label
-        className="grid gap-1.5 text-sm font-medium"
+        className="grid min-w-0 gap-1.5 text-sm font-medium"
         htmlFor="entry-procedure"
       >
         Procedimento{" "}
@@ -525,7 +529,7 @@ export function ProductionEntryCreateForm({
           name="procedure_id"
           required
           disabled={!activeProcedures.length}
-          className="h-10 rounded-lg border bg-background px-3 font-normal"
+          className="h-10 w-full min-w-0 rounded-lg border bg-background px-3 font-normal"
         >
           <option value="">Selecione</option>
           {activeProcedures.map((procedure) => (
@@ -537,7 +541,7 @@ export function ProductionEntryCreateForm({
         </select>
       </label>
       <label
-        className="grid gap-1.5 text-sm font-medium"
+        className="grid min-w-0 gap-1.5 text-sm font-medium"
         htmlFor="entry-period"
       >
         Competência{" "}
@@ -550,11 +554,11 @@ export function ProductionEntryCreateForm({
           type="month"
           required
           defaultValue={defaultCompetence}
-          className="h-10 rounded-lg border bg-background px-3 font-normal"
+          className="h-10 w-full min-w-0 rounded-lg border bg-background px-3 font-normal"
         />
       </label>
       <label
-        className="grid gap-1.5 text-sm font-medium"
+        className="grid min-w-0 gap-1.5 text-sm font-medium"
         htmlFor="entry-quantity"
       >
         Quantidade{" "}
@@ -570,11 +574,11 @@ export function ProductionEntryCreateForm({
           step="1"
           required
           inputMode="numeric"
-          className="h-10 rounded-lg border bg-background px-3 font-normal"
+          className="h-10 w-full min-w-0 rounded-lg border bg-background px-3 font-normal"
         />
       </label>
       <label
-        className="grid gap-1.5 text-sm font-medium"
+        className="grid min-w-0 gap-1.5 text-sm font-medium"
         htmlFor="entry-source"
       >
         Fonte{" "}
@@ -587,10 +591,10 @@ export function ProductionEntryCreateForm({
           required
           maxLength={80}
           defaultValue="manual"
-          className="h-10 rounded-lg border bg-background px-3 font-normal"
+          className="h-10 w-full min-w-0 rounded-lg border bg-background px-3 font-normal"
         />
       </label>
-      <div className="flex flex-wrap items-end gap-3">
+      <div className="flex min-w-0 flex-wrap items-end gap-3">
         <Button type="submit" disabled={pending || !activeProcedures.length}>
           {pending ? "Salvando…" : "Registrar lançamento"}
         </Button>
@@ -623,7 +627,10 @@ export function ProductionEntryList({
     );
   return (
     <div className="overflow-hidden rounded-xl border bg-card">
-      <div className="overflow-x-auto">
+      <ScrollableRegion
+        aria-label="Histórico de lançamentos de produção"
+        className="overflow-x-auto"
+      >
         <table className="w-full min-w-[900px] text-left text-sm">
           <thead className="bg-muted/70 text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
@@ -657,7 +664,7 @@ export function ProductionEntryList({
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollableRegion>
     </div>
   );
 }

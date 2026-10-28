@@ -20,7 +20,9 @@ export default async function ProductsPage() {
         description="Cadastre medicamentos e insumos pela apresentação padronizada. O preço pertence a cada item de compra."
         actions={
           <Button
+            role="link"
             variant="outline"
+            nativeButton={false}
             render={<Link href="/financeiro/farmacia" />}
           >
             <ArrowLeft aria-hidden="true" />

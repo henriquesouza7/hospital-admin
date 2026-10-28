@@ -1,3 +1,4 @@
+import { ScrollableRegion } from "@/components/scrollable-region";
 import Link from "next/link";
 import { CalendarDays, ChartNoAxesCombined, Target } from "lucide-react";
 import { ChartCard } from "@/components/chart-card";
@@ -38,7 +39,7 @@ export function AdmissionsDashboardView({
     timeZone: "UTC",
   }).format(new Date(Date.UTC(dashboard.year, selectedMonth - 1, 1)));
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-1 gap-6">
       <nav
         aria-label="Navegação de Internações"
         className="flex flex-wrap gap-2"
@@ -145,7 +146,10 @@ export function AdmissionsDashboardView({
         badge="Registros reais"
       >
         <AdmissionDashboardChart dashboard={dashboard} />
-        <div className="mt-5 overflow-x-auto">
+        <ScrollableRegion
+          aria-label="Valores mensais de internações"
+          className="mt-5 overflow-x-auto"
+        >
           <table className="w-full min-w-[540px] text-left text-sm">
             <caption className="sr-only">
               Valores mensais usados no gráfico
@@ -181,7 +185,7 @@ export function AdmissionsDashboardView({
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollableRegion>
       </ChartCard>
       <section className="grid gap-3" aria-labelledby="totais-por-medico">
         <div>
@@ -199,7 +203,10 @@ export function AdmissionsDashboardView({
           </p>
         ) : (
           <div className="overflow-hidden rounded-xl border bg-card">
-            <div className="overflow-x-auto">
+            <ScrollableRegion
+              aria-label="Lançamentos de internações por médico"
+              className="overflow-x-auto"
+            >
               <table className="w-full min-w-[520px] text-left text-sm">
                 <thead className="bg-muted/70 text-xs uppercase text-muted-foreground">
                   <tr>
@@ -239,7 +246,7 @@ export function AdmissionsDashboardView({
                   ))}
                 </tbody>
               </table>
-            </div>
+            </ScrollableRegion>
           </div>
         )}
       </section>

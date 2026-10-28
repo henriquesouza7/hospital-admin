@@ -1,137 +1,680 @@
+import Link from "next/link";
+import { unstable_rethrow } from "next/navigation";
 import {
-  Activity,
-  ArrowUpRight,
-  BarChart3,
   CalendarDays,
+  ChartNoAxesCombined,
+  ClipboardPlus,
   CircleDollarSign,
   FileChartColumn,
-  TrendingUp,
 } from "lucide-react";
 import { ChartCard } from "@/components/chart-card";
 import { KpiCard } from "@/components/kpi-card";
 import { PageHeader } from "@/components/page-header";
 import { SectionHeader } from "@/components/section-header";
+import { ScrollableRegion } from "@/components/scrollable-region";
 import { StatusBadge } from "@/components/status-badge";
+import {
+  addMonthsClamped,
+  parseYearMonth,
+  saoPauloToday,
+} from "@/modules/admissions/period";
+import { loadAdmissionDashboard } from "@/modules/admin-dashboard/admissions";
+import { MonthlyEvolutionCharts } from "@/modules/production/indicators/indicator-charts";
+import { buildProductionIndicatorData } from "@/modules/production/indicators/domain";
+import {
+  listMonthlyExpenseTotals,
+  MonthlyExpenseTotalsQueryError,
+  MonthlyExpenseTotalsRpcUnavailableError,
+} from "@/modules/finance/indicators/repository";
+import {
+  amountToCents,
+  currencyChartScale,
+  currencyChartValue,
+} from "@/modules/finance/indicators/domain";
+import { AdmissionDashboardChart } from "@/modules/admissions/admission-dashboard-chart";
+import { MonthlyChart } from "@/modules/finance/indicators/monthly-chart";
+import { loadProductionIndicatorSource } from "@/modules/production/repository";
+import { listProductionImports } from "@/modules/production-import/repository";
+import { loadSurgerySummaryForDashboard } from "@/modules/minor-surgeries/repository";
+import { logDashboardQueryFailure } from "@/lib/neon/dashboard-diagnostics";
+import {
+  formatCurrency,
+  formatInteger,
+  getProductionForMonth,
+  monthName,
+} from "@/modules/admin-dashboard/domain";
 
-const monthlyBars = [
-  { month: "Jan", value: "42%", amount: "42" },
-  { month: "Fev", value: "58%", amount: "58" },
-  { month: "Mar", value: "47%", amount: "47" },
-  { month: "Abr", value: "71%", amount: "71" },
-  { month: "Mai", value: "64%", amount: "64" },
-  { month: "Jun", value: "82%", amount: "82" },
-] as const;
+export const dynamic = "force-dynamic";
 
-export default function Home() {
+type HomeProps = Readonly<{
+  searchParams: Promise<{
+    year?: string | string[];
+    month?: string | string[];
+  }>;
+}>;
+
+async function loadDashboardFinanceRows(startMonth: string, endMonth: string) {
+  const startedAt = performance.now();
+  try {
+    return {
+      kind: "available" as const,
+      rows: await listMonthlyExpenseTotals(startMonth, endMonth),
+    };
+  } catch (error: unknown) {
+    if (error instanceof MonthlyExpenseTotalsRpcUnavailableError) {
+      logDashboardQueryFailure({
+        operation: "finance_totals",
+        stage: "data_api",
+        durationMs: performance.now() - startedAt,
+      });
+      return { kind: "rpc_unavailable" as const, code: null };
+    }
+    if (error instanceof MonthlyExpenseTotalsQueryError) {
+      logDashboardQueryFailure({
+        operation: "finance_totals",
+        stage: "data_api",
+        error,
+        durationMs: performance.now() - startedAt,
+      });
+      return { kind: "query_error" as const, code: error.code };
+    }
+    throw error;
+  }
+}
+
+async function loadDashboardProductionSource(year: number) {
+  const startedAt = performance.now();
+  try {
+    return {
+      kind: "available" as const,
+      source: await loadProductionIndicatorSource({
+        from: `${year}-01`,
+        to: `${year}-12`,
+      }),
+    };
+  } catch (error: unknown) {
+    unstable_rethrow(error);
+    logDashboardQueryFailure({
+      operation: "production_indicators",
+      stage: "data_api",
+      error,
+      durationMs: performance.now() - startedAt,
+    });
+    return { kind: "unavailable" as const };
+  }
+}
+
+async function loadDashboardProductionImports() {
+  const startedAt = performance.now();
+  try {
+    return {
+      kind: "available" as const,
+      imports: await listProductionImports(3),
+    };
+  } catch (error: unknown) {
+    unstable_rethrow(error);
+    logDashboardQueryFailure({
+      operation: "production_imports",
+      stage: "data_api",
+      error,
+      durationMs: performance.now() - startedAt,
+    });
+    return { kind: "unavailable" as const };
+  }
+}
+
+export default async function Home({ searchParams }: HomeProps) {
+  const period = parseYearMonth(await searchParams);
+  const startDate = `${period.year}-01-01`;
+  const endDate = `${period.year + 1}-01-01`;
+  const competence = `${period.year}-${String(period.month).padStart(2, "0")}`;
+  const today = saoPauloToday();
+  const todayDate = today.toISOString().slice(0, 10);
+  const surgeryThrough = addMonthsClamped(today, 24);
+  const financeRowsPromise = loadDashboardFinanceRows(
+    `${period.year}-01`,
+    `${period.year}-12`,
+  );
+  const productionPromise = loadDashboardProductionSource(period.year);
+  const productionImportsPromise = loadDashboardProductionImports();
+  const [
+    admissionResult,
+    financeRows,
+    productionResult,
+    productionImportsResult,
+    surgeryResult,
+  ] = await Promise.all([
+    loadAdmissionDashboard({
+      startDate,
+      endDate,
+      year: period.year,
+      month: period.month,
+      today,
+    }),
+    financeRowsPromise,
+    productionPromise,
+    productionImportsPromise,
+    loadSurgerySummaryForDashboard(
+      todayDate,
+      surgeryThrough.toISOString().slice(0, 10),
+      5,
+    ),
+  ]);
+  const financeUnavailable = financeRows.kind !== "available";
+  const surgery =
+    surgeryResult.kind === "available" ? surgeryResult.summary : null;
+  const surgeryUnavailableMessage =
+    surgeryResult.kind === "unavailable"
+      ? surgeryResult.code === "42501"
+        ? "A consulta de Pequenas Cirurgias foi negada pelo banco (42501). Verifique a autorização administrativa."
+        : `Não foi possível consultar o resumo de Pequenas Cirurgias${surgeryResult.code ? ` (${surgeryResult.code})` : ""}. Nenhum total foi substituído por zero.`
+      : null;
+  const financeUnavailableMessage =
+    financeRows.kind === "rpc_unavailable"
+      ? "A consulta de totais exatos não está disponível neste ambiente."
+      : financeRows.kind === "query_error"
+        ? financeRows.code === "42501"
+          ? "A consulta financeira foi negada pelo banco (42501). Verifique a autorização administrativa."
+          : `Não foi possível consultar os totais financeiros${financeRows.code ? ` (código ${financeRows.code})` : ""}.`
+        : null;
+  const admissions =
+    admissionResult.kind === "available" ? admissionResult.dashboard : null;
+  const admissionsUnavailable = admissions === null;
+  const finance = (
+    financeRows.kind === "available" ? financeRows.rows : []
+  ).map((row) => {
+    const pharmacyCents = amountToCents(row.pharmacy_total);
+    const laboratoryCents = amountToCents(row.laboratory_total);
+    const fairCents = amountToCents(row.fair_total);
+    return {
+      month: row.competence.slice(0, 7),
+      pharmacyCents,
+      laboratoryCents,
+      fairCents,
+      totalCents: pharmacyCents + laboratoryCents + fairCents,
+      pharmacyItemCount: row.pharmacy_item_count,
+      laboratoryItemCount: row.laboratory_item_count,
+      hasRecords:
+        row.pharmacy_item_count > 0 ||
+        row.laboratory_item_count > 0 ||
+        row.has_fair_record,
+    };
+  });
+  const selectedMonth = finance.find((item) => item.month === competence);
+  const productionSource =
+    productionResult.kind === "available" ? productionResult.source : null;
+  const production = productionSource
+    ? getProductionForMonth(productionSource.entries, period.year, period.month)
+    : [];
+  const selectedProcedure = production[0];
+  const productionHistory =
+    selectedProcedure && productionSource
+      ? buildProductionIndicatorData(productionSource.entries, {
+          mode: "intervalo",
+          competence,
+          from: `${period.year}-01`,
+          to: competence,
+          year: String(period.year),
+          categoryId: "",
+          procedureId: selectedProcedure.procedureId,
+          source: "",
+        }).monthlyEvolution
+      : [];
+  const available = surgery
+    ? Math.max(0, surgery.capacity - surgery.occupied)
+    : null;
+  const chartScale = currencyChartScale(
+    finance.flatMap((month) => [
+      month.pharmacyCents,
+      month.laboratoryCents,
+      month.fairCents,
+      month.totalCents,
+    ]),
+  );
+  const periodLabel = `${monthName(period.month)} ${period.year}`;
+
   return (
     <div className="mx-auto max-w-7xl space-y-8">
       <PageHeader
         eyebrow="Visão geral"
-        title="Bom dia, equipe administrativa"
-        description="Uma visão rápida do cenário operacional. Os indicadores abaixo são demonstrativos e não representam dados reais."
+        title="Painel administrativo"
+        description="Indicadores derivados dos registros dos módulos. Volumes e unidades permanecem separados."
         actions={
-          <StatusBadge icon={Activity} label="Dados fictícios" tone="info" />
+          <StatusBadge
+            icon={ChartNoAxesCombined}
+            label="Dados persistidos"
+            tone="success"
+          />
         }
       />
 
-      <section className="space-y-4">
+      <form
+        method="get"
+        className="grid gap-3 rounded-xl border bg-card p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+      >
+        <label className="grid gap-1.5 text-sm font-medium">
+          Ano
+          <input
+            name="year"
+            type="number"
+            min="1900"
+            max="2100"
+            defaultValue={period.year}
+            className="h-10 rounded-lg border bg-background px-3 font-normal"
+          />
+        </label>
+        <label className="grid gap-1.5 text-sm font-medium">
+          Mês
+          <select
+            name="month"
+            defaultValue={period.month}
+            className="h-10 rounded-lg border bg-background px-3 font-normal"
+          >
+            {Array.from({ length: 12 }, (_, index) => index + 1).map(
+              (month) => (
+                <option key={month} value={month}>
+                  {monthName(month)}
+                </option>
+              ),
+            )}
+          </select>
+        </label>
+        <button
+          className="h-10 rounded-md border px-4 text-sm font-medium hover:bg-muted"
+          type="submit"
+        >
+          Aplicar período
+        </button>
+      </form>
+
+      <section className="space-y-4" aria-label="Resumo mensal">
         <SectionHeader
-          title="Resumo do período"
-          description="Visão demonstrativa dos principais indicadores do mês atual."
+          title={`Resumo · ${periodLabel}`}
+          description="Financeiro, internações e produção exibidos com seus critérios e unidades próprios."
         />
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <KpiCard
             icon={CircleDollarSign}
-            label="Despesas registradas"
-            value="R$ 48,2 mil"
-            detail="+8,4% em relação ao mês anterior"
+            label="Gastos registrados"
+            value={
+              financeUnavailable
+                ? "Indisponível"
+                : formatCurrency(selectedMonth?.totalCents ?? BigInt(0))
+            }
+            detail={
+              financeUnavailable
+                ? "Consulte o aviso de disponibilidade abaixo"
+                : `${selectedMonth?.pharmacyItemCount ?? 0} itens de Farmácia · ${selectedMonth?.laboratoryItemCount ?? 0} de Laboratório`
+            }
           />
           <KpiCard
             icon={CalendarDays}
-            label="Internações"
-            value="186"
-            detail="Volume demonstrativo acumulado"
+            label="Internações no mês"
+            value={
+              admissionsUnavailable
+                ? "Indisponível"
+                : formatInteger(admissions.monthlyTotal)
+            }
+            detail={
+              admissionsUnavailable
+                ? "Consulte o aviso no gráfico de internações"
+                : admissions.monthTarget === null
+                  ? "Meta mensal não configurada"
+                  : `${formatInteger(admissions.monthTarget)} de meta mensal`
+            }
           />
           <KpiCard
             icon={FileChartColumn}
-            label="Produção hospitalar"
-            value="1.248"
-            detail="Registros fictícios no período"
+            label="Séries de produção"
+            value={
+              productionSource
+                ? formatInteger(production.length)
+                : "Indisponível"
+            }
+            detail={
+              productionSource
+                ? "Procedimento, origem e unidade discriminados"
+                : "Consulta de Produção indisponível"
+            }
           />
           <KpiCard
-            icon={TrendingUp}
-            label="Acompanhamento de metas"
-            value="76%"
-            detail="Progresso demonstrativo do mês"
+            icon={ClipboardPlus}
+            label="Vagas disponíveis · próximos 2 anos"
+            value={
+              available === null ? "Indisponível" : formatInteger(available)
+            }
+            detail={
+              surgery
+                ? `${surgery.occupied} ocupadas · ${surgery.waiting_count} na fila`
+                : "Confira o aviso de disponibilidade abaixo"
+            }
           />
         </div>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[1.35fr_1fr]">
+      <section className="grid gap-4 xl:grid-cols-2">
         <ChartCard
-          title="Evolução mensal"
-          description="Exemplo de espaço reservado para um gráfico analítico."
+          title="Evolução financeira mensal"
+          description="Farmácia, Laboratório e Feira conforme registros persistidos; valores sem registros ficam em zero."
+          badge="R$"
         >
-          <div
-            aria-label="Gráfico demonstrativo de evolução mensal"
-            className="flex h-56 items-end justify-between gap-3 border-b border-l border-border/80 px-2 pb-0 pt-5 sm:gap-5"
-            role="img"
-          >
-            {monthlyBars.map((bar) => (
-              <div
-                key={bar.month}
-                className="flex h-full flex-1 flex-col items-center justify-end gap-2"
-              >
-                <div className="flex h-full items-end">
-                  <div
-                    aria-label={`${bar.month}: ${bar.amount} unidades fictícias`}
-                    className="w-7 rounded-t-md bg-primary/80 transition-colors hover:bg-primary sm:w-10"
-                    style={{ height: bar.value }}
-                  />
-                </div>
-                <span className="text-xs text-muted-foreground">
-                  {bar.month}
-                </span>
+          {financeUnavailable ? (
+            <p role="status" className="text-sm text-muted-foreground">
+              {financeUnavailableMessage} Os demais indicadores continuam
+              disponíveis; nenhum valor financeiro foi substituído por zero.
+            </p>
+          ) : (
+            <MonthlyChart
+              points={finance.map((item) => ({
+                month: item.month,
+                label: monthName(Number(item.month.slice(5, 7))),
+                pharmacy: currencyChartValue(item.pharmacyCents, chartScale),
+                pharmacyExact: formatCurrency(item.pharmacyCents),
+                laboratory: currencyChartValue(
+                  item.laboratoryCents,
+                  chartScale,
+                ),
+                laboratoryExact: formatCurrency(item.laboratoryCents),
+                fair: currencyChartValue(item.fairCents, chartScale),
+                fairExact: formatCurrency(item.fairCents),
+                total: currencyChartValue(item.totalCents, chartScale),
+                totalExact: formatCurrency(item.totalCents),
+                hasRecords: item.hasRecords,
+              }))}
+              scale={chartScale.toString()}
+            />
+          )}
+          {!financeUnavailable && !selectedMonth?.hasRecords ? (
+            <p className="text-sm text-muted-foreground">
+              Nenhuma despesa registrada em {periodLabel}.
+            </p>
+          ) : null}
+        </ChartCard>
+        <ChartCard
+          title={`Internações por mês · ${period.year}`}
+          description="Quantidade administrativa; o mês atual e os períodos encerrados são diferenciados no gráfico."
+        >
+          {admissions ? (
+            <AdmissionDashboardChart dashboard={admissions} />
+          ) : (
+            <p role="status" className="text-sm text-muted-foreground">
+              Não foi possível consultar o resumo de Internações. Nenhum total
+              foi substituído por zero.
+            </p>
+          )}
+          {admissions ? (
+            <p className="mt-3 text-sm text-muted-foreground">
+              Meta mensal:{" "}
+              {admissions.monthTarget === null
+                ? "não configurada"
+                : formatInteger(admissions.monthTarget)}
+              {admissions.monthTarget && admissions.monthTarget > 0
+                ? ` · ${Math.round((admissions.monthlyTotal / admissions.monthTarget) * 100)}% realizado`
+                : ""}
+            </p>
+          ) : null}
+          {admissions ? (
+            <p className="mt-1 text-sm text-muted-foreground">
+              Total anual: {formatInteger(admissions.annualTotal)} · meta anual:{" "}
+              {admissions.yearTarget === null
+                ? "não configurada"
+                : formatInteger(admissions.yearTarget)}
+              {admissions.yearTarget && admissions.yearTarget > 0
+                ? ` · ${Math.round((admissions.annualTotal / admissions.yearTarget) * 100)}% realizado`
+                : ""}
+            </p>
+          ) : null}
+        </ChartCard>
+      </section>
+
+      <section className="space-y-4" aria-label="Resumo financeiro por área">
+        <SectionHeader
+          title={`Despesas por área · ${periodLabel}`}
+          description="Totais derivados dos mesmos registros financeiros apresentados na evolução mensal."
+        />
+        {financeUnavailable ? (
+          <p role="status" className="text-sm text-muted-foreground">
+            {financeUnavailableMessage}
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[
+              { label: "Farmácia", value: selectedMonth?.pharmacyCents },
+              { label: "Laboratório", value: selectedMonth?.laboratoryCents },
+              { label: "Feira", value: selectedMonth?.fairCents },
+            ].map((item) => (
+              <div key={item.label} className="rounded-xl border bg-card p-4">
+                <p className="text-sm text-muted-foreground">{item.label}</p>
+                <p className="mt-1 text-xl font-semibold">
+                  {formatCurrency(item.value ?? BigInt(0))}
+                </p>
               </div>
             ))}
           </div>
-        </ChartCard>
+        )}
+      </section>
 
-        <ChartCard
-          title="Acompanhamento"
-          description="Exemplo de card para próximos indicadores."
-        >
-          <div className="space-y-5">
-            <div className="rounded-lg bg-accent/70 p-4">
-              <div className="flex items-start justify-between gap-4">
+      <section className="grid gap-4 xl:grid-cols-2">
+        <div className="min-w-0 rounded-xl border bg-card p-5 shadow-sm sm:p-6">
+          <SectionHeader
+            title="Produção por procedimento"
+            description={`Competência ${periodLabel}; classificações e unidades permanecem separadas.`}
+          />
+          {!productionSource ? (
+            <p role="status" className="mt-5 text-sm text-muted-foreground">
+              Não foi possível consultar a Produção. Nenhuma série foi
+              substituída por zero.
+            </p>
+          ) : production.length === 0 ? (
+            <p className="mt-5 text-sm text-muted-foreground">
+              Sem lançamentos nesta competência.
+            </p>
+          ) : (
+            <ScrollableRegion
+              aria-label="Lançamentos recentes de produção"
+              className="mt-4"
+            >
+              <table className="w-full min-w-[28rem] text-left text-sm">
+                <thead>
+                  <tr className="border-b text-muted-foreground">
+                    <th className="py-2 font-medium">Procedimento</th>
+                    <th className="py-2 font-medium">Classificação</th>
+                    <th className="py-2 font-medium">Quantidade</th>
+                    <th className="py-2 font-medium">Unidade</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {production.map((item) => (
+                    <tr key={item.id} className="border-b last:border-0">
+                      <td className="py-3 font-medium">{item.name}</td>
+                      <td className="py-3">{item.source}</td>
+                      <td className="py-3">{formatInteger(item.quantity)}</td>
+                      <td className="py-3">{item.unit}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </ScrollableRegion>
+          )}
+        </div>
+        <div className="min-w-0 rounded-xl border bg-card p-5 shadow-sm sm:p-6">
+          <SectionHeader
+            title="Evolução da produção"
+            description={
+              !productionSource
+                ? "Dados de Produção indisponíveis."
+                : selectedProcedure
+                  ? `Histórico de ${selectedProcedure.name}; cada origem e unidade forma uma série própria.`
+                  : `Sem procedimento com registro em ${periodLabel}.`
+            }
+          />
+          {!productionSource ? (
+            <p role="status" className="mt-4 text-sm text-muted-foreground">
+              Não foi possível consultar a evolução da Produção.
+            </p>
+          ) : selectedProcedure ? (
+            <div className="mt-4">
+              <MonthlyEvolutionCharts
+                series={productionHistory}
+                procedureName={selectedProcedure.name}
+              />
+            </div>
+          ) : (
+            <p className="mt-4 text-sm text-muted-foreground">
+              A evolução aparecerá quando houver lançamentos nesta competência.
+            </p>
+          )}
+        </div>
+        <div className="min-w-0 rounded-xl border bg-card p-5 shadow-sm sm:p-6">
+          <SectionHeader
+            title="Pequenas Cirurgias"
+            description="Datas futuras, capacidade e status agregados; sem nomes de pacientes nesta visão."
+          />
+          <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+            <p className="rounded-lg bg-muted/60 p-3">
+              Datas futuras · próximos 2 anos
+              <strong className="mt-1 block text-xl">
+                {surgery?.day_count ?? "Indisponível"}
+              </strong>
+            </p>
+            <p className="rounded-lg bg-muted/60 p-3">
+              Vagas livres
+              <strong className="mt-1 block text-xl">
+                {available ?? "Indisponível"}
+              </strong>
+            </p>
+            <p className="rounded-lg bg-muted/60 p-3">
+              Aguardando confirmação
+              <strong className="mt-1 block text-xl">
+                {surgery?.awaiting_confirmation ?? "Indisponível"}
+              </strong>
+            </p>
+            <p className="rounded-lg bg-muted/60 p-3">
+              Confirmados
+              <strong className="mt-1 block text-xl">
+                {surgery?.confirmed ?? "Indisponível"}
+              </strong>
+            </p>
+            <p className="rounded-lg bg-muted/60 p-3">
+              Fila de espera
+              <strong className="mt-1 block text-xl">
+                {surgery?.waiting_count ?? "Indisponível"}
+              </strong>
+            </p>
+          </div>
+          {surgery?.days.length ? (
+            <ul className="mt-4 divide-y">
+              {surgery.days.slice(0, 4).map((day) => (
+                <li
+                  key={day.id}
+                  className="flex justify-between gap-3 py-2 text-sm"
+                >
+                  <span>
+                    {new Intl.DateTimeFormat("pt-BR", {
+                      dateStyle: "medium",
+                      timeZone: "UTC",
+                    }).format(new Date(`${day.procedure_date}T12:00:00Z`))}
+                  </span>
+                  <span>
+                    {day.occupied}/{day.capacity} ocupadas
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : surgery ? (
+            <p className="mt-4 text-sm text-muted-foreground">
+              Não há datas futuras cadastradas.
+            </p>
+          ) : null}
+          {!surgery ? (
+            <p role="status" className="mt-4 text-sm text-muted-foreground">
+              {surgeryUnavailableMessage}
+            </p>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="rounded-xl border bg-card p-5 shadow-sm sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <SectionHeader
+            title="Importações SUS recentes"
+            description="Competência, volume e estado das últimas importações administrativas."
+          />
+          <Link
+            className="text-sm font-medium text-link underline-offset-4 hover:underline"
+            href="/producao/importacoes"
+          >
+            Abrir importações
+          </Link>
+        </div>
+        {productionImportsResult.kind === "unavailable" ? (
+          <p role="status" className="mt-4 text-sm text-muted-foreground">
+            Não foi possível consultar as importações SUS recentes.
+          </p>
+        ) : productionImportsResult.imports.length === 0 ? (
+          <p className="mt-4 text-sm text-muted-foreground">
+            Nenhuma importação registrada.
+          </p>
+        ) : (
+          <ul className="mt-4 divide-y">
+            {productionImportsResult.imports.slice(0, 3).map((item) => (
+              <li
+                key={item.id}
+                className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm"
+              >
                 <div>
-                  <p className="text-sm font-medium text-accent-foreground">
-                    Operação em destaque
+                  <p className="font-medium">
+                    Competência{" "}
+                    {monthName(Number(item.reference_period.slice(5, 7)))}{" "}
+                    {item.reference_period.slice(0, 4)}
                   </p>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    Espaço reservado para um resumo contextual do período.
+                  <p className="text-muted-foreground">
+                    {formatInteger(item.row_count)} linhas ·{" "}
+                    {formatInteger(item.imported_group_count)} grupos importados
                   </p>
                 </div>
-                <ArrowUpRight
-                  aria-hidden="true"
-                  className="size-4 text-accent-foreground"
-                />
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-lg border bg-card text-primary-foreground">
-                <BarChart3 aria-hidden="true" className="size-5" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">Indicadores configuráveis</p>
-                <p className="text-xs text-muted-foreground">
-                  Disponíveis quando os módulos forem implementados.
-                </p>
-              </div>
-            </div>
-          </div>
-        </ChartCard>
+                <span className="rounded-full border px-2.5 py-1 text-xs font-medium">
+                  {item.status === "pending_reconciliation"
+                    ? `${formatInteger(item.pending_group_count)} grupos pendentes`
+                    : item.status === "reconciled"
+                      ? "Reconciliada"
+                      : "Confirmada"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
+
+      <nav
+        aria-label="Acessos de administração"
+        className="flex flex-wrap gap-2 text-sm"
+      >
+        <Link
+          className="rounded-md border px-3 py-2 hover:bg-muted"
+          href="/financeiro/indicadores"
+        >
+          Financeiro detalhado
+        </Link>
+        <Link
+          className="rounded-md border px-3 py-2 hover:bg-muted"
+          href="/internacoes"
+        >
+          Internações e metas
+        </Link>
+        <Link
+          className="rounded-md border px-3 py-2 hover:bg-muted"
+          href="/producao/indicadores"
+        >
+          Indicadores de Produção
+        </Link>
+        <Link
+          className="rounded-md border px-3 py-2 hover:bg-muted"
+          href="/pequenas-cirurgias"
+        >
+          Pequenas Cirurgias
+        </Link>
+      </nav>
     </div>
   );
 }

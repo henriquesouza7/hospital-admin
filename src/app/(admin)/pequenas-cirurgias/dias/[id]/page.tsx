@@ -1,3 +1,4 @@
+import { ScrollableRegion } from "@/components/scrollable-region";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -144,7 +145,10 @@ export default async function SurgeryDayPage({
               : "Nenhum agendamento encontrado nesta página."}{" "}
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border bg-card">
+          <ScrollableRegion
+            aria-label="Agendamentos do dia cirúrgico"
+            className="overflow-x-auto rounded-xl border bg-card"
+          >
             {" "}
             <table className="w-full min-w-[52rem] text-left text-sm">
               {" "}
@@ -210,7 +214,7 @@ export default async function SurgeryDayPage({
                 })}{" "}
               </tbody>{" "}
             </table>{" "}
-          </div>
+          </ScrollableRegion>
         )}{" "}
         {appointments.length > 0 || page > 1 ? (
           <nav

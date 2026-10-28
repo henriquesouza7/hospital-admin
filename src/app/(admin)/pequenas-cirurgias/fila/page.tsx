@@ -150,7 +150,7 @@ export default async function SurgeryWaitlistPage({
                   {entry.transferDestination ? (
                     <Link
                       href={`/pequenas-cirurgias/dias/${entry.transferDestination.surgery_day_id}?page=${entry.transferDestination.appointment_page}#appointment-${entry.transferDestination.appointment_id}`}
-                      className="mt-2 inline-flex text-sm font-medium text-primary underline-offset-4 hover:underline"
+                      className="mt-2 inline-flex text-sm font-medium text-link underline-offset-4 hover:underline"
                     >
                       Destino:{" "}
                       {dateLabel(entry.transferDestination.procedure_date)}

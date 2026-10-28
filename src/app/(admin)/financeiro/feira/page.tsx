@@ -58,7 +58,11 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
         title="Feira"
         description="Registre o total mensal consolidado e acompanhe o histórico de despesas."
         actions={
-          <Button nativeButton={false} render={<Link href="#novo-registro" />}>
+          <Button
+            role="link"
+            nativeButton={false}
+            render={<Link href="#novo-registro" />}
+          >
             <Plus aria-hidden="true" />
             Registrar mês
           </Button>

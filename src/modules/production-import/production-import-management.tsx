@@ -1,4 +1,5 @@
 "use client";
+import { ScrollableRegion } from "@/components/scrollable-region";
 
 import { type FormEvent, useMemo, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
@@ -662,7 +663,10 @@ export function ProductionImportHistory({
           Nenhuma importação foi confirmada.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border">
+        <ScrollableRegion
+          aria-label="Importações de produção SUS"
+          className="overflow-x-auto rounded-lg border"
+        >
           <table className="w-full min-w-[760px] text-left text-sm">
             <thead className="bg-muted/60 text-muted-foreground">
               <tr>
@@ -699,7 +703,7 @@ export function ProductionImportHistory({
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollableRegion>
       )}
     </section>
   );

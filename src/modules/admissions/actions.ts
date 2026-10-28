@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { unstable_rethrow } from "next/navigation";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import type { AdmissionsActionState } from "./action-state";
 import {
@@ -40,7 +41,8 @@ export async function createDoctorAction(
 
   try {
     await createDoctor(parsed.data);
-  } catch {
+  } catch (error) {
+    unstable_rethrow(error);
     return errorState("Não foi possível cadastrar o médico. Tente novamente.");
   }
 
@@ -64,7 +66,8 @@ export async function updateDoctorAction(
 
   try {
     await updateDoctor(parsed.data.id, parsed.data.name);
-  } catch {
+  } catch (error) {
+    unstable_rethrow(error);
     return errorState("Não foi possível atualizar o médico. Tente novamente.");
   }
 
@@ -86,7 +89,8 @@ export async function setDoctorActiveAction(
 
   try {
     await setDoctorActive(parsed.data.id, parsed.data.active);
-  } catch {
+  } catch (error) {
+    unstable_rethrow(error);
     return errorState("Não foi possível alterar o status. Tente novamente.");
   }
 
@@ -120,6 +124,7 @@ export async function createAdmissionEntryAction(
     revalidatePath("/internacoes/medicos/[id]", "page");
     return { status: "success", message: "Lançamento registrado." };
   } catch (error) {
+    unstable_rethrow(error);
     return errorState(
       error instanceof Error
         ? error.message
@@ -148,6 +153,7 @@ export async function updateAdmissionEntryAction(
     revalidatePath("/internacoes/medicos/[id]", "page");
     return { status: "success", message: "Lançamento atualizado." };
   } catch (error) {
+    unstable_rethrow(error);
     return errorState(
       error instanceof Error
         ? error.message
@@ -176,6 +182,7 @@ export async function createAdmissionTargetAction(
     revalidatePath("/internacoes/metas");
     return { status: "success", message: "Meta cadastrada." };
   } catch (error) {
+    unstable_rethrow(error);
     return errorState(
       error instanceof Error
         ? error.message
@@ -203,6 +210,7 @@ export async function updateAdmissionTargetAction(
     revalidatePath("/internacoes/metas");
     return { status: "success", message: "Meta atualizada." };
   } catch (error) {
+    unstable_rethrow(error);
     return errorState(
       error instanceof Error
         ? error.message

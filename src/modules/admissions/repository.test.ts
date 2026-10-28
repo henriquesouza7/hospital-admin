@@ -27,8 +27,10 @@ import {
   createAdmissionEntry,
   createAdmissionTarget,
   createDoctor,
+  getAdmissionDashboardTotals,
   importAdmissionEntries,
   listAdmissionEntries,
+  listAdmissionEntriesForExport,
   listDoctors,
   listAdmissionTargets,
   setDoctorActive,
@@ -207,6 +209,54 @@ describe("doctors repository", () => {
     });
   });
 
+  it("should_export_a_single_snapshot_when_admissions_are_inserted_concurrently", async () => {
+    const snapshot = [
+      {
+        entry_date: "2026-10-07",
+        quantity: 3,
+        doctor_name: doctor.name,
+      },
+      {
+        entry_date: "2026-10-06",
+        quantity: 2,
+        doctor_name: doctor.name,
+      },
+    ];
+    const currentRows = [...snapshot];
+    mocks.rpc.mockImplementation(async () => {
+      const rowsInStatementSnapshot = [...currentRows];
+      currentRows.unshift({
+        entry_date: "2026-10-08",
+        quantity: 5,
+        doctor_name: doctor.name,
+      });
+      return { data: rowsInStatementSnapshot, error: null };
+    });
+
+    const entries = await listAdmissionEntriesForExport(
+      "2026-10-01",
+      "2026-11-01",
+      10_001,
+    );
+
+    expect(entries).toEqual([
+      { entry_date: "2026-10-07", doctor_name: doctor.name, quantity: 3 },
+      { entry_date: "2026-10-06", doctor_name: doctor.name, quantity: 2 },
+    ]);
+    expect(currentRows).toHaveLength(3);
+    expect(mocks.rpc).toHaveBeenCalledWith(
+      "list_admission_entries_for_export",
+      {
+        p_start_date: "2026-10-01",
+        p_end_date: "2026-11-01",
+        p_limit: 10_001,
+      },
+    );
+    expect(mocks.rpc).toHaveBeenCalledOnce();
+    expect(mocks.from).not.toHaveBeenCalled();
+    expect(mocks.requireAdmin).toHaveBeenCalledOnce();
+  });
+
   it("should_read_all_admission_entries_in_one_database_snapshot", async () => {
     const mockEntries = [
       {
@@ -279,5 +329,50 @@ describe("doctors repository", () => {
       "30000000-0000-4000-8000-000000001000",
     );
     expect(limit).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("admissions dashboard repository", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.requireAdmin.mockResolvedValue({ id: "admin-user-id" });
+  });
+
+  it("should_load_month_and_doctor_totals_without_listing_entries_or_doctors", async () => {
+    mocks.rpc.mockResolvedValue({
+      data: {
+        monthly_totals: [{ month: 1, quantity: 5 }],
+        annual_total: 5,
+        by_doctor: [
+          {
+            doctor_id: doctor.id,
+            doctor_name: doctor.name,
+            doctor_active: false,
+            quantity: 5,
+          },
+        ],
+      },
+      error: null,
+    });
+
+    await expect(
+      getAdmissionDashboardTotals("2026-01-01", "2027-01-01"),
+    ).resolves.toEqual({
+      monthlyTotals: [{ month: 1, quantity: 5 }],
+      annualTotal: 5,
+      byDoctor: [
+        {
+          doctorId: doctor.id,
+          doctorName: doctor.name,
+          active: false,
+          quantity: 5,
+        },
+      ],
+    });
+    expect(mocks.rpc).toHaveBeenCalledWith("get_admission_dashboard_totals", {
+      p_start: "2026-01-01",
+      p_through_exclusive: "2027-01-01",
+    });
+    expect(mocks.from).not.toHaveBeenCalled();
   });
 });

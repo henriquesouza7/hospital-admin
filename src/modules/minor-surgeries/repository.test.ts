@@ -25,6 +25,8 @@ import {
   createSurgeryDay,
   createSurgeryWaitlistEntry,
   getSurgeryDay,
+  getSurgerySummary,
+  loadSurgerySummaryForDashboard,
   listDayAppointments,
   listSurgeryDaysPage,
   listMinorSurgeryAudit,
@@ -111,6 +113,108 @@ describe("minor surgeries repository", () => {
       };
       return query;
     });
+  });
+
+  it("should_load_bounded_surgery_summary_without_patient_rows", async () => {
+    const summary = {
+      days: [],
+      has_more: false,
+      day_count: 0,
+      waiting_count: 4,
+      capacity: 0,
+      occupied: 0,
+      awaiting_confirmation: 0,
+      confirmed: 0,
+    };
+    mocks.rpc.mockResolvedValue({ data: summary, error: null });
+
+    await expect(
+      getSurgerySummary("2026-10-01", "2026-11-01", 10_001),
+    ).resolves.toEqual(summary);
+
+    expect(mocks.rpc).toHaveBeenCalledWith("get_surgery_summary", {
+      p_start: "2026-10-01",
+      p_through_exclusive: "2026-11-01",
+      p_max_rows: 10_001,
+    });
+    expect(mocks.from).not.toHaveBeenCalled();
+    expect(mocks.requireMinorSurgeriesAdmin).toHaveBeenCalledOnce();
+  });
+
+  it("should_return_persisted_zeroes_when_the_surgery_summary_has_no_records", async () => {
+    const summary = {
+      days: [],
+      has_more: false,
+      day_count: 0,
+      waiting_count: 0,
+      capacity: 0,
+      occupied: 0,
+      awaiting_confirmation: 0,
+      confirmed: 0,
+    };
+    mocks.rpc.mockResolvedValueOnce({ data: summary, error: null });
+
+    await expect(
+      getSurgerySummary("2026-10-12", "2028-10-12", 5),
+    ).resolves.toEqual(summary);
+  });
+
+  it("should_preserve_database_authorization_error_when_the_admin_guard_denies_access", async () => {
+    mocks.rpc.mockResolvedValueOnce({
+      data: null,
+      error: {
+        code: "42501",
+        message: "Administrator access required",
+      },
+    });
+
+    await expect(
+      getSurgerySummary("2026-10-12", "2028-10-12", 5),
+    ).rejects.toMatchObject({
+      name: "SurgerySummaryQueryError",
+      code: "42501",
+    });
+  });
+
+  it("should_keep_the_dashboard_available_when_the_surgery_rpc_is_denied", async () => {
+    mocks.rpc.mockResolvedValueOnce({
+      data: null,
+      error: { code: "42501", message: "Administrator access required" },
+    });
+
+    await expect(
+      loadSurgerySummaryForDashboard("2026-10-12", "2028-10-12", 5),
+    ).resolves.toEqual({ kind: "unavailable", code: "42501" });
+  });
+
+  it("should_not_swallow_a_local_administrator_guard_redirect_for_the_dashboard", async () => {
+    mocks.requireMinorSurgeriesAdmin.mockRejectedValueOnce(
+      new Error("redirect:/login?error=forbidden"),
+    );
+
+    await expect(
+      loadSurgerySummaryForDashboard("2026-10-12", "2028-10-12", 5),
+    ).rejects.toThrow("redirect:/login?error=forbidden");
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it("should_reject_an_invalid_schema_when_the_summary_rpc_returns_incompatible_data", async () => {
+    mocks.rpc.mockResolvedValueOnce({ data: { days: [] }, error: null });
+
+    await expect(
+      getSurgerySummary("2026-10-12", "2028-10-12", 5),
+    ).rejects.toThrow();
+  });
+
+  it("should_skip_the_summary_rpc_when_the_local_admin_guard_rejects_access", async () => {
+    mocks.requireMinorSurgeriesAdmin.mockRejectedValueOnce(
+      new Error("redirect:/login?error=forbidden"),
+    );
+
+    await expect(
+      getSurgerySummary("2026-10-12", "2028-10-12", 5),
+    ).rejects.toThrow("redirect:/login?error=forbidden");
+    expect(mocks.rpc).not.toHaveBeenCalled();
   });
 
   it("should_throw_when_day_query_fails", async () => {

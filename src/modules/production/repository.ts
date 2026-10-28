@@ -38,6 +38,16 @@ const entryRowSchema = z.object({
 
 const uuidResultSchema = z.string().uuid();
 const PAGE_SIZE = 1000;
+const productionExportRowsSchema = z.array(
+  z.object({
+    reference_period: z.iso.date(),
+    category_name: z.string().min(1),
+    procedure_name: z.string().min(1),
+    quantity: z.union([z.string(), z.number()]).transform(String),
+    counting_unit: z.string().min(1),
+    source: z.string().min(1),
+  }),
+);
 
 export type ProductionIndicatorEntry = ProductionEntry &
   Readonly<{ category_id: string }>;
@@ -193,6 +203,7 @@ export async function listProductionEntries(
     procedure_id?: string;
     from?: string;
     to?: string;
+    maxRows?: number;
   } = {},
 ): Promise<ProductionEntry[]> {
   await requireProductionAdmin();
@@ -220,10 +231,36 @@ export async function listProductionEntries(
   });
 }
 
+export async function listProductionEntriesForExport(
+  startDate: string,
+  throughExclusive: string,
+  maxRows: number,
+) {
+  await requireProductionAdmin();
+  if (!Number.isSafeInteger(maxRows) || maxRows < 1 || maxRows > 10_001) {
+    throw new Error("O limite de linhas da exportação é inválido.");
+  }
+  const { data, error } = await getNeonDataApiClient().rpc(
+    "list_production_entries_for_export",
+    {
+      p_start: startDate,
+      p_through_exclusive: throughExclusive,
+      p_limit: maxRows,
+    },
+  );
+  return requireData(
+    data,
+    error,
+    "Não foi possível carregar os lançamentos da exportação.",
+    productionExportRowsSchema,
+  );
+}
+
 async function listProductionEntryRows(filters: {
   procedure_id?: string;
   from?: string;
   to?: string;
+  maxRows?: number;
 }) {
   const rows: z.infer<typeof entryRowSchema>[] = [];
   for (let offset = 0; ; offset += PAGE_SIZE) {
@@ -237,10 +274,14 @@ async function listProductionEntryRows(filters: {
     if (filters.from)
       query = query.gte("reference_period", `${filters.from}-01`);
     if (filters.to) query = query.lte("reference_period", `${filters.to}-01`);
+    const pageSize =
+      filters.maxRows === undefined
+        ? PAGE_SIZE
+        : Math.min(PAGE_SIZE, filters.maxRows + 1 - rows.length);
     const { data, error } = await query
       .order("reference_period", { ascending: false })
       .order("id", { ascending: true })
-      .range(offset, offset + PAGE_SIZE - 1);
+      .range(offset, offset + pageSize - 1);
     const page = requireData(
       data,
       error,
@@ -248,16 +289,22 @@ async function listProductionEntryRows(filters: {
       z.array(entryRowSchema),
     );
     rows.push(...page);
-    if (page.length < PAGE_SIZE) return rows;
+    if (
+      (filters.maxRows !== undefined && rows.length > filters.maxRows) ||
+      page.length < pageSize
+    )
+      return rows;
   }
 }
 
-export async function loadProductionIndicatorSource(): Promise<ProductionIndicatorSource> {
+export async function loadProductionIndicatorSource(
+  filters: { from?: string; to?: string } = {},
+): Promise<ProductionIndicatorSource> {
   await requireProductionAdmin();
   const [categoryRows, procedureRows, entryRows] = await Promise.all([
     listProcedureCategoryRows(),
     listProductionProcedureRows({ status: "todos" }),
-    listProductionEntryRows({}),
+    listProductionEntryRows(filters),
   ]);
   const categories: ProcedureCategory[] = categoryRows;
   const categoryNames = new Map(
