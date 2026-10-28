@@ -1,0 +1,71 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: 1rem;
+}
+
+.card {
+  display: flex;
+  min-height: 14rem;
+  flex-direction: column;
+  align-items: flex-start;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-dashboard-card);
+  background: var(--card);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-card);
+  transition: border-color var(--motion-fast), box-shadow var(--motion-fast), transform var(--motion-fast);
+}
+
+.card:hover {
+  border-color: color-mix(in srgb, var(--accent-blue) 35%, var(--border));
+  box-shadow: 0 8px 24px rgb(29 29 31 / 7%);
+  transform: translateY(-2px);
+}
+
+.card:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 3px;
+}
+
+.icon {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  place-items: center;
+  border-radius: 0.9rem;
+  background: #e7f2ff;
+  color: var(--accent-blue);
+}
+
+.copy {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 1.5rem;
+}
+
+.title {
+  color: var(--foreground);
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.description {
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.arrow {
+  align-self: flex-end;
+  flex: none;
+  margin-top: 0.75rem;
+  color: var(--accent-blue);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card { transition: none; }
+  .card:hover { transform: none; }
+}
