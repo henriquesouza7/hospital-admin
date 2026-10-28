@@ -1,8 +1,11 @@
 "use client";
 
-import { type FormEvent, useState, useTransition } from "react";
+import { type FormEvent, useRef, useState, useTransition } from "react";
 import Link from "next/link";
+import { Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
 import { getSafeRedirectPath } from "@/lib/auth/redirect";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   getLoginErrorMessage,
   getLoginUnavailableMessage,
@@ -12,17 +15,21 @@ type LoginFormProps = Readonly<{ next?: string }>;
 
 export function LoginForm({ next }: LoginFormProps) {
   const [error, setError] = useState<string>();
+  const [showPassword, setShowPassword] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const passwordInputRef = useRef<HTMLInputElement>(null);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const email = String(formData.get("email") ?? "");
     const password = String(formData.get("password") ?? "");
+    const rememberMe = formData.get("rememberMe") === "on";
 
     setError(undefined);
     startTransition(async () => {
       try {
+        const destination = getSafeRedirectPath(next);
         const response = await fetch("/api/auth/sign-in/email", {
           method: "POST",
           credentials: "include",
@@ -30,6 +37,7 @@ export function LoginForm({ next }: LoginFormProps) {
           body: JSON.stringify({
             email,
             password,
+            rememberMe,
             callbackURL: `${window.location.origin}/`,
           }),
         });
@@ -40,7 +48,7 @@ export function LoginForm({ next }: LoginFormProps) {
           return;
         }
 
-        window.location.assign(getSafeRedirectPath(next));
+        window.location.assign(destination);
       } catch {
         setError(getLoginUnavailableMessage());
       }
@@ -48,59 +56,89 @@ export function LoginForm({ next }: LoginFormProps) {
   }
 
   return (
-    <form className="space-y-5" onSubmit={handleSubmit}>
-      <div className="space-y-2">
+    <form className="login-form" onSubmit={handleSubmit}>
+      <div className="login-field">
         <label className="text-sm font-medium" htmlFor="email">
           Email
         </label>
-        <input
-          autoComplete="email"
-          className="flex h-11 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
-          id="email"
-          name="email"
-          placeholder="voce@hospital.com"
-          required
-          type="email"
-        />
+        <span className="login-input-wrap">
+          <Mail aria-hidden="true" className="login-input-icon" />
+          <input
+            autoComplete="email"
+            className="login-input flex w-full border border-border bg-card placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground admin-field"
+            id="email"
+            name="email"
+            placeholder="voce@hospital.com"
+            required
+            type="email"
+          />
+        </span>
       </div>
 
-      <div className="space-y-2">
+      <div className="login-field">
         <label className="text-sm font-medium" htmlFor="password">
           Senha
         </label>
-        <input
-          autoComplete="current-password"
-          className="flex h-11 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
-          id="password"
-          name="password"
-          required
-          type="password"
-        />
+        <span className="login-input-wrap">
+          <LockKeyhole aria-hidden="true" className="login-input-icon" />
+          <input
+            ref={passwordInputRef}
+            autoComplete="current-password"
+            className="login-input login-input-password flex w-full border border-border bg-card placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground admin-field"
+            id="password"
+            name="password"
+            required
+            type={showPassword ? "text" : "password"}
+          />
+          <button
+            aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+            aria-pressed={showPassword}
+            className="login-password-toggle"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              setShowPassword((current) => !current);
+              passwordInputRef.current?.focus();
+            }}
+            type="button"
+          >
+            {showPassword ? (
+              <EyeOff aria-hidden="true" className="size-4" />
+            ) : (
+              <Eye aria-hidden="true" className="size-4" />
+            )}
+          </button>
+        </span>
+      </div>
+
+      <div className="login-form-options">
+        <label className="login-remember-label inline-flex min-h-11 min-w-11 cursor-pointer items-center gap-2.5 rounded-lg">
+          <Checkbox defaultChecked name="rememberMe" />
+          Lembrar de mim
+        </label>
+        <Link
+          className="login-forgot-link inline-flex min-h-11 items-center rounded-lg underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          href="/login/forgot-password"
+        >
+          Esqueceu a senha?
+        </Link>
       </div>
 
       {error ? (
         <p
-          className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+          className="login-form-error rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
           role="alert"
         >
           {error}
         </p>
       ) : null}
 
-      <button
-        className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/80 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-60"
+      <Button
+        className="login-submit w-full"
         disabled={isPending}
         type="submit"
       >
         {isPending ? "Entrando..." : "Entrar"}
-      </button>
-
-      <Link
-        className="block text-center text-sm text-link underline-offset-4 hover:underline"
-        href="/login/forgot-password"
-      >
-        Esqueci minha senha
-      </Link>
+      </Button>
     </form>
   );
 }
