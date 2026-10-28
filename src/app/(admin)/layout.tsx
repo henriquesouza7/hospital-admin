@@ -24,5 +24,14 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
     redirect("/login?error=forbidden");
   }
 
-  return <AdminShell>{children}</AdminShell>;
+  return (
+    <AdminShell
+      currentYear={new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/Sao_Paulo",
+        year: "numeric",
+      }).format(new Date())}
+    >
+      {children}
+    </AdminShell>
+  );
 }

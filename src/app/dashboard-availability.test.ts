@@ -39,7 +39,7 @@ vi.mock("@/lib/neon/dashboard-diagnostics", () => ({
 }));
 
 import Home from "./(admin)/page";
-import { KpiCard } from "@/components/kpi-card";
+import { DashboardModuleLink } from "@/modules/admin-dashboard/dashboard-components";
 
 function findElements(
   node: ReactNode,
@@ -86,13 +86,13 @@ describe("dashboard availability", () => {
     const productionKpi = findElements(
       page,
       (node) =>
-        isValidElement<{ label: string }>(node) &&
-        node.type === KpiCard &&
-        node.props.label === "Séries de produção",
+        isValidElement<{ title: string }>(node) &&
+        node.type === DashboardModuleLink &&
+        node.props.title === "Produção",
     )[0];
-    expect(isValidElement<{ value: string }>(productionKpi)).toBe(true);
-    if (!isValidElement<{ value: string }>(productionKpi)) return;
-    expect(productionKpi.props.value).toBe("Indisponível");
+    expect(isValidElement<{ metricValue: string }>(productionKpi)).toBe(true);
+    if (!isValidElement<{ metricValue: string }>(productionKpi)) return;
+    expect(productionKpi.props.metricValue).toBe("Indisponível");
     expect(mocks.logDashboardQueryFailure).toHaveBeenCalledTimes(2);
     expect(
       mocks.logDashboardQueryFailure.mock.calls.map(

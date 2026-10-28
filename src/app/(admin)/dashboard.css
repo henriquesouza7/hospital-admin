@@ -1,0 +1,384 @@
+.dashboard-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--dashboard-kpi-columns), minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.dashboard-kpi-grid > .dashboard-module-card {
+  --dashboard-module-accent: var(--chart-1);
+  --dashboard-module-tint: color-mix(
+    in srgb,
+    var(--dashboard-module-accent) 10%,
+    var(--card)
+  );
+  transition:
+    border-color var(--motion-fast) var(--motion-ease),
+    background-color var(--motion-fast) var(--motion-ease),
+    box-shadow var(--motion-fast) var(--motion-ease);
+}
+
+.dashboard-kpi-grid > .dashboard-module-card[data-module="Financeiro"] {
+  --dashboard-module-accent: var(--chart-1);
+}
+
+.dashboard-kpi-grid > .dashboard-module-card[data-module="Internações"] {
+  --dashboard-module-accent: var(--chart-2);
+}
+
+.dashboard-kpi-grid > .dashboard-module-card[data-module="Produção"] {
+  --dashboard-module-accent: var(--chart-4);
+}
+
+.dashboard-kpi-grid > .dashboard-module-card[data-module="Pequenas Cirurgias"] {
+  --dashboard-module-accent: var(--chart-3);
+}
+
+.dashboard-kpi-grid > .dashboard-module-card:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--dashboard-module-accent) 18%,
+    var(--border)
+  );
+  background: color-mix(in srgb, var(--dashboard-module-tint) 30%, var(--card));
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--foreground) 6%, transparent);
+}
+
+.dashboard-module-icon-wrap {
+  display: grid;
+  width: var(--dashboard-kpi-icon-size);
+  height: var(--dashboard-kpi-icon-size);
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.6875rem;
+  background: var(--dashboard-module-tint, var(--muted));
+  color: var(--dashboard-module-accent, var(--muted-foreground));
+}
+
+.dashboard-shell .dashboard-financial-chart-sparse {
+  --dashboard-chart-height-mobile: var(--dashboard-chart-height-sparse-mobile);
+  --dashboard-chart-height: var(--dashboard-chart-height-sparse);
+}
+
+.dashboard-shell .dashboard-production-chart-sparse {
+  --dashboard-chart-height-mobile: var(
+    --dashboard-production-chart-height-sparse-mobile
+  );
+  --dashboard-chart-height: var(--dashboard-production-chart-height-sparse);
+}
+
+.dashboard-module-card:has(.dashboard-module-trigger:focus-visible) {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.dashboard-module-sparkline {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 38px;
+  pointer-events: none;
+  color: var(--dashboard-module-accent);
+  overflow: hidden;
+  border-radius: 0 0 var(--radius-dashboard-card) var(--radius-dashboard-card);
+}
+
+.dashboard-module-sparkline-area {
+  fill: currentColor;
+  fill-opacity: 0.08;
+}
+
+.dashboard-module-sparkline-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.6;
+  vector-effect: non-scaling-stroke;
+}
+
+.dashboard-module-metric-content {
+  container-type: inline-size;
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-analytics-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.dashboard-finance-panel,
+.dashboard-production-panel {
+  min-width: 0;
+}
+
+.dashboard-production-chart {
+  --dashboard-chart-height-mobile: 15rem;
+  --dashboard-chart-height: 16rem;
+}
+
+@media (min-width: 1181px) {
+  .dashboard-shell {
+    --dashboard-kpi-columns: 4;
+  }
+
+  .dashboard-analytics-grid {
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  }
+
+  .dashboard-finance-panel {
+    grid-column: auto;
+  }
+
+  .dashboard-production-panel {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .dashboard-shell {
+    --dashboard-kpi-columns: 1;
+    --dashboard-kpi-padding: var(--space-5);
+    --dashboard-kpi-padding-compact: var(--space-4);
+    --dashboard-kpi-icon-size: 2rem;
+    --dashboard-chart-tick-size: 10px;
+  }
+
+  .dashboard-kpi-grid {
+    gap: var(--space-4);
+  }
+
+  .dashboard-financial-chart [role="group"] {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .dashboard-financial-chart [role="group"] > button {
+    width: 100%;
+  }
+}
+
+@media (min-width: 601px) and (max-width: 768px) {
+  .dashboard-shell {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .dashboard-shell .module-sidebar {
+    position: relative;
+    top: auto;
+    width: 100%;
+    height: auto;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+    overflow: visible;
+    border-right: 0;
+    border-bottom: 1px solid var(--sidebar-border);
+    padding: var(--space-4) var(--space-5) var(--space-2);
+  }
+
+  .dashboard-shell .module-brand {
+    min-height: 40px;
+    margin: 0;
+    padding: 0 48px 0 var(--space-2);
+  }
+
+  .dashboard-shell .dashboard-navigation-viewport {
+    width: 100%;
+    min-width: 0;
+    flex: none;
+  }
+
+  .dashboard-shell .module-navigation {
+    min-height: 40px;
+    flex-direction: row;
+    gap: var(--space-1);
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: var(--space-1);
+    padding-right: 48px;
+  }
+
+  .dashboard-shell .dashboard-navigation-scroll-cue {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 1;
+    display: grid;
+    width: 44px;
+    height: 40px;
+    place-items: center;
+    border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+    border-radius: var(--radius-control);
+    background: linear-gradient(90deg, transparent, var(--sidebar) 28%);
+    color: var(--foreground);
+  }
+
+  .dashboard-shell .dashboard-navigation-scroll-cue:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  .dashboard-shell .module-navigation-group {
+    display: contents;
+  }
+
+  .dashboard-shell .module-navigation-children {
+    display: none;
+  }
+
+  .dashboard-shell .module-navigation-link {
+    width: auto;
+    min-width: max-content;
+    min-height: 40px;
+    justify-content: flex-start;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    white-space: nowrap;
+  }
+
+  .dashboard-shell .module-brand-text,
+  .dashboard-shell .module-navigation-label,
+  .dashboard-shell .module-account-label,
+  .dashboard-shell .module-account-chevron {
+    display: block;
+  }
+
+  .dashboard-shell .module-account {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-5);
+    margin: 0;
+  }
+
+  .dashboard-shell .module-account-trigger {
+    width: 40px;
+    min-height: 40px;
+    justify-content: center;
+    padding: var(--space-1);
+  }
+
+  .dashboard-shell .module-account-label,
+  .dashboard-shell .module-account-chevron {
+    display: none;
+  }
+
+  .dashboard-shell .module-account-menu {
+    position: absolute;
+    top: calc(100% + var(--space-2));
+    right: 0;
+    bottom: auto;
+    left: auto;
+  }
+
+  .dashboard-shell .admin-main-dashboard {
+    padding: var(--space-6) var(--space-4) var(--space-8);
+  }
+}
+
+@media (min-width: 769px) and (max-width: 860px) {
+  .dashboard-shell .module-sidebar {
+    align-items: stretch;
+    padding-inline: var(--space-3);
+  }
+
+  .dashboard-shell .module-brand {
+    justify-content: flex-start;
+    padding-inline: var(--space-3);
+  }
+
+  .dashboard-shell .module-brand-text,
+  .dashboard-shell .module-navigation-label,
+  .dashboard-shell .module-account-label,
+  .dashboard-shell .module-account-chevron {
+    display: block;
+  }
+
+  .dashboard-shell .module-navigation,
+  .dashboard-shell .module-navigation-group {
+    align-items: stretch;
+  }
+
+  .dashboard-shell .module-navigation-link {
+    width: 100%;
+    min-height: 38px;
+    justify-content: flex-start;
+    padding-inline: var(--space-3);
+  }
+
+  .dashboard-shell .module-account-trigger {
+    width: 100%;
+    justify-content: flex-start;
+    padding-inline: var(--space-3);
+  }
+
+  .dashboard-shell .dashboard-account .module-account-label,
+  .dashboard-shell .dashboard-account .module-account-chevron {
+    display: block;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-kpi-grid > .dashboard-module-card {
+    transition: none;
+  }
+}
+
+.dashboard-surface {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-dashboard-card);
+  background-color: var(--card);
+  box-shadow: var(--shadow-card);
+}
+
+.dashboard-motion-safe .recharts-default-tooltip {
+  border-color: var(--border) !important;
+  border-radius: 0.75rem;
+  background-color: var(--popover) !important;
+  color: var(--popover-foreground) !important;
+}
+
+.dashboard-motion-safe .recharts-tooltip-label,
+.dashboard-motion-safe .recharts-tooltip-item {
+  color: var(--popover-foreground) !important;
+}
+
+.dashboard-motion-safe .recharts-cartesian-axis-tick-value {
+  fill: var(--muted-foreground) !important;
+}
+
+.dashboard-chart-tooltip {
+  max-width: min(15rem, calc(100vw - 2rem));
+  overflow: hidden;
+  border: 1px solid var(--dashboard-tooltip-border);
+  border-radius: var(--radius-control);
+  background: var(--dashboard-tooltip-bg);
+  padding: var(--space-3) var(--space-4);
+  color: var(--dashboard-tooltip-text);
+  box-shadow: var(--shadow-tooltip);
+}
+
+.dashboard-chart-tooltip-period {
+  color: var(--dashboard-tooltip-muted);
+  font-size: var(--type-body);
+  line-height: 1.35;
+  text-transform: capitalize;
+}
+
+.dashboard-chart-tooltip-label {
+  margin-top: var(--space-2);
+  color: var(--dashboard-tooltip-muted);
+  font-size: var(--type-body);
+  line-height: 1.35;
+}
+
+.dashboard-chart-tooltip-value {
+  margin-top: var(--space-1);
+  font-size: var(--type-section-title);
+  font-weight: 600;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+}
