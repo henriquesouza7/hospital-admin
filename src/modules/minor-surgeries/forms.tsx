@@ -260,7 +260,10 @@ export function UpdateAppointmentStatusForm({
     initialMinorSurgeryActionState,
   );
   return (
-    <form action={action} className="flex flex-wrap items-center gap-2">
+    <form
+      action={action}
+      className="relative flex flex-wrap items-center gap-2"
+    >
       <input type="hidden" name="appointment_id" value={appointmentId} />
       <label className="sr-only" htmlFor={`status-${appointmentId}`}>
         Status do agendamento
@@ -316,7 +319,10 @@ export function TransferWaitlistForm({
     initialMinorSurgeryActionState,
   );
   return (
-    <form action={action} className="flex flex-wrap items-center gap-2">
+    <form
+      action={action}
+      className="relative flex flex-wrap items-center gap-2"
+    >
       <input type="hidden" name="waitlist_id" value={entryId} />
       <label className="sr-only" htmlFor={`day-${entryId}`}>
         Dia de cirurgia para transferência
@@ -362,7 +368,10 @@ export function UpdatePatientNameForm({
     initialMinorSurgeryActionState,
   );
   return (
-    <form action={action} className="flex flex-wrap items-center gap-2">
+    <form
+      action={action}
+      className="relative flex flex-wrap items-center gap-2"
+    >
       <input type="hidden" name="patient_id" value={patient.id} />
       <label className="sr-only" htmlFor={`patient-${patient.id}`}>
         Nome administrativo
