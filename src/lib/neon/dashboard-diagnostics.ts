@@ -1,6 +1,9 @@
 import "server-only";
 
 import { randomUUID } from "node:crypto";
+import { cache } from "react";
+
+const getRequestCorrelationId = cache(() => randomUUID());
 
 type DashboardDiagnostic = Readonly<{
   operation:
@@ -39,6 +42,15 @@ function safeHttpStatus(error: unknown): number | null {
     : null;
 }
 
+function safePermissionCategory(error: unknown): string | null {
+  if (safeErrorCode(error) !== "42501" || typeof error !== "object" || error === null || !("message" in error) || typeof error.message !== "string") return null;
+  if (error.message === "Administrator access required") return "administrator_required";
+  if (/^permission denied for schema\b/i.test(error.message)) return "schema_denied";
+  if (/^permission denied for function\b/i.test(error.message)) return "function_denied";
+  if (/^permission denied for (?:table|relation)\b/i.test(error.message)) return "relation_denied";
+  return "other_permission_denied";
+}
+
 export function logDashboardQueryFailure({
   operation,
   stage,
@@ -52,8 +64,9 @@ export function logDashboardQueryFailure({
       stage,
       code: safeErrorCode(error),
       status: safeHttpStatus(error),
+      category: safePermissionCategory(error),
       duration_ms: Math.max(0, Math.round(durationMs)),
-      correlation_id: randomUUID(),
+      correlation_id: getRequestCorrelationId(),
     }),
   );
 }

@@ -157,7 +157,7 @@ async function listActiveAppointmentsByDayIds(dayIds: readonly string[]) {
       async (pageOffset) =>
         await getNeonDataApiClient()
           .from("surgery_appointments")
-          .select("surgery_day_id,status")
+          .select("id,surgery_day_id,status")
           .in("surgery_day_id", batch)
           .in("status", ["awaiting_confirmation", "confirmed"])
           .order("id", { ascending: true })

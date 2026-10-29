@@ -2,13 +2,15 @@ import "server-only";
 
 import { createClient } from "@neondatabase/neon-js";
 import { cache } from "react";
+import { hasAdminRole } from "@/lib/auth/roles";
 import { logDashboardQueryFailure } from "./dashboard-diagnostics";
 import { getNeonAuth } from "@/lib/neon/auth-server";
 import { getNeonServerEnv } from "@/lib/neon/env";
+import { createResilientReadFetch } from "./read-resilience";
 
 type NeonDataApiClient = ReturnType<typeof createClient>;
 
-const getDataApiToken = cache(async () => {
+async function loadDataApiToken() {
   const startedAt = performance.now();
   const result = await getNeonAuth()
     .token()
@@ -30,8 +32,12 @@ const getDataApiToken = cache(async () => {
       durationMs: performance.now() - startedAt,
     });
   }
-  return data?.token ?? null;
-});
+  if (error || !data?.token)
+    throw new Error("Data API authentication required");
+  return data.token;
+}
+
+const getDataApiToken = cache(loadDataApiToken);
 
 export function getNeonDataApiClient(): NeonDataApiClient {
   const env = getNeonServerEnv();
@@ -39,6 +45,22 @@ export function getNeonDataApiClient(): NeonDataApiClient {
     dataApi: {
       url: env.dataApiUrl,
       getToken: getDataApiToken,
+      options: {
+        global: {
+          fetch: createResilientReadFetch({
+            baseUrl: env.dataApiUrl,
+            fetch: (input, init) => fetch(input, init),
+            refreshToken: loadDataApiToken,
+            getIdentity: async () => {
+              const { data, error } = await getNeonAuth().getSession();
+              if (error || !data?.user?.id) return null;
+              return { subject: data.user.id, admin: hasAdminRole(data.user) };
+            },
+            report: (event) =>
+              console.warn("data_api_read_recovery", JSON.stringify(event)),
+          }),
+        },
+      },
     },
   });
 }
