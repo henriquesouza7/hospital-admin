@@ -22,11 +22,11 @@ test.describe("smokes administrativos autenticados", () => {
 
     await expect(page).not.toHaveURL(/\/login/);
     await expect(
-      page.getByRole("heading", { level: 1, name: "Painel administrativo" }),
+      page.getByRole("heading", { level: 1, name: "Visão Geral" }),
     ).toBeVisible();
     await expect(
-      page.locator("article").filter({ hasText: "Gastos registrados" }),
-    ).toContainText(/R\$/);
+      page.locator("article").filter({ hasText: "Financeiro" }).first(),
+    ).toContainText("Total no mês");
   });
 
   test("should_keep_dashboard_available_for_concurrent_authenticated_requests", async ({
@@ -44,7 +44,7 @@ test.describe("smokes administrativos autenticados", () => {
         await expect(
           page.getByRole("heading", {
             level: 1,
-            name: "Painel administrativo",
+            name: "Visão Geral",
           }),
         ).toBeVisible();
       }

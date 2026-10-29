@@ -53,7 +53,9 @@ async function expectGeistTypography(page: import("@playwright/test").Page) {
   for (const [element, fontFamily] of Object.entries(result.computed)) {
     if (!fontFamily) continue;
     expect(fontFamily.toLowerCase(), element + " font").toContain("geist");
-    expect(fontFamily.toLowerCase()).not.toMatch(/times new roman|serif/);
+    expect(fontFamily.toLowerCase()).not.toMatch(
+      /times new roman|(?:^|,\s*)serif(?:,|$)/,
+    );
   }
 }
 
