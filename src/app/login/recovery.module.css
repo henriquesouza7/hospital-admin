@@ -1,0 +1,70 @@
+.card {
+  --background: #f5f5f7;
+  --foreground: #1d1d1f;
+  --border: rgb(29 29 31 / 12%);
+  --input: rgb(29 29 31 / 12%);
+  --primary: #0071e3;
+  --primary-foreground: #ffffff;
+  --link: #0071e3;
+  --ring: #0071e3;
+  position: relative;
+  z-index: 1;
+  width: min(100%, 32rem);
+  padding: clamp(2rem, 5vw, 4rem);
+}
+
+:global(.login-screen) .card {
+  min-height: auto;
+  grid-template-columns: 1fr;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: clamp(2rem, 5vw, 3rem);
+}
+
+.brandMark {
+  display: grid;
+  width: 3.25rem;
+  height: 3.25rem;
+  flex: none;
+  place-items: center;
+  border-radius: 1rem;
+  background: #f5f5f7;
+  color: var(--primary);
+}
+
+.brandName {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.environment {
+  margin-top: 0.125rem;
+  color: #6e6e73;
+  font-size: 0.8125rem;
+}
+
+.description {
+  margin-bottom: 2rem;
+}
+
+.card :global(input:not([type="hidden"])) {
+  height: 3.5rem;
+  border-radius: 0.875rem;
+}
+
+.card :global(button[type="submit"]) {
+  height: 3.5rem;
+  border-radius: 0.875rem;
+}
+
+.card :global(input:focus-visible),
+.card :global(button:focus-visible),
+.card :global(a:focus-visible) {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
