@@ -123,7 +123,10 @@ function AdmissionEntryEditor({ entry }: { entry: AdmissionEntry }) {
     initialAdmissionsActionState,
   );
   return (
-    <form action={action} className="relative flex flex-wrap items-center gap-2">
+    <form
+      action={action}
+      className="relative flex flex-wrap items-center gap-2"
+    >
       <input type="hidden" name="id" value={entry.id} />
       <label className="sr-only" htmlFor={`quantity-${entry.id}`}>
         Quantidade de {entry.doctor_name} em {entry.entry_date}
@@ -346,7 +349,10 @@ function AdmissionTargetEditor({ target }: { target: AdmissionTarget }) {
     initialAdmissionsActionState,
   );
   return (
-    <form action={action} className="relative flex flex-wrap items-center gap-2">
+    <form
+      action={action}
+      className="relative flex flex-wrap items-center gap-2"
+    >
       <input type="hidden" name="id" value={target.id} />
       <label className="sr-only" htmlFor={`target-${target.id}`}>
         Meta de {target.reference_period}
