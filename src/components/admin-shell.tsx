@@ -1,6 +1,7 @@
 "use client";
 
 import "./admin-shell.css";
+import "./admin-controls.css";
 import Link from "next/link";
 import {
   Bed,
@@ -66,9 +67,7 @@ export function AdminShell({ children, currentYear }: AdminShellProps) {
 
   return (
     <div
-      className={
-        `${isDashboard ? "dashboard-shell" : "module-shell"} admin-motion-safe min-h-screen bg-background min-[601px]:grid min-[601px]:grid-cols-[72px_minmax(0,1fr)] min-[861px]:grid-cols-[var(--dashboard-sidebar-width)_minmax(0,1fr)]`
-      }
+      className={`${isDashboard ? "dashboard-shell" : "module-shell"} admin-motion-safe min-h-screen bg-background min-[601px]:grid min-[601px]:grid-cols-[72px_minmax(0,1fr)] min-[861px]:grid-cols-[var(--dashboard-sidebar-width)_minmax(0,1fr)]`}
       data-module={isDashboard ? undefined : moduleName}
     >
       <aside className="module-sidebar">
@@ -85,9 +84,7 @@ export function AdminShell({ children, currentYear }: AdminShellProps) {
         </div>
 
         <p className="module-navigation-caption">Menu principal</p>
-        <div
-          className="module-navigation-viewport dashboard-navigation-viewport"
-        >
+        <div className="module-navigation-viewport dashboard-navigation-viewport">
           <nav
             ref={navigationRef}
             id="primary-navigation"

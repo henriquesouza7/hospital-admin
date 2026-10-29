@@ -14,7 +14,10 @@
   background: var(--card);
   padding: 1.5rem;
   box-shadow: var(--shadow-card);
-  transition: border-color var(--motion-fast), box-shadow var(--motion-fast), transform var(--motion-fast);
+  transition:
+    border-color var(--motion-fast),
+    box-shadow var(--motion-fast),
+    transform var(--motion-fast);
 }
 
 .card:hover {
@@ -66,6 +69,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .card { transition: none; }
-  .card:hover { transform: none; }
+  .card {
+    transition: none;
+  }
+  .card:hover {
+    transform: none;
+  }
 }

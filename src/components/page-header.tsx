@@ -18,23 +18,15 @@ export function PageHeader({
     <header className="admin-page-header">
       <div className="admin-page-header-copy">
         {eyebrow ? (
-          <p className="admin-page-header-eyebrow">
-            {eyebrow}
-          </p>
+          <p className="admin-page-header-eyebrow">{eyebrow}</p>
         ) : null}
-        <h1 className="admin-page-header-title">
-          {title}
-        </h1>
+        <h1 className="admin-page-header-title">{title}</h1>
         {description ? (
-          <p className="admin-page-header-description">
-            {description}
-          </p>
+          <p className="admin-page-header-description">{description}</p>
         ) : null}
       </div>
       {actions ? (
-        <div className="admin-page-header-actions">
-          {actions}
-        </div>
+        <div className="admin-page-header-actions">{actions}</div>
       ) : null}
     </header>
   );

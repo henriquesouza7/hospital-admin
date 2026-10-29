@@ -1,9 +1,4 @@
-import {
-  Activity,
-  ClipboardList,
-  FileUp,
-  Stethoscope,
-} from "lucide-react";
+import { Activity, ClipboardList, FileUp, Stethoscope } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { ModuleAreaCard, ModuleAreaGrid } from "@/components/module-area";
 
@@ -47,7 +42,9 @@ export default function ProductionPage() {
         description="Gerencie o catálogo e os volumes mensais por procedimento, sem dados individualizados de pacientes."
       />
       <ModuleAreaGrid label="Áreas de Produção">
-        {sections.map((section) => <ModuleAreaCard key={section.href} {...section} />)}
+        {sections.map((section) => (
+          <ModuleAreaCard key={section.href} {...section} />
+        ))}
       </ModuleAreaGrid>
     </div>
   );

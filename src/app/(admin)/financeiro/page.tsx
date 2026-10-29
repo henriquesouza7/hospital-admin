@@ -55,7 +55,9 @@ export default function FinancePage() {
         description="Base compartilhada para compras, despesas e análises administrativas."
       />
       <ModuleAreaGrid label="Áreas do Financeiro">
-        {areas.map((area) => <ModuleAreaCard key={area.href} {...area} />)}
+        {areas.map((area) => (
+          <ModuleAreaCard key={area.href} {...area} />
+        ))}
       </ModuleAreaGrid>
     </div>
   );
