@@ -289,6 +289,7 @@ export function PurchaseOrderForm({
                   type="button"
                   variant="ghost"
                   size="icon"
+                  className="size-10"
                   aria-label={`Remover item ${index + 1}`}
                   disabled={items.length === 1}
                   onClick={() =>

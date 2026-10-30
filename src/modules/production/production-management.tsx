@@ -258,7 +258,11 @@ export function ProcedureCreateForm({
         />
       </label>
       <div className="flex flex-wrap items-end gap-3">
-        <Button type="submit" disabled={pending || !activeCategories.length}>
+        <Button
+          type="submit"
+          disabled={pending || !activeCategories.length}
+          className="h-10"
+        >
           {pending ? "Salvando…" : "Cadastrar"}
         </Button>
         <ActionFeedback state={state} />
@@ -594,7 +598,11 @@ export function ProductionEntryCreateForm({
         />
       </label>
       <div className="flex min-w-0 flex-wrap items-end gap-3">
-        <Button type="submit" disabled={pending || !activeProcedures.length}>
+        <Button
+          type="submit"
+          disabled={pending || !activeProcedures.length}
+          className="h-10"
+        >
           {pending ? "Salvando…" : "Registrar lançamento"}
         </Button>
         <ActionFeedback state={state} />
