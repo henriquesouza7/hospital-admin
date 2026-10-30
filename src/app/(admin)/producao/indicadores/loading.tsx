@@ -1,7 +1,7 @@
 export default function ProductionIndicatorsLoading() {
   return (
     <div
-      className="mx-auto max-w-7xl space-y-6"
+      className="space-y-6"
       aria-busy="true"
       aria-label="Carregando indicadores de produção"
     >

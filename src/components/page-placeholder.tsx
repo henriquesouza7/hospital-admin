@@ -9,7 +9,7 @@ type PagePlaceholderProps = Readonly<{
 
 export function PagePlaceholder({ title, description }: PagePlaceholderProps) {
   return (
-    <div className="mx-auto max-w-7xl space-y-8">
+    <div className="space-y-8">
       <PageHeader
         eyebrow="Hospital Admin"
         title={title}

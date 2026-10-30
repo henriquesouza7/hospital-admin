@@ -28,7 +28,7 @@ export default async function NewLaboratoryPurchaseOrderPage({
   ]);
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
+    <div className="space-y-6">
       <PageHeader
         eyebrow="Financeiro / Laboratório"
         title="Novo pedido de compra"

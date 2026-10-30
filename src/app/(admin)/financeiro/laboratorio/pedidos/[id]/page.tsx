@@ -22,7 +22,7 @@ export default async function LaboratoryPurchaseOrderDetailPage({
   if (!order) notFound();
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
+    <div className="space-y-6">
       <PageHeader
         eyebrow="Financeiro / Laboratório / Pedidos"
         title="Detalhe do pedido"

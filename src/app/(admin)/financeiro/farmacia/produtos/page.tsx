@@ -13,7 +13,7 @@ export default async function ProductsPage() {
   const sector = "farmacia" as const;
   const products = await listProducts(sector);
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
+    <div className="space-y-6">
       <PageHeader
         eyebrow="Financeiro / Farmácia"
         title="Produtos"

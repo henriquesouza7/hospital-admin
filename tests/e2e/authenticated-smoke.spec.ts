@@ -114,6 +114,7 @@ test.describe("smokes administrativos autenticados", () => {
       [768, 1024],
       [1024, 900],
       [1440, 900],
+      [1920, 1080],
     ]);
     const routes = [
       "/",
@@ -121,17 +122,29 @@ test.describe("smokes administrativos autenticados", () => {
       "/configuracoes",
       "/exportacoes",
       "/financeiro",
+      "/financeiro/fornecedores?setor=farmacia",
       "/financeiro/indicadores",
+      "/financeiro/importacao-fiscal",
       "/financeiro/farmacia",
+      "/financeiro/farmacia/fornecedores",
+      "/financeiro/farmacia/produtos",
+      "/financeiro/farmacia/pedidos/novo",
       "/financeiro/laboratorio",
+      "/financeiro/laboratorio/produtos",
+      "/financeiro/laboratorio/pedidos/novo",
       "/financeiro/feira",
       "/internacoes",
       "/internacoes/lancamentos",
+      "/internacoes/medicos",
       "/internacoes/metas",
       "/producao",
+      "/producao/importacoes",
       "/producao/lancamentos",
       "/producao/indicadores",
+      "/producao/procedimentos",
       "/pequenas-cirurgias",
+      "/pequenas-cirurgias/dias",
+      "/pequenas-cirurgias/fila",
     ];
 
     for (const route of routes) {
@@ -145,6 +158,12 @@ test.describe("smokes administrativos autenticados", () => {
           page.evaluate(() => {
             const heading = document.querySelector("main h1");
             const bounds = heading?.getBoundingClientRect();
+            const contentBounds = document
+              .querySelector(".admin-content")
+              ?.getBoundingClientRect();
+            const pageBounds = document
+              .querySelector(".admin-content > div > :first-child")
+              ?.getBoundingClientRect();
             return {
               horizontalOverflow: document.body.scrollWidth > window.innerWidth,
               mainOverflow:
@@ -152,6 +171,11 @@ test.describe("smokes administrativos autenticados", () => {
                 (document.querySelector("main")?.clientWidth ?? 0),
               headingOutsideViewport:
                 !bounds || bounds.left < 0 || bounds.right > window.innerWidth,
+              contentNotAligned:
+                !contentBounds ||
+                !pageBounds ||
+                Math.abs(contentBounds.left - pageBounds.left) > 1 ||
+                Math.abs(contentBounds.right - pageBounds.right) > 1,
             };
           });
 
@@ -161,6 +185,7 @@ test.describe("smokes administrativos autenticados", () => {
             horizontalOverflow: false,
             mainOverflow: false,
             headingOutsideViewport: false,
+            contentNotAligned: false,
           });
       }
     }

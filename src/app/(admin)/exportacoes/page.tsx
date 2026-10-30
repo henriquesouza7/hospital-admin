@@ -40,7 +40,7 @@ export default function ExportsPage() {
   ] as const;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="space-y-6">
       <PageHeader
         eyebrow="Administração"
         title="Exportações CSV"

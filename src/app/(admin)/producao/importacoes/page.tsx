@@ -37,7 +37,7 @@ export default async function ProductionImportsPage({
     typeof params.erro === "string" ? params.erro : undefined;
 
   return (
-    <div className="mx-auto max-w-7xl space-y-7">
+    <div className="space-y-7">
       <PageHeader
         eyebrow="Produção"
         title="Importação SUS e reconciliação"

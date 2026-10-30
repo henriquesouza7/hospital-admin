@@ -53,7 +53,7 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
   ].sort((left, right) => right - left);
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
+    <div className="space-y-6">
       <PageHeader
         eyebrow="Financeiro"
         title="Feira"
