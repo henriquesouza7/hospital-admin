@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import {
+  ClipboardList,
   Stethoscope,
   UserRoundCheck,
   UserRoundPlus,
@@ -9,7 +10,8 @@ import {
 } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { StatusBadge } from "@/components/status-badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import Link from "next/link";
 import type { Doctor } from "./domain";
 import {
   createDoctorAction,
@@ -109,6 +111,13 @@ function DoctorEditor({ doctor }: { doctor: Doctor }) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
+      <Link
+        href={`/internacoes/medicos/${doctor.id}`}
+        className={buttonVariants({ variant: "outline", size: "sm" })}
+      >
+        <ClipboardList aria-hidden="true" />
+        Ver histórico
+      </Link>
       <details className="relative">
         <summary className="cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
           Editar nome

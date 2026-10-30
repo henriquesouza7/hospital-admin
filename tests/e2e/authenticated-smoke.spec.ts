@@ -62,6 +62,22 @@ test.describe("smokes administrativos autenticados", () => {
     }
   });
 
+  test("should_open_existing_admission_history_from_doctor_card", async ({
+    page,
+  }) => {
+    await page.goto("/internacoes/medicos");
+    const historyLink = page.getByRole("link", {
+      name: "Ver histórico",
+    }).first();
+    await expect(historyLink).toBeVisible();
+    await historyLink.click();
+    await expect(page).toHaveURL(/\/internacoes\/medicos\/[^/]+$/);
+    await expect(page.locator("main h1")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Lançamentos deste médico" }),
+    ).toBeVisible();
+  });
+
   test("should_render_administrative_dashboard_with_a_real_admin_session", async ({
     page,
   }) => {
