@@ -130,21 +130,33 @@ test.describe("smokes administrativos autenticados", () => {
     page,
   }) => {
     const cases = [
-      { route: "/", selector: ".dashboard-kpi-grid", desktopColumns: 2 },
+      {
+        route: "/",
+        selector: ".dashboard-kpi-grid",
+        desktopColumns: 2,
+        columnsAt768: 2,
+        columnsAt1024: 2,
+      },
       {
         route: "/financeiro/indicadores",
         selector: 'section[aria-labelledby="overview-title"] > div.grid',
-        desktopColumns: 2,
+        desktopColumns: 3,
+        columnsAt768: 3,
+        columnsAt1024: 3,
       },
       {
         route: "/internacoes",
         selector: 'section[aria-label="Indicadores do período"]',
         desktopColumns: 2,
+        columnsAt768: 2,
+        columnsAt1024: 2,
       },
       {
         route: "/producao/indicadores",
         selector: 'section[aria-label="Resumo do recorte"]',
         desktopColumns: 3,
+        columnsAt768: 2,
+        columnsAt1024: 2,
       },
     ] as const;
 
@@ -168,7 +180,15 @@ test.describe("smokes administrativos autenticados", () => {
 
         expect(layout.overflow, `${item.route} em ${width}px`).toBe(false);
         expect(layout.columns, `${item.route} em ${width}px`).toBe(
-          width === 390 ? 1 : width === 1440 ? item.desktopColumns : 2,
+          width === 390
+            ? 1
+            : width === 1440
+              ? item.desktopColumns
+              : width === 768
+                ? item.columnsAt768
+                : width === 1024
+                  ? item.columnsAt1024
+                  : 2,
         );
         expect(layout.radius, `${item.route} em ${width}px`).toBe("12px");
       }

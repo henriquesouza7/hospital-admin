@@ -24,6 +24,7 @@ import type {
 } from "./domain";
 import { MonthlyChart } from "./monthly-chart";
 import type { IndicatorsFilters } from "./validation";
+import tableStyles from "@/modules/finance/finance-history.module.css";
 
 type ProductChoice = Readonly<{
   id: string;
@@ -131,7 +132,7 @@ export function IndicatorsPageView({
       <form
         action="/financeiro/indicadores"
         method="get"
-        className="grid gap-4 rounded-xl border bg-card p-5 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_2fr_auto] lg:items-end"
+        className="grid gap-4 rounded-xl border bg-card p-5 sm:grid-cols-2 xl:grid-cols-[minmax(8rem,1fr)_minmax(8rem,1fr)_minmax(9rem,1fr)_minmax(14rem,1.6fr)_auto] xl:items-end"
       >
         <label className="grid gap-1.5 text-sm font-medium" htmlFor="inicio">
           Início
@@ -177,10 +178,10 @@ export function IndicatorsPageView({
             ))}
           </SelectField>
         </label>
-        <Button type="submit" className="h-10">
-          Aplicar
+        <Button type="submit" className="h-10 sm:col-span-2 xl:col-span-1">
+          Aplicar filtros
         </Button>
-        <p className="text-xs text-muted-foreground sm:col-span-2 lg:col-span-5">
+        <p className="text-xs text-muted-foreground sm:col-span-2 xl:col-span-5">
           Período padrão: últimos 12 meses, incluindo o mês atual. Limite: 24
           meses por consulta.
         </p>
@@ -204,9 +205,9 @@ export function IndicatorsPageView({
             mensal.
           </p>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
           <KpiCard
-            label="Total Financeiro"
+            label="Total de gastos"
             value={formatCurrency(data.totalCents)}
             detail="Soma dos três setores no período"
             icon={ChartNoAxesCombined}
@@ -231,50 +232,58 @@ export function IndicatorsPageView({
             }
             icon={PackageSearch}
           />
-          <KpiCard
-            label="Feira"
-            value={formatCurrency(data.fairCents)}
-            detail={
-              data.fairExpenses.length === 0
-                ? "Sem registros no período"
-                : `${data.fairExpenses.length} competências com registro`
-            }
-            icon={PackageSearch}
-          />
         </div>
       </section>
 
       <ChartCard
-        title="Evolução mensal"
-        description="Meses sem registros aparecem com zero apenas na série; isso não afirma ausência de gastos."
-        badge="Período consultado"
+        title="Gastos por mês"
+        description={`Total registrado de ${monthLabel(filters.inicio)} a ${monthLabel(filters.fim)}; o mês final está destacado quando há registros.`}
+        badge={
+          data.fairExpenses.length === 0
+            ? "Feira sem registros"
+            : `Feira · ${formatCurrency(data.fairCents)}`
+        }
       >
-        <MonthlyChart points={points} scale={chartScale.toString()} />
+        <MonthlyChart
+          points={points}
+          scale={chartScale.toString()}
+          highlightedMonth={filters.fim}
+        />
         <ScrollableRegion
           aria-label="Evolução mensal dos gastos"
           className="mt-4 overflow-x-auto"
         >
-          <table className="w-full min-w-[680px] text-left text-sm">
+          <table
+            className={`${tableStyles.table} w-full min-w-[680px] text-left text-sm`}
+          >
             <caption className="sr-only">
               Valores mensais de Farmácia, Laboratório, Feira e total
             </caption>
             <thead>
-              <tr className="border-b text-muted-foreground">
-                <th className="py-2 pr-3 font-medium">Mês</th>
-                <th className="py-2 pr-3 font-medium">Farmácia</th>
-                <th className="py-2 pr-3 font-medium">Laboratório</th>
-                <th className="py-2 pr-3 font-medium">Feira</th>
-                <th className="py-2 pr-3 font-medium">Total</th>
-                <th className="py-2 font-medium">Registros</th>
+              <tr>
+                <th scope="col">Mês</th>
+                <th scope="col" className={tableStyles.amount}>
+                  Farmácia
+                </th>
+                <th scope="col" className={tableStyles.amount}>
+                  Laboratório
+                </th>
+                <th scope="col" className={tableStyles.amount}>
+                  Feira
+                </th>
+                <th scope="col" className={tableStyles.amount}>
+                  Total
+                </th>
+                <th scope="col">Registros</th>
               </tr>
             </thead>
             <tbody>
               {data.monthly.map((month) => (
-                <tr key={month.month} className="border-b last:border-0">
-                  <th scope="row" className="py-2 pr-3 font-medium">
+                <tr key={month.month}>
+                  <th scope="row" className="font-medium">
                     {monthLabel(month.month)}
                   </th>
-                  <td className="py-2 pr-3">
+                  <td className={tableStyles.amount}>
                     {formatCurrency(month.pharmacyCents)}
                     {!month.hasPharmacyRecords ? (
                       <span className="block text-xs text-muted-foreground">
@@ -282,7 +291,7 @@ export function IndicatorsPageView({
                       </span>
                     ) : null}
                   </td>
-                  <td className="py-2 pr-3">
+                  <td className={tableStyles.amount}>
                     {formatCurrency(month.laboratoryCents)}
                     {!month.hasLaboratoryRecords ? (
                       <span className="block text-xs text-muted-foreground">
@@ -290,7 +299,7 @@ export function IndicatorsPageView({
                       </span>
                     ) : null}
                   </td>
-                  <td className="py-2 pr-3">
+                  <td className={tableStyles.amount}>
                     {formatCurrency(month.fairCents)}
                     {!month.hasFairRecords ? (
                       <span className="block text-xs text-muted-foreground">
@@ -298,10 +307,10 @@ export function IndicatorsPageView({
                       </span>
                     ) : null}
                   </td>
-                  <td className="py-2 pr-3 font-medium">
+                  <td className={`${tableStyles.amount} font-medium`}>
                     {formatCurrency(month.totalCents)}
                   </td>
-                  <td className="py-2">
+                  <td>
                     {month.hasRecords ? "Com registros" : "Sem registros"}
                   </td>
                 </tr>
@@ -340,11 +349,13 @@ export function IndicatorsPageView({
             aria-label="Histórico de preços por produto"
             className="overflow-x-auto rounded-xl border bg-card"
           >
-            <table className="w-full min-w-[1000px] text-left text-sm">
+            <table
+              className={`${tableStyles.table} w-full min-w-[1000px] text-left text-sm`}
+            >
               <caption className="sr-only">
                 Histórico de preços de {selectedProduct.name}
               </caption>
-              <thead className="bg-muted/50 text-muted-foreground">
+              <thead>
                 <tr>
                   {[
                     "Data",
@@ -356,7 +367,7 @@ export function IndicatorsPageView({
                     "Valor unitário",
                     "Subtotal",
                   ].map((heading) => (
-                    <th key={heading} className="px-4 py-3 font-medium">
+                    <th key={heading} scope="col" className="font-medium">
                       {heading}
                     </th>
                   ))}
@@ -364,19 +375,19 @@ export function IndicatorsPageView({
               </thead>
               <tbody>
                 {selectedHistory.map((item) => (
-                  <tr key={item.id} className="border-t">
-                    <td className="px-4 py-3 whitespace-nowrap">
+                  <tr key={item.id}>
+                    <td className="whitespace-nowrap">
                       {formatDate(item.orderDate)}
                     </td>
-                    <td className="px-4 py-3">{item.supplierName}</td>
-                    <td className="px-4 py-3">{item.productName}</td>
-                    <td className="px-4 py-3">{item.presentation}</td>
-                    <td className="px-4 py-3">{item.category ?? "—"}</td>
-                    <td className="px-4 py-3">{item.quantity}</td>
-                    <td className="px-4 py-3">
+                    <td>{item.supplierName}</td>
+                    <td>{item.productName}</td>
+                    <td>{item.presentation}</td>
+                    <td>{item.category ?? "—"}</td>
+                    <td className={tableStyles.amount}>{item.quantity}</td>
+                    <td className={tableStyles.amount}>
                       {formatCurrency(item.unitPrice)}
                     </td>
-                    <td className="px-4 py-3 font-medium">
+                    <td className={`${tableStyles.amount} font-medium`}>
                       {formatCurrency(item.lineTotal)}
                     </td>
                   </tr>
@@ -409,11 +420,13 @@ export function IndicatorsPageView({
             aria-label="Comparação de preços por produto"
             className="overflow-x-auto rounded-xl border bg-card"
           >
-            <table className="w-full min-w-[900px] text-left text-sm">
+            <table
+              className={`${tableStyles.table} w-full min-w-[900px] text-left text-sm`}
+            >
               <caption className="sr-only">
                 Comparação de preços por produto e apresentação equivalentes
               </caption>
-              <thead className="bg-muted/50 text-muted-foreground">
+              <thead>
                 <tr>
                   {[
                     "Setor",
@@ -424,7 +437,7 @@ export function IndicatorsPageView({
                     "Maior preço",
                     "Amplitude",
                   ].map((heading) => (
-                    <th key={heading} className="px-4 py-3 font-medium">
+                    <th key={heading} scope="col" className="font-medium">
                       {heading}
                     </th>
                   ))}
@@ -432,11 +445,11 @@ export function IndicatorsPageView({
               </thead>
               <tbody>
                 {groups.map((group) => (
-                  <tr key={group.key} className="border-t">
-                    <td className="px-4 py-3">{sectorLabel(group.sector)}</td>
-                    <td className="px-4 py-3 font-medium">{group.name}</td>
-                    <td className="px-4 py-3">{group.presentation}</td>
-                    <td className="px-4 py-3">
+                  <tr key={group.key}>
+                    <td>{sectorLabel(group.sector)}</td>
+                    <td className="font-medium">{group.name}</td>
+                    <td>{group.presentation}</td>
+                    <td>
                       {group.suppliers.length === 1 ? (
                         `${group.suppliers[0].name} · único observado`
                       ) : (
@@ -450,17 +463,17 @@ export function IndicatorsPageView({
                         </>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className={tableStyles.amount}>
                       {formatCurrency(group.lowestUnitPriceCents)}
                       <span className="block text-xs text-muted-foreground">
                         {group.bestSupplierNames.join(", ")}
                         {group.bestSupplierNames.length > 1 ? " · empate" : ""}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className={tableStyles.amount}>
                       {formatCurrency(group.highestUnitPriceCents)}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className={tableStyles.amount}>
                       {formatCurrency(group.rangeCents)}
                     </td>
                   </tr>
@@ -497,11 +510,13 @@ export function IndicatorsPageView({
             aria-label="Maiores aumentos por produto"
             className="overflow-x-auto rounded-xl border bg-card"
           >
-            <table className="w-full min-w-[1100px] text-left text-sm">
+            <table
+              className={`${tableStyles.table} w-full min-w-[1100px] text-left text-sm`}
+            >
               <caption className="sr-only">
                 Até dez maiores aumentos observados
               </caption>
-              <thead className="bg-muted/50 text-muted-foreground">
+              <thead>
                 <tr>
                   {[
                     "Setor",
@@ -515,7 +530,7 @@ export function IndicatorsPageView({
                     "Diferença",
                     "Variação",
                   ].map((heading) => (
-                    <th key={heading} className="px-4 py-3 font-medium">
+                    <th key={heading} scope="col" className="font-medium">
                       {heading}
                     </th>
                   ))}
@@ -523,39 +538,32 @@ export function IndicatorsPageView({
               </thead>
               <tbody>
                 {increases.map((change) => (
-                  <tr
-                    key={`${change.current.id}:${change.previous.id}`}
-                    className="border-t"
-                  >
-                    <td className="px-4 py-3">
-                      {sectorLabel(change.current.sector)}
-                    </td>
-                    <td className="px-4 py-3">
+                  <tr key={`${change.current.id}:${change.previous.id}`}>
+                    <td>{sectorLabel(change.current.sector)}</td>
+                    <td>
                       {change.current.productName}
                       <span className="block text-xs text-muted-foreground">
                         {change.current.presentation}
                       </span>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td className="whitespace-nowrap">
                       {formatDate(change.previous.orderDate)}
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td className="whitespace-nowrap">
                       {formatDate(change.current.orderDate)}
                     </td>
-                    <td className="px-4 py-3">
-                      {change.previous.supplierName}
-                    </td>
-                    <td className="px-4 py-3">{change.current.supplierName}</td>
-                    <td className="px-4 py-3">
+                    <td>{change.previous.supplierName}</td>
+                    <td>{change.current.supplierName}</td>
+                    <td className={tableStyles.amount}>
                       {formatCurrency(change.previous.unitPrice)}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className={tableStyles.amount}>
                       {formatCurrency(change.current.unitPrice)}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className={tableStyles.amount}>
                       {signedCurrency(change.differenceCents)}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className={tableStyles.amount}>
                       {percent(change.percentageBasisPoints)}
                     </td>
                   </tr>
@@ -601,11 +609,13 @@ export function IndicatorsPageView({
             aria-label="Oportunidades de economia"
             className="overflow-x-auto rounded-xl border bg-card"
           >
-            <table className="w-full min-w-[800px] text-left text-sm">
+            <table
+              className={`${tableStyles.table} w-full min-w-[800px] text-left text-sm`}
+            >
               <caption className="sr-only">
                 Produtos com maior oportunidade retrospectiva, limitado a dez
               </caption>
-              <thead className="bg-muted/50 text-muted-foreground">
+              <thead>
                 <tr>
                   {[
                     "Setor",
@@ -616,7 +626,7 @@ export function IndicatorsPageView({
                     "Economia potencial",
                     "Fornecedores",
                   ].map((heading) => (
-                    <th key={heading} className="px-4 py-3 font-medium">
+                    <th key={heading} scope="col" className="font-medium">
                       {heading}
                     </th>
                   ))}
@@ -624,20 +634,20 @@ export function IndicatorsPageView({
               </thead>
               <tbody>
                 {opportunities.map((item) => (
-                  <tr key={item.key} className="border-t">
-                    <td className="px-4 py-3">{sectorLabel(item.sector)}</td>
-                    <td className="px-4 py-3 font-medium">{item.name}</td>
-                    <td className="px-4 py-3">{item.presentation}</td>
-                    <td className="px-4 py-3">
+                  <tr key={item.key}>
+                    <td>{sectorLabel(item.sector)}</td>
+                    <td className="font-medium">{item.name}</td>
+                    <td>{item.presentation}</td>
+                    <td className={tableStyles.amount}>
                       {formatCurrency(item.realSpendCents)}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className={tableStyles.amount}>
                       {formatCurrency(item.benchmarkSpendCents)}
                     </td>
-                    <td className="px-4 py-3 font-medium">
+                    <td className={`${tableStyles.amount} font-medium`}>
                       {formatCurrency(item.potentialSavingsCents)}
                     </td>
-                    <td className="px-4 py-3">{item.suppliers}</td>
+                    <td>{item.suppliers}</td>
                   </tr>
                 ))}
               </tbody>

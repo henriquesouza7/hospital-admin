@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
 import { PurchaseNavigation } from "@/modules/finance/purchase-navigation";
 import { formatCurrency, formatDate } from "@/modules/finance/pharmacy/format";
+import tableStyles from "@/modules/finance/finance-history.module.css";
 import type {
   getPurchaseOrder,
   listPurchaseOrders,
@@ -50,40 +51,36 @@ export function PurchaseOrderList({
             aria-label="Pedidos de compra"
             className="overflow-x-auto"
           >
-            <table className="w-full min-w-[650px] text-left text-sm">
-              <thead className="bg-muted/70 text-xs uppercase tracking-wide text-muted-foreground">
+            <table
+              className={`${tableStyles.table} w-full min-w-[650px] text-left text-sm`}
+            >
+              <thead>
                 <tr>
-                  <th scope="col" className="px-4 py-3">
-                    Data
-                  </th>
-                  <th scope="col" className="px-4 py-3">
-                    Fornecedor
-                  </th>
-                  <th scope="col" className="px-4 py-3">
+                  <th scope="col">Data</th>
+                  <th scope="col">Fornecedor</th>
+                  <th scope="col" className={tableStyles.amount}>
                     Itens
                   </th>
-                  <th scope="col" className="px-4 py-3 text-right">
+                  <th scope="col" className={tableStyles.amount}>
                     Total
                   </th>
-                  <th scope="col" className="relative px-4 py-3">
+                  <th scope="col" className="relative">
                     <span className="sr-only">Detalhe</span>
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
+              <tbody>
                 {orders.map((order) => (
                   <tr key={order.id}>
-                    <td className="px-4 py-4 tabular-nums">
+                    <td className="tabular-nums">
                       {formatDate(order.order_date)}
                     </td>
-                    <td className="px-4 py-4 font-medium">
-                      {order.supplier_name}
-                    </td>
-                    <td className="px-4 py-4">{order.item_count}</td>
-                    <td className="px-4 py-4 text-right font-medium tabular-nums">
+                    <td className="font-medium">{order.supplier_name}</td>
+                    <td className={tableStyles.amount}>{order.item_count}</td>
+                    <td className={`${tableStyles.amount} font-medium`}>
                       {formatCurrency(order.total)}
                     </td>
-                    <td className="px-4 py-4 text-right">
+                    <td className="text-right">
                       <Button
                         variant="ghost"
                         size="sm"
