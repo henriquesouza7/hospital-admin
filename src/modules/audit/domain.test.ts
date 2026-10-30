@@ -4,11 +4,50 @@ import {
   buildAuditCursorFilter,
   buildAuditReverseCursorFilter,
   buildCsv,
+  describeAuditEvent,
   moduleForEntity,
   parseAuditDate,
 } from "./domain";
 
 describe("audit and CSV domain", () => {
+  it("should_describe_created_record_when_safe_subject_is_recorded", () => {
+    expect(
+      describeAuditEvent("procedure_category", "created", {
+        after: { name: "Categoria sintética" },
+      }),
+    ).toEqual({
+      subject: "Categoria de procedimento",
+      actionLabel: "Criado",
+      context: "Categoria sintética",
+      tone: "positive",
+    });
+  });
+
+  it("should_hide_patient_name_when_describing_surgery_audit", () => {
+    expect(
+      describeAuditEvent("surgery_patient", "created", {
+        name: "Pessoa fictícia",
+      }).context,
+    ).toBe("");
+  });
+
+  it("should_format_recorded_surgery_date_for_brazilian_readers", () => {
+    expect(
+      describeAuditEvent("surgery_day", "created", {
+        procedure_date: "2027-01-15",
+      }).context,
+    ).toBe("15/01/2027");
+  });
+
+  it("should_preserve_unknown_actions_in_technical_details_only", () => {
+    expect(describeAuditEvent("unknown", "unmapped", {})).toEqual({
+      subject: "Registro administrativo",
+      actionLabel: "Alteração registrada",
+      context: "",
+      tone: "neutral",
+    });
+  });
+
   it("should_map_known_entities_to_their_module", () => {
     expect(moduleForEntity("doctor")).toBe("internacoes");
     expect(moduleForEntity("surgery_appointment")).toBe("pequenas-cirurgias");

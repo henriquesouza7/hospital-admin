@@ -65,6 +65,37 @@ test.describe("smokes administrativos autenticados", () => {
     await expect(page.getByLabel("Módulo")).toBeVisible();
   });
 
+  test("should_show_readable_audit_events_and_keyboard_details", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/auditoria");
+    await expect(
+      page.getByRole("heading", { name: "Histórico de alterações" }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("O que aconteceu", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Responsável", { exact: true }).first(),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Quando", { exact: true }).first(),
+    ).toBeVisible();
+
+    const firstEvent = page.locator("main ol > li").first();
+    if (await firstEvent.count()) {
+      await expect(firstEvent.locator("time")).toHaveAttribute(
+        "datetime",
+        /.+/,
+      );
+      const details = firstEvent.getByText("Ver detalhes", { exact: true });
+      await details.focus();
+      await page.keyboard.press("Enter");
+      await expect(firstEvent.getByText("ID do registro")).toBeVisible();
+    }
+  });
+
   test("should_keep_administrative_dashboards_within_supported_viewports", async ({
     page,
   }) => {

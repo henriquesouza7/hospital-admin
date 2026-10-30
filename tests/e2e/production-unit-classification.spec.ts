@@ -155,10 +155,10 @@ test("should_keep_production_units_and_classifications_separate_after_catalog_ch
   await page.goto(
     `/auditoria?module=producao&entity=procedure&from=${currentDay}&through=${nextDay}`,
   );
-  await expect(page.getByRole("heading", { name: "Eventos" })).toBeVisible();
   await expect(
-    page.getByText("updated · procedure", { exact: true }).first(),
+    page.getByRole("heading", { name: "Histórico de alterações" }),
   ).toBeVisible();
+  await expect(page.getByText(/^Procedimento(?: ·|$)/).first()).toBeVisible();
 
   await page.goto(`/producao/lancamentos?de=${period}&ate=${period}`);
   const historyTexts = await page.locator("main tbody tr").allInnerTexts();
