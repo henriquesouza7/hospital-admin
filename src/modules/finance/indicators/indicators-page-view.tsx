@@ -1,3 +1,5 @@
+import { MonthYearPicker } from "@/components/ui/month-year-picker";
+import { SelectField } from "@/components/ui/select";
 import { ScrollableRegion } from "@/components/scrollable-region";
 import Link from "next/link";
 import {
@@ -133,46 +135,37 @@ export function IndicatorsPageView({
       >
         <label className="grid gap-1.5 text-sm font-medium" htmlFor="inicio">
           Início
-          <input
+          <MonthYearPicker
             id="inicio"
             name="inicio"
-            type="month"
             required
             defaultValue={filters.inicio}
-            className="h-10 rounded-lg border bg-background px-3 font-normal"
           />
         </label>
         <label className="grid gap-1.5 text-sm font-medium" htmlFor="fim">
           Fim
-          <input
+          <MonthYearPicker
             id="fim"
             name="fim"
-            type="month"
             required
             defaultValue={filters.fim}
-            className="h-10 rounded-lg border bg-background px-3 font-normal"
           />
         </label>
         <label className="grid gap-1.5 text-sm font-medium" htmlFor="setor">
           Setor
-          <select
-            id="setor"
-            name="setor"
-            defaultValue={filters.setor}
-            className="h-10 rounded-lg border bg-background px-3 font-normal"
-          >
+          <SelectField id="setor" name="setor" defaultValue={filters.setor}>
             <option value="todos">Todos</option>
             <option value="farmacia">Farmácia</option>
             <option value="laboratorio">Laboratório</option>
-          </select>
+          </SelectField>
         </label>
         <label className="grid gap-1.5 text-sm font-medium" htmlFor="produto">
           Produto para histórico
-          <select
+          <SelectField
             id="produto"
             name="produto"
             defaultValue={selectedProduct?.id ?? ""}
-            className="h-10 min-w-0 rounded-lg border bg-background px-3 font-normal"
+            className="min-w-0"
           >
             <option value="">Selecione um produto</option>
             {availableProducts.map((product) => (
@@ -182,7 +175,7 @@ export function IndicatorsPageView({
                 {product.is_active ? "" : " (inativo)"}
               </option>
             ))}
-          </select>
+          </SelectField>
         </label>
         <Button type="submit" className="h-10">
           Aplicar

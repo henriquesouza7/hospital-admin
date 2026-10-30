@@ -1,3 +1,5 @@
+import { MonthYearPicker } from "@/components/ui/month-year-picker";
+import { SelectField } from "@/components/ui/select";
 import { Download } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { SectionHeader } from "@/components/section-header";
@@ -55,37 +57,31 @@ export default function ExportsPage() {
         >
           <label className="grid min-w-0 gap-1.5 text-sm font-medium">
             Início
-            <input
+            <MonthYearPicker
               required
-              type="month"
               name="inicio"
               defaultValue={competence}
-              className="h-10 w-full min-w-0 rounded-md border bg-background px-3 font-normal"
+              className="w-full min-w-0"
             />
           </label>
           <label className="grid min-w-0 gap-1.5 text-sm font-medium">
             Fim
-            <input
+            <MonthYearPicker
               required
-              type="month"
               name="fim"
               defaultValue={competence}
-              className="h-10 w-full min-w-0 rounded-md border bg-background px-3 font-normal"
+              className="w-full min-w-0"
             />
           </label>
           <label className="grid min-w-0 gap-1.5 text-sm font-medium">
             Relatório
-            <select
-              required
-              name="tipo"
-              className="h-10 w-full min-w-0 rounded-md border bg-background px-3 font-normal"
-            >
+            <SelectField required name="tipo" className="w-full min-w-0">
               {types.map(([value, title]) => (
                 <option key={value} value={value}>
                   {title}
                 </option>
               ))}
-            </select>
+            </SelectField>
           </label>
           <button
             className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground sm:col-span-2 xl:col-span-1 xl:w-auto"

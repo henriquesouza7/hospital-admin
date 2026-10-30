@@ -1,4 +1,6 @@
 "use client";
+import { MonthYearPicker } from "@/components/ui/month-year-picker";
+import { SelectField } from "@/components/ui/select";
 import { ScrollableRegion } from "@/components/scrollable-region";
 
 import { type FormEvent, useMemo, useState, useTransition } from "react";
@@ -46,9 +48,9 @@ function ColumnSelect({
         {label}
         {optional ? " (opcional)" : ""}
       </label>
-      <select
+      <SelectField
         id={name}
-        className={fieldClassName}
+        className="w-full"
         value={value}
         onChange={(event) =>
           onChange(event.target.value === "" ? "" : Number(event.target.value))
@@ -60,7 +62,7 @@ function ColumnSelect({
             {header}
           </option>
         ))}
-      </select>
+      </SelectField>
     </div>
   );
 }
@@ -211,32 +213,31 @@ export function ProductionSusImportForm({
             >
               Competência
             </label>
-            <input
+            <MonthYearPicker
               id="sus-reference-period"
               name="reference_period"
-              type="month"
               value={period}
               onChange={(event) => setPeriod(event.target.value)}
               required
-              className={fieldClassName}
+              className="w-full"
             />
           </div>
           <div className="space-y-2">
             <label htmlFor="sus-delimiter" className="text-sm font-medium">
               Separador
             </label>
-            <select
+            <SelectField
               id="sus-delimiter"
               name="delimiter"
               value={delimiter}
               onChange={(event) =>
                 setDelimiter(event.target.value === "," ? "," : ";")
               }
-              className={fieldClassName}
+              className="w-full"
             >
               <option value=";">Ponto e vírgula (;)</option>
               <option value=",">Vírgula (,)</option>
-            </select>
+            </SelectField>
           </div>
         </div>
 
@@ -353,9 +354,9 @@ export function ProductionSusImportForm({
                     >
                       Procedimento cadastrado
                     </label>
-                    <select
+                    <SelectField
                       id={`mapping-${encodeURIComponent(group.key)}`}
-                      className={fieldClassName}
+                      className="w-full"
                       value={previewMappings[group.mappingKey] ?? ""}
                       onChange={(event) =>
                         setMappings((current) => ({
@@ -377,7 +378,7 @@ export function ProductionSusImportForm({
                           {procedure.category_name}
                         </option>
                       ))}
-                    </select>
+                    </SelectField>
                   </div>
                 </div>
               ))}

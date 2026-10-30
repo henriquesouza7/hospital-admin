@@ -1,4 +1,6 @@
 "use client";
+import { MonthYearPicker } from "@/components/ui/month-year-picker";
+import { SelectField } from "@/components/ui/select";
 import { ScrollableRegion } from "@/components/scrollable-region";
 
 import { useActionState } from "react";
@@ -208,12 +210,11 @@ export function ProcedureCreateForm({
         <span className="text-destructive" aria-hidden="true">
           *
         </span>
-        <select
+        <SelectField
           id="procedure-category"
           name="category_id"
           required
           disabled={!activeCategories.length}
-          className="h-10 rounded-lg border bg-background px-3 font-normal"
         >
           <option value="">Selecione</option>
           {activeCategories.map((category) => (
@@ -221,7 +222,7 @@ export function ProcedureCreateForm({
               {category.name}
             </option>
           ))}
-        </select>
+        </SelectField>
       </label>
       <label
         className="grid gap-1.5 text-sm font-medium"
@@ -375,11 +376,10 @@ function ProcedureRow({
               <input type="hidden" name="id" value={procedure.id} />
               <label className="grid gap-1 text-xs font-medium">
                 Categoria
-                <select
+                <SelectField
                   name="category_id"
                   required
                   defaultValue={procedure.category_id}
-                  className="h-9 rounded-md border bg-background px-2 text-sm font-normal"
                 >
                   {editableCategories.map((category) => (
                     <option key={category.id} value={category.id}>
@@ -387,7 +387,7 @@ function ProcedureRow({
                       {category.active ? "" : " (inativa)"}
                     </option>
                   ))}
-                </select>
+                </SelectField>
               </label>
               <label className="grid gap-1 text-xs font-medium">
                 Nome
@@ -459,11 +459,11 @@ export function ProcedureFilters({
         htmlFor="filter-category"
       >
         Categoria
-        <select
+        <SelectField
           id="filter-category"
           name="categoria"
           defaultValue={categoryId}
-          className="h-9 min-w-48 rounded-md border bg-background px-3 font-normal"
+          className="min-w-48"
         >
           <option value="">Todas</option>
           {categories.map((category) => (
@@ -471,20 +471,20 @@ export function ProcedureFilters({
               {category.name}
             </option>
           ))}
-        </select>
+        </SelectField>
       </label>
       <label className="grid gap-1 text-sm font-medium" htmlFor="filter-status">
         Status
-        <select
+        <SelectField
           id="filter-status"
           name="status"
           defaultValue={status}
-          className="h-9 min-w-36 rounded-md border bg-background px-3 font-normal"
+          className="min-w-36"
         >
           <option value="todos">Todos</option>
           <option value="ativos">Ativos</option>
           <option value="inativos">Inativos</option>
-        </select>
+        </SelectField>
       </label>
       <Button type="submit" variant="outline" size="sm">
         Filtrar
@@ -524,12 +524,12 @@ export function ProductionEntryCreateForm({
         <span className="text-destructive" aria-hidden="true">
           *
         </span>
-        <select
+        <SelectField
           id="entry-procedure"
           name="procedure_id"
           required
           disabled={!activeProcedures.length}
-          className="h-10 w-full min-w-0 rounded-lg border bg-background px-3 font-normal"
+          className="w-full min-w-0"
         >
           <option value="">Selecione</option>
           {activeProcedures.map((procedure) => (
@@ -538,7 +538,7 @@ export function ProductionEntryCreateForm({
               {procedure.counting_unit})
             </option>
           ))}
-        </select>
+        </SelectField>
       </label>
       <label
         className="grid min-w-0 gap-1.5 text-sm font-medium"
@@ -548,13 +548,12 @@ export function ProductionEntryCreateForm({
         <span className="text-destructive" aria-hidden="true">
           *
         </span>
-        <input
+        <MonthYearPicker
           id="entry-period"
           name="reference_period"
-          type="month"
           required
           defaultValue={defaultCompetence}
-          className="h-10 w-full min-w-0 rounded-lg border bg-background px-3 font-normal"
+          className="w-full min-w-0"
         />
       </label>
       <label
@@ -706,11 +705,10 @@ function ProductionEntryRow({
             <input type="hidden" name="id" value={entry.id} />
             <label className="grid gap-1 text-xs font-medium">
               Procedimento
-              <select
+              <SelectField
                 name="procedure_id"
                 required
                 defaultValue={entry.procedure_id}
-                className="h-9 rounded-md border bg-background px-2 text-sm font-normal"
               >
                 {options.map((procedure) => (
                   <option key={procedure.id} value={procedure.id}>
@@ -721,16 +719,14 @@ function ProductionEntryRow({
                     )
                   </option>
                 ))}
-              </select>
+              </SelectField>
             </label>
             <label className="grid gap-1 text-xs font-medium">
               Competência
-              <input
+              <MonthYearPicker
                 name="reference_period"
-                type="month"
                 required
                 defaultValue={entry.reference_period.slice(0, 7)}
-                className="h-9 rounded-md border bg-background px-2 text-sm font-normal"
               />
             </label>
             <label className="grid gap-1 text-xs font-medium">
@@ -788,11 +784,11 @@ export function ProductionEntryFilters({
         htmlFor="filter-entry-procedure"
       >
         Procedimento
-        <select
+        <SelectField
           id="filter-entry-procedure"
           name="procedimento"
           defaultValue={procedureId}
-          className="h-9 min-w-56 rounded-md border bg-background px-3 font-normal"
+          className="min-w-56"
         >
           <option value="">Todos</option>
           {procedures.map((procedure) => (
@@ -800,33 +796,21 @@ export function ProductionEntryFilters({
               {procedure.category_name} · {procedure.name}
             </option>
           ))}
-        </select>
+        </SelectField>
       </label>
       <label
         className="grid gap-1 text-sm font-medium"
         htmlFor="filter-entry-from"
       >
         De
-        <input
-          id="filter-entry-from"
-          type="month"
-          name="de"
-          defaultValue={from}
-          className="h-9 rounded-md border bg-background px-3 font-normal"
-        />
+        <MonthYearPicker id="filter-entry-from" name="de" defaultValue={from} />
       </label>
       <label
         className="grid gap-1 text-sm font-medium"
         htmlFor="filter-entry-to"
       >
         Até
-        <input
-          id="filter-entry-to"
-          type="month"
-          name="ate"
-          defaultValue={to}
-          className="h-9 rounded-md border bg-background px-3 font-normal"
-        />
+        <MonthYearPicker id="filter-entry-to" name="ate" defaultValue={to} />
       </label>
       <Button type="submit" variant="outline" size="sm">
         Filtrar
