@@ -1,4 +1,5 @@
 "use client";
+import { SelectField } from "@/components/ui/select";
 import { ScrollableRegion } from "@/components/scrollable-region";
 
 import {
@@ -156,7 +157,7 @@ export function FiscalImportForm({
           <span className="text-destructive" aria-hidden="true">
             *
           </span>
-          <select
+          <SelectField
             name="sector"
             required
             value={sector}
@@ -164,14 +165,13 @@ export function FiscalImportForm({
               setSector(event.target.value as FinanceSector | "");
               setMappedProducts({});
             }}
-            className="h-10 rounded-lg border bg-background px-3 font-normal"
           >
             <option value="" disabled>
               Selecione Farmácia ou Laboratório
             </option>
             <option value="farmacia">Farmácia</option>
             <option value="laboratorio">Laboratório</option>
-          </select>
+          </SelectField>
         </label>
         <label className="grid min-w-0 gap-1.5 text-sm font-medium">
           Arquivo NF-e XML{" "}
@@ -292,7 +292,7 @@ export function FiscalImportForm({
               <span className="text-destructive" aria-hidden="true">
                 *
               </span>
-              <select
+              <SelectField
                 name="supplier_id"
                 required
                 value={sameDraft ? supplierId : ""}
@@ -300,7 +300,6 @@ export function FiscalImportForm({
                   setDraftHash(state.hash);
                   setSupplierId(event.target.value);
                 }}
-                className="h-10 rounded-lg border bg-background px-3 font-normal"
               >
                 <option value="" disabled>
                   Selecione manualmente
@@ -310,7 +309,7 @@ export function FiscalImportForm({
                     {supplier.name}
                   </option>
                 ))}
-              </select>
+              </SelectField>
               {!suppliers.length ? (
                 <span className="text-xs font-normal text-destructive">
                   Cadastre e ative um fornecedor antes de confirmar.
@@ -448,7 +447,7 @@ export function FiscalImportForm({
                           >
                             Produto para o item {item.itemNumber}
                           </label>
-                          <select
+                          <SelectField
                             id={`product-${item.itemNumber}`}
                             required
                             value={
@@ -463,7 +462,7 @@ export function FiscalImportForm({
                                 [item.itemNumber]: event.target.value,
                               }));
                             }}
-                            className="h-10 max-w-64 rounded-lg border bg-background px-2 font-normal"
+                            className="max-w-64"
                           >
                             <option value="" disabled>
                               Selecione
@@ -480,7 +479,7 @@ export function FiscalImportForm({
                                 {product.name} — {product.presentation}
                               </option>
                             ))}
-                          </select>
+                          </SelectField>
                         </td>
                         <td className="px-3 py-3">
                           <label

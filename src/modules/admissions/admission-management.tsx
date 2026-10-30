@@ -1,4 +1,5 @@
 "use client";
+import { SelectField } from "@/components/ui/select";
 import { ScrollableRegion } from "@/components/scrollable-region";
 
 import { useActionState, useState } from "react";
@@ -73,12 +74,7 @@ export function AdmissionEntryCreateForm({
       </label>
       <label className="grid gap-1.5 text-sm font-medium">
         Médico
-        <select
-          name="doctor_id"
-          required
-          defaultValue=""
-          className="h-10 rounded-lg border bg-background px-3 font-normal"
-        >
+        <SelectField name="doctor_id" required defaultValue="">
           <option value="" disabled>
             Selecione
           </option>
@@ -87,7 +83,7 @@ export function AdmissionEntryCreateForm({
               {doctor.name}
             </option>
           ))}
-        </select>
+        </SelectField>
       </label>
       <label className="grid gap-1.5 text-sm font-medium">
         Quantidade
@@ -473,7 +469,7 @@ export function AdmissionTargetCreateForm({
       </div>
       <label className="grid gap-1.5 text-sm font-medium">
         Granularidade
-        <select
+        <SelectField
           name="period_type"
           value={periodType}
           onChange={(event) => {
@@ -481,11 +477,10 @@ export function AdmissionTargetCreateForm({
             setPeriodType(nextType);
             setPeriod(nextType === "year" ? String(defaultYear) : defaultMonth);
           }}
-          className="h-10 rounded-lg border bg-background px-3 font-normal"
         >
           <option value="month">Mensal</option>
           <option value="year">Anual</option>
-        </select>
+        </SelectField>
       </label>
       <label className="grid gap-1.5 text-sm font-medium">
         Período

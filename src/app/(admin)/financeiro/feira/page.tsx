@@ -1,3 +1,4 @@
+import { SelectField } from "@/components/ui/select";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -88,18 +89,17 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
           >
             <label className="grid gap-1 text-sm font-medium" htmlFor="ano">
               Ano
-              <select
+              <SelectField
                 id="ano"
                 name="ano"
                 defaultValue={String(selectedYear)}
-                className="h-9 rounded-lg border bg-background px-3 font-normal"
               >
                 {years.map((year) => (
                   <option key={year} value={year}>
                     {year}
                   </option>
                 ))}
-              </select>
+              </SelectField>
             </label>
             <Button type="submit" variant="outline" size="sm">
               Consultar

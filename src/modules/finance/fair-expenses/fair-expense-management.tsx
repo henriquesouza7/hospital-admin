@@ -1,4 +1,5 @@
 "use client";
+import { MonthYearPicker } from "@/components/ui/month-year-picker";
 import { ScrollableRegion } from "@/components/scrollable-region";
 
 import { useActionState } from "react";
@@ -61,12 +62,10 @@ export function FairExpenseCreateForm({
       </div>
       <label className="grid gap-1.5 text-sm font-medium">
         Competência
-        <input
+        <MonthYearPicker
           name="competence"
-          type="month"
           required
           defaultValue={defaultCompetence}
-          className="h-10 rounded-lg border bg-background px-3 font-normal"
         />
       </label>
       <label className="grid gap-1.5 text-sm font-medium">

@@ -1,4 +1,5 @@
 "use client";
+import { SelectField } from "@/components/ui/select";
 
 import { useActionState, useId, useState, useTransition } from "react";
 import {
@@ -96,11 +97,11 @@ function PatientSelector() {
             <label className="sr-only" htmlFor={`${id}-patient`}>
               Selecione um cadastro encontrado
             </label>
-            <select
+            <SelectField
               id={`${id}-patient`}
               name="patient_id"
               value={selectedId}
-              className={fieldClass}
+              className="mt-1 w-full"
               onChange={(event) => setSelectedId(event.target.value)}
             >
               <option value="">Selecionar cadastro encontrado</option>
@@ -109,7 +110,7 @@ function PatientSelector() {
                   {patient.name}
                 </option>
               ))}
-            </select>
+            </SelectField>
             {hasMore ? (
               <button
                 type="button"
@@ -198,14 +199,14 @@ export function CreateAppointmentForm({ dayId }: { dayId: string }) {
       <PatientSelector />
       <label className={labelClass}>
         Status inicial
-        <select
+        <SelectField
           name="status"
           defaultValue="awaiting_confirmation"
-          className={fieldClass}
+          className="mt-1 w-full"
         >
           <option value="awaiting_confirmation">Aguardando confirmação</option>
           <option value="confirmed">Confirmado</option>
-        </select>
+        </SelectField>
       </label>
       <div className="flex flex-col gap-3 sm:col-span-2 sm:flex-row sm:items-center">
         <button className={buttonClass} disabled={pending}>
@@ -268,16 +269,16 @@ export function UpdateAppointmentStatusForm({
       <label className="sr-only" htmlFor={`status-${appointmentId}`}>
         Status do agendamento
       </label>
-      <select
+      <SelectField
         id={`status-${appointmentId}`}
         name="status"
         defaultValue={status}
-        className={`${fieldClass} mt-0 w-52`}
+        className="mt-0 w-52"
       >
         <option value="awaiting_confirmation">Aguardando confirmação</option>
         <option value="confirmed">Confirmado</option>
         <option value="cancelled">Cancelado</option>
-      </select>
+      </SelectField>
       <button
         className="h-10 rounded-md border px-3 text-sm font-medium hover:bg-muted"
         disabled={pending}
@@ -327,12 +328,12 @@ export function TransferWaitlistForm({
       <label className="sr-only" htmlFor={`day-${entryId}`}>
         Dia de cirurgia para transferência
       </label>
-      <select
+      <SelectField
         id={`day-${entryId}`}
         name="surgery_day_id"
         required
         defaultValue=""
-        className={`${fieldClass} mt-0 min-w-56 w-auto`}
+        className="mt-0 min-w-56 w-auto"
       >
         <option value="" disabled>
           Escolher dia com vaga
@@ -346,7 +347,7 @@ export function TransferWaitlistForm({
             · {day.capacity - day.occupied} vaga(s)
           </option>
         ))}
-      </select>
+      </SelectField>
       <button
         className="h-10 rounded-md border px-3 text-sm font-medium hover:bg-muted"
         disabled={pending}

@@ -1,3 +1,4 @@
+import { SelectField } from "@/components/ui/select";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { SectionHeader } from "@/components/section-header";
@@ -99,18 +100,14 @@ export default async function AuditPage({ searchParams }: Props) {
           </label>
           <label className="grid gap-1 text-sm">
             Módulo
-            <select
-              className="h-10 rounded-md border bg-background px-3"
-              name="module"
-              defaultValue={selectedModule}
-            >
+            <SelectField name="module" defaultValue={selectedModule}>
               <option value="todos">Todos</option>
               {auditModules.map((item) => (
                 <option key={item} value={item}>
                   {item}
                 </option>
               ))}
-            </select>
+            </SelectField>
           </label>
           <label className="grid gap-1 text-sm">
             Entidade

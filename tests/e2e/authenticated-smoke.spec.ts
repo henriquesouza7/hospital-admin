@@ -339,9 +339,24 @@ test.describe("smokes administrativos autenticados", () => {
       "producao",
       "cirurgias",
     ]) {
-      await page.getByLabel("Início").fill("2099-10");
-      await page.getByLabel("Fim").fill("2099-10");
-      await page.getByLabel("Relatório").selectOption(reportType);
+      await page.getByLabel("Início").click();
+      await page.getByRole("button", { name: "Este mês" }).click();
+      await page.getByLabel("Fim").click();
+      await page.getByRole("button", { name: "Este mês" }).click();
+      const report = page.getByRole("combobox", { name: "Relatório" });
+      await report.click();
+      const reportLabels: Record<string, string> = {
+        gastos: "Despesas financeiras",
+        compras: "Compras e fornecedores",
+        internacoes: "Internações agregadas",
+        metas: "Metas de Internações",
+        producao: "Produção por procedimento",
+        cirurgias: "Resumo de Pequenas Cirurgias",
+      };
+      const reportOption = page.getByRole("option", {
+        name: reportLabels[reportType],
+      });
+      await reportOption.click();
       const downloadPromise = page.waitForEvent("download");
       await page.getByRole("button", { name: "Baixar CSV" }).click();
       const download = await downloadPromise;
@@ -349,8 +364,15 @@ test.describe("smokes administrativos autenticados", () => {
       if (!downloadPath) throw new Error("O arquivo CSV não foi salvo.");
       const csv = await readFile(downloadPath, "utf8");
 
+      const competence = new Date()
+        .toLocaleDateString("sv-SE", {
+          timeZone: "America/Sao_Paulo",
+          year: "numeric",
+          month: "2-digit",
+        })
+        .slice(0, 7);
       expect(download.suggestedFilename()).toBe(
-        `${reportType}-2099-10-2099-10.csv`,
+        `${reportType}-${competence}-${competence}.csv`,
       );
       expect(csv.startsWith("\uFEFF")).toBe(true);
       expect(csv).toContain("\r\n");
