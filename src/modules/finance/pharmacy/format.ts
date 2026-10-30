@@ -9,9 +9,31 @@ export function formatCurrency(value: string | bigint): string {
             BigInt(fraction.padEnd(2, "0").slice(0, 2))
           );
         })();
-  const whole = new Intl.NumberFormat("pt-BR").format(cents / BigInt(100));
-  const fraction = (cents % BigInt(100)).toString().padStart(2, "0");
-  return `R$ ${whole},${fraction}`;
+  const negative = cents < BigInt(0);
+  const absolute = negative ? -cents : cents;
+  const whole = new Intl.NumberFormat("pt-BR").format(absolute / BigInt(100));
+  const fraction = (absolute % BigInt(100)).toString().padStart(2, "0");
+  return `${negative ? "−" : ""}R$ ${whole},${fraction}`;
+}
+
+export function formatCompactCurrency(amountCents: bigint): string {
+  const negative = amountCents < BigInt(0);
+  const absolute = negative ? -amountCents : amountCents;
+  const scales = [
+    { cents: BigInt("100000"), suffix: "mil" },
+    { cents: BigInt("100000000"), suffix: "mi" },
+    { cents: BigInt("100000000000"), suffix: "bi" },
+    { cents: BigInt("100000000000000"), suffix: "tri" },
+  ];
+  const scale = [...scales].reverse().find((item) => absolute >= item.cents);
+
+  if (!scale) return formatCurrency(amountCents);
+
+  const tenths =
+    (absolute * BigInt(10) + scale.cents / BigInt(2)) / scale.cents;
+  const whole = new Intl.NumberFormat("pt-BR").format(tenths / BigInt(10));
+  const fraction = (tenths % BigInt(10)).toString();
+  return `${negative ? "−" : ""}R$ ${whole},${fraction} ${scale.suffix}`;
 }
 
 export function formatDate(value: string): string {

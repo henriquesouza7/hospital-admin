@@ -1,116 +1,268 @@
 "use client";
 
+import "./admin-shell.css";
 import Link from "next/link";
-import { Building2 } from "lucide-react";
+import {
+  Bed,
+  Building2,
+  ChevronRight,
+  ChevronDown,
+  CircleUserRound,
+  ClipboardList,
+  DollarSign,
+  HeartPulse,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { LogoutButton } from "@/components/logout-button";
 import { getEnvironmentLabel } from "@/lib/environment-label";
 import { isNavigationItemActive, navigationGroups } from "@/lib/navigation";
 
-type AdminShellProps = Readonly<{ children: React.ReactNode }>;
+type AdminShellProps = Readonly<{
+  children: React.ReactNode;
+  currentYear: string;
+}>;
 
-const activeLinkClasses =
-  "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm ring-1 ring-primary/20";
-const inactiveLinkClasses =
-  "text-sidebar-foreground/75 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground";
+function getModuleName(pathname: string) {
+  if (pathname.startsWith("/financeiro/farmacia")) return "pharmacy";
+  if (pathname.startsWith("/financeiro/laboratorio")) return "laboratory";
+  if (pathname.startsWith("/financeiro/feira")) return "fair";
+  if (pathname.startsWith("/financeiro")) return "finance";
+  if (pathname.startsWith("/internacoes")) return "admissions";
+  if (pathname.startsWith("/producao")) return "production";
+  if (pathname.startsWith("/pequenas-cirurgias")) return "minor-surgeries";
+  return "administration";
+}
 
-export function AdminShell({ children }: AdminShellProps) {
+export function AdminShell({ children, currentYear }: AdminShellProps) {
   const pathname = usePathname();
+  const isDashboard = pathname === "/";
+  const moduleName = getModuleName(pathname);
+  const navigationRef = useRef<HTMLElement | null>(null);
+  const [canScrollNavigation, setCanScrollNavigation] = useState(false);
+
+  useEffect(() => {
+    const navigation = navigationRef.current;
+    if (!navigation || !isDashboard) {
+      setCanScrollNavigation(false);
+      return;
+    }
+
+    const updateScrollCue = () => {
+      setCanScrollNavigation(
+        navigation.scrollLeft + navigation.clientWidth <
+          navigation.scrollWidth - 1,
+      );
+    };
+    const resizeObserver = new ResizeObserver(updateScrollCue);
+
+    resizeObserver.observe(navigation);
+    navigation.addEventListener("scroll", updateScrollCue, { passive: true });
+    updateScrollCue();
+
+    return () => {
+      resizeObserver.disconnect();
+      navigation.removeEventListener("scroll", updateScrollCue);
+    };
+  }, [isDashboard]);
 
   return (
-    <div className="min-h-screen bg-muted/40 md:grid md:grid-cols-[17rem_1fr]">
-      <aside className="border-b bg-sidebar md:sticky md:top-0 md:h-screen md:border-r md:border-b-0">
-        <div className="flex h-20 items-center gap-3 border-b px-5">
-          <span
-            aria-hidden="true"
-            className="flex size-10 items-center justify-center rounded-xl bg-primary/70 text-primary-foreground ring-1 ring-primary/50"
-          >
-            <Building2 className="size-5" />
+    <div
+      className={
+        isDashboard
+          ? "dashboard-shell admin-motion-safe min-h-screen bg-background min-[601px]:grid min-[601px]:grid-cols-[var(--dashboard-sidebar-width)_minmax(0,1fr)]"
+          : "module-shell admin-motion-safe min-h-screen bg-background min-[601px]:grid min-[601px]:grid-cols-[72px_minmax(0,1fr)] min-[861px]:grid-cols-[232px_minmax(0,1fr)]"
+      }
+      data-module={isDashboard ? undefined : moduleName}
+    >
+      <aside className="module-sidebar">
+        <div className="module-brand flex items-center">
+          <span className="module-brand-mark" aria-hidden="true">
+            {isDashboard ? (
+              <HeartPulse className="size-5" strokeWidth={1.8} />
+            ) : (
+              <Building2 className="size-5" strokeWidth={1.8} />
+            )}
           </span>
-          <div>
+          <div className="module-brand-text">
             <p className="font-semibold tracking-tight">Hospital Admin</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Gestão administrativa
+              {isDashboard ? getEnvironmentLabel() : "Gestão administrativa"}
             </p>
           </div>
         </div>
 
-        <nav
-          aria-label="Navegação principal"
-          className="flex gap-2 overflow-x-auto p-3 md:flex-col md:gap-1"
+        {isDashboard ? (
+          <p className="module-navigation-caption">Menu principal</p>
+        ) : null}
+        <div
+          className={`module-navigation-viewport ${isDashboard ? "dashboard-navigation-viewport" : ""}`}
         >
-          {navigationGroups.map((group) => {
-            const isGroupActive = isNavigationItemActive(pathname, group.href);
+          <nav
+            ref={navigationRef}
+            id="primary-navigation"
+            aria-label="Navegação principal"
+            className="module-navigation"
+          >
+            {navigationGroups.map((group) => {
+              const isGroupActive = isNavigationItemActive(
+                pathname,
+                group.href,
+              );
+              const NavigationIcon =
+                isDashboard && group.href === "/financeiro"
+                  ? DollarSign
+                  : isDashboard && group.href === "/internacoes"
+                    ? Bed
+                    : isDashboard && group.href === "/producao"
+                      ? ClipboardList
+                      : group.icon;
 
-            return (
-              <div key={group.href} className="shrink-0 md:shrink">
-                <Link
-                  href={group.href}
-                  aria-current={group.href === pathname ? "page" : undefined}
-                  onFocus={(event) =>
-                    event.currentTarget.scrollIntoView({
-                      block: "nearest",
-                      inline: "nearest",
-                    })
-                  }
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring ${isGroupActive ? activeLinkClasses : inactiveLinkClasses}`}
+              return (
+                <div
+                  key={group.href}
+                  className={`module-navigation-group ${isGroupActive && group.href !== pathname ? "module-navigation-group-active" : ""}`}
                 >
-                  <group.icon aria-hidden="true" className="size-4" />
-                  <span>{group.label}</span>
-                </Link>
+                  <Link
+                    href={group.href}
+                    aria-current={group.href === pathname ? "page" : undefined}
+                    aria-label={group.label}
+                    title={group.label}
+                    onFocus={(event) =>
+                      event.currentTarget.scrollIntoView({
+                        block: "nearest",
+                        inline: "nearest",
+                      })
+                    }
+                    className={`module-navigation-link ${group.href === pathname ? "module-navigation-active" : ""}`}
+                  >
+                    <NavigationIcon
+                      aria-hidden="true"
+                      className="size-4"
+                      strokeWidth={1.75}
+                    />
+                    <span className="module-navigation-label">
+                      {group.label}
+                    </span>
+                  </Link>
 
-                {group.items ? (
-                  <div className="mt-1 flex gap-1 border-l border-sidebar-border pl-3 md:ml-5 md:flex-col">
-                    {group.items.map((item) => {
-                      const isActive = isNavigationItemActive(
-                        pathname,
-                        item.href,
-                      );
+                  {group.items ? (
+                    <div className="module-navigation-children">
+                      {group.items.map((item) => {
+                        const isActive = isNavigationItemActive(
+                          pathname,
+                          item.href,
+                        );
 
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          aria-current={isActive ? "page" : undefined}
-                          onFocus={(event) =>
-                            event.currentTarget.scrollIntoView({
-                              block: "nearest",
-                              inline: "nearest",
-                            })
-                          }
-                          className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring ${isActive ? activeLinkClasses : inactiveLinkClasses}`}
-                        >
-                          <item.icon aria-hidden="true" className="size-3.5" />
-                          {item.label}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                ) : null}
-              </div>
-            );
-          })}
-        </nav>
-      </aside>
+                        return (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            aria-current={isActive ? "page" : undefined}
+                            aria-label={item.label}
+                            title={item.label}
+                            onFocus={(event) =>
+                              event.currentTarget.scrollIntoView({
+                                block: "nearest",
+                                inline: "nearest",
+                              })
+                            }
+                            className={`module-navigation-link module-navigation-child ${isActive ? "module-navigation-active" : ""}`}
+                          >
+                            <item.icon
+                              aria-hidden="true"
+                              className="size-3.5"
+                              strokeWidth={1.75}
+                            />
+                            <span className="module-navigation-label">
+                              {item.label}
+                            </span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </nav>
+          {isDashboard && canScrollNavigation ? (
+            <button
+              type="button"
+              aria-label="Rolar navegação para a direita"
+              aria-controls="primary-navigation"
+              className="dashboard-navigation-scroll-cue"
+              onClick={() => {
+                const navigation = navigationRef.current;
+                if (!navigation) return;
+                navigation.scrollBy({
+                  left: navigation.clientWidth * 0.75,
+                  behavior: window.matchMedia(
+                    "(prefers-reduced-motion: reduce)",
+                  ).matches
+                    ? "instant"
+                    : "smooth",
+                });
+              }}
+            >
+              <ChevronRight aria-hidden="true" className="size-4" />
+            </button>
+          ) : null}
+        </div>
 
-      <div className="min-w-0">
-        <header className="sticky top-0 z-10 flex min-h-16 items-center justify-between border-b bg-background/95 px-4 backdrop-blur sm:px-6 lg:px-8">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-[0.16em] text-primary-foreground/70">
-              Operação administrativa
-            </p>
-            <p className="mt-0.5 text-sm font-semibold text-foreground">
-              Painel hospitalar
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="hidden rounded-full border bg-card px-3 py-1 text-xs font-medium text-muted-foreground sm:inline-flex">
-              {getEnvironmentLabel()}
+        <details className="module-account">
+          <summary
+            aria-label="Menu da conta: administrador"
+            className="module-account-trigger"
+          >
+            {isDashboard ? (
+              <span className="dashboard-account-avatar" aria-hidden="true">
+                AD
+              </span>
+            ) : (
+              <CircleUserRound
+                aria-hidden="true"
+                className="module-account-icon"
+              />
+            )}
+            <span
+              className="module-account-label"
+              title="Conta administrativa · Administrador"
+            >
+              Conta administrativa
+              {isDashboard ? (
+                <span className="dashboard-account-role">Administrador</span>
+              ) : null}
             </span>
+            <ChevronDown
+              aria-hidden="true"
+              className="module-account-chevron"
+            />
+          </summary>
+          <div className="module-account-menu">
+            <p className="module-environment-label">{getEnvironmentLabel()}</p>
             <LogoutButton />
           </div>
-        </header>
-        <main className="p-4 sm:p-6 lg:p-8">{children}</main>
+        </details>
+      </aside>
+
+      <div
+        className={
+          isDashboard
+            ? "admin-main admin-main-dashboard flex min-h-screen min-w-0 flex-col"
+            : "admin-main flex min-h-screen min-w-0 flex-col"
+        }
+      >
+        <main className="admin-content min-h-0 w-full flex-1">
+          <div>{children}</div>
+        </main>
+        <footer className="mt-[var(--space-section-major)] flex flex-col gap-2 border-t border-border/70 py-4 text-xs leading-5 text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <div>
+            <p className="font-medium text-foreground/80">Hospital Admin</p>
+            <p>© {currentYear} · Gestão administrativa hospitalar.</p>
+          </div>
+          <p className="font-medium">Uso interno</p>
+        </footer>
       </div>
     </div>
   );
