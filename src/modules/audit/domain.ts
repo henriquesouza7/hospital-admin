@@ -94,6 +94,91 @@ export function moduleForEntity(entityType: string): AuditModule | "outros" {
   return "outros";
 }
 
+const entityLabels: Readonly<Record<string, string>> = {
+  purchase_order: "Pedido de compra",
+  supplier: "Fornecedor",
+  product: "Produto",
+  monthly_fair_expense: "Despesa da Feira",
+  fiscal_import: "Importação de nota fiscal",
+  fiscal_import_item: "Item de nota fiscal",
+  doctor: "Médico",
+  admission_entry: "Lançamento de internação",
+  admission_target: "Meta de internação",
+  admission_import: "Importação de internações",
+  procedure_category: "Categoria de procedimento",
+  procedure: "Procedimento",
+  production_entry: "Lançamento de produção",
+  production_import: "Importação de produção",
+  surgery_day: "Dia de cirurgia",
+  surgery_patient: "Cadastro de pessoa",
+  surgery_appointment: "Agendamento de cirurgia",
+  surgery_waitlist: "Fila de cirurgia",
+};
+
+const actionLabels: Readonly<Record<string, string>> = {
+  created: "Criado",
+  updated: "Atualizado",
+  activated: "Ativado",
+  deactivated: "Inativado",
+  imported: "Importado",
+  transferred: "Transferido",
+  cancelled: "Cancelado",
+  status_changed: "Status alterado",
+  capacity_changed: "Capacidade alterada",
+};
+
+export function describeAuditEvent(
+  entityType: string,
+  action: string,
+  payload: Record<string, unknown>,
+) {
+  const subject = entityLabels[entityType] ?? "Registro administrativo";
+  const actionLabel = actionLabels[action] ?? "Alteração registrada";
+  const source =
+    payload.after &&
+    typeof payload.after === "object" &&
+    !Array.isArray(payload.after)
+      ? (payload.after as Record<string, unknown>)
+      : payload;
+  const allowedName = [
+    "doctor",
+    "supplier",
+    "product",
+    "procedure_category",
+    "procedure",
+  ].includes(entityType);
+  const name =
+    allowedName && typeof source.name === "string" ? source.name.trim() : "";
+  const referenceField: Readonly<Record<string, string>> = {
+    monthly_fair_expense: "competence",
+    admission_entry: "entry_date",
+    admission_target: "reference_period",
+    purchase_order: "order_date",
+    surgery_day: "procedure_date",
+    fiscal_import: "invoice_number",
+  };
+  const reference = source[referenceField[entityType] ?? ""];
+  let context = name || (typeof reference === "string" ? reference : "");
+  if (!name && /^\d{4}-\d{2}-\d{2}$/.test(context)) {
+    const [year, month, day] = context.split("-");
+    context = `${day}/${month}/${year}`;
+  } else if (!name && /^\d{4}-\d{2}$/.test(context)) {
+    const [year, month] = context.split("-");
+    context = `${month}/${year}`;
+  }
+  return {
+    subject,
+    actionLabel,
+    context: context.slice(0, 100),
+    tone:
+      action === "cancelled" || action === "deactivated"
+        ? "warning"
+        : action === "created" || action === "activated"
+          ? "positive"
+          : "neutral",
+  } as const;
+}
+
 export function entityTypesForModule(
   auditModule: AuditModule,
 ): readonly string[] {

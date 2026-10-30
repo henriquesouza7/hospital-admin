@@ -107,7 +107,9 @@ test("should_reject_duplicate_patient_booking_without_duplicate_row_or_audit", a
       through: formatDate(through),
     });
     await page.goto(`/auditoria?${params}`);
-    await expect(page.getByRole("heading", { name: "Eventos" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Histórico de alterações" }),
+    ).toBeVisible();
     return page.locator("ol li").count();
   };
 
