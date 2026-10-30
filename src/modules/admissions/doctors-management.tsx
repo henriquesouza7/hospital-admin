@@ -184,14 +184,22 @@ export function DoctorsManagement({
             icon={Stethoscope}
           />
         ) : (
-          <ul className="divide-y rounded-xl border bg-card">
+          <ul className="grid gap-3 lg:grid-cols-2">
             {doctors.map((doctor) => (
               <li
                 key={doctor.id}
-                className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5"
+                className="grid gap-4 rounded-xl border bg-card p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
               >
-                <div className="grid gap-2">
-                  <p className="font-medium text-foreground">{doctor.name}</p>
+                <div className="flex min-w-0 items-center gap-3">
+                  <span
+                    aria-hidden="true"
+                    className="grid size-10 shrink-0 place-items-center rounded-full bg-muted text-sm font-semibold text-foreground"
+                  >
+                    {doctor.name.trim().slice(0, 1).toLocaleUpperCase("pt-BR")}
+                  </span>
+                  <p className="min-w-0 flex-1 truncate font-semibold text-foreground">
+                    {doctor.name}
+                  </p>
                   <StatusBadge
                     label={doctor.active ? "Ativo" : "Inativo"}
                     tone={doctor.active ? "success" : "neutral"}

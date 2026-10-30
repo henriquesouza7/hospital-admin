@@ -10,6 +10,8 @@ import {
   ClipboardList,
   DollarSign,
   HeartPulse,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -39,6 +41,7 @@ export function AdminShell({ children, currentYear }: AdminShellProps) {
   const moduleName = getModuleName(pathname);
   const navigationRef = useRef<HTMLElement | null>(null);
   const [canScrollNavigation, setCanScrollNavigation] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     const navigation = navigationRef.current;
@@ -68,6 +71,7 @@ export function AdminShell({ children, currentYear }: AdminShellProps) {
   return (
     <div
       className={`${isDashboard ? "dashboard-shell" : "module-shell"} admin-motion-safe min-h-screen bg-background min-[601px]:grid min-[601px]:grid-cols-[72px_minmax(0,1fr)] min-[861px]:grid-cols-[var(--dashboard-sidebar-width)_minmax(0,1fr)]`}
+      data-sidebar-collapsed={sidebarCollapsed}
       data-module={isDashboard ? undefined : moduleName}
     >
       <aside className="module-sidebar">
@@ -81,6 +85,20 @@ export function AdminShell({ children, currentYear }: AdminShellProps) {
               {getEnvironmentLabel()}
             </p>
           </div>
+          <button
+            type="button"
+            className="module-sidebar-toggle"
+            aria-label={sidebarCollapsed ? "Expandir menu" : "Recolher menu"}
+            aria-expanded={!sidebarCollapsed}
+            aria-controls="primary-navigation"
+            onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
+          >
+            {sidebarCollapsed ? (
+              <PanelLeftOpen aria-hidden="true" className="size-4" />
+            ) : (
+              <PanelLeftClose aria-hidden="true" className="size-4" />
+            )}
+          </button>
         </div>
 
         <p className="module-navigation-caption">Menu principal</p>

@@ -668,6 +668,79 @@
   animation: admin-content-enter var(--motion-enter) var(--motion-ease) both;
 }
 
+.module-sidebar-toggle {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  place-items: center;
+  margin-left: auto;
+  border: 1px solid var(--sidebar-border);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--muted-foreground);
+}
+
+.module-sidebar-toggle:hover {
+  background: var(--surface-soft);
+  color: var(--foreground);
+}
+
+.module-sidebar-toggle:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+@media (min-width: 861px) {
+  .admin-motion-safe[data-sidebar-collapsed="true"] {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  .admin-motion-safe[data-sidebar-collapsed="true"] .module-sidebar {
+    padding-inline: 10px;
+  }
+
+  .admin-motion-safe[data-sidebar-collapsed="true"] .module-brand-text,
+  .admin-motion-safe[data-sidebar-collapsed="true"] .module-navigation-caption,
+  .admin-motion-safe[data-sidebar-collapsed="true"] .module-navigation-label,
+  .admin-motion-safe[data-sidebar-collapsed="true"] .module-account-label,
+  .admin-motion-safe[data-sidebar-collapsed="true"] .module-account-chevron {
+    display: none;
+  }
+
+  .admin-motion-safe[data-sidebar-collapsed="true"] .module-brand {
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  .admin-motion-safe[data-sidebar-collapsed="true"] .module-sidebar-toggle {
+    margin: 8px auto 0;
+  }
+
+  .admin-motion-safe[data-sidebar-collapsed="true"] .module-navigation-link {
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  .admin-motion-safe[data-sidebar-collapsed="true"]
+    .module-navigation-children {
+    margin-left: 0;
+    border-left: 0;
+    padding-left: 0;
+  }
+
+  .admin-motion-safe[data-sidebar-collapsed="true"] .module-account-trigger {
+    justify-content: center;
+    padding-inline: 0;
+  }
+}
+
+@media (max-width: 860px) {
+  .module-sidebar-toggle {
+    display: none;
+  }
+}
+
 .module-environment-label {
   margin: 0;
   padding: 10px 11px 12px;

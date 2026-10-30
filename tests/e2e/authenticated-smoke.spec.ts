@@ -15,6 +15,53 @@ test.describe("smokes administrativos autenticados", () => {
   );
   test.use({ storageState: storageState ?? undefined });
 
+  test("should_collapse_and_expand_desktop_sidebar_without_losing_navigation", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/internacoes/medicos");
+    const navigation = page.getByRole("navigation", {
+      name: "Navegação principal",
+    });
+    const collapse = page.getByRole("button", { name: "Recolher menu" });
+    await expect(collapse).toBeVisible();
+    await collapse.click();
+    await expect(
+      page.locator(".admin-motion-safe[data-sidebar-collapsed='true']"),
+    ).toBeVisible();
+    await expect(
+      navigation.getByRole("link", { name: "Internações" }),
+    ).toBeVisible();
+    await expect(
+      navigation.getByRole("link", { name: "Farmácia" }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Expandir menu" }).click();
+    await expect(
+      page.locator(".admin-motion-safe[data-sidebar-collapsed='false']"),
+    ).toBeVisible();
+  });
+
+  test("should_render_record_cards_for_doctors_suppliers_and_admission_targets", async ({
+    page,
+  }) => {
+    for (const [route, heading] of [
+      ["/internacoes/medicos", "Médicos"],
+      ["/financeiro/fornecedores?setor=farmacia", "Fornecedores"],
+      ["/internacoes/metas", "Metas"],
+    ] as const) {
+      for (const width of [390, 768, 1440]) {
+        await page.setViewportSize({ width, height: 900 });
+        await page.goto(route);
+        await expect(page).not.toHaveURL(/\/login/);
+        await expect(page.locator("main h1")).toContainText(heading);
+        const overflow = await page.evaluate(
+          () => document.documentElement.scrollWidth > window.innerWidth,
+        );
+        expect(overflow, `${route} em ${width}px`).toBe(false);
+      }
+    }
+  });
+
   test("should_render_administrative_dashboard_with_a_real_admin_session", async ({
     page,
   }) => {

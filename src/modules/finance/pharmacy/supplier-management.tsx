@@ -1,6 +1,4 @@
 "use client";
-import { ScrollableRegion } from "@/components/scrollable-region";
-
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -78,36 +76,14 @@ export function SupplierList({ suppliers }: { suppliers: Supplier[] }) {
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border bg-card">
-      <ScrollableRegion
-        aria-label="Fornecedores cadastrados"
-        className="overflow-x-auto"
-      >
-        <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="bg-muted/70 text-xs uppercase tracking-wide text-muted-foreground">
-            <tr>
-              <th scope="col" className="px-4 py-3">
-                Fornecedor
-              </th>
-              <th scope="col" className="px-4 py-3">
-                Observação
-              </th>
-              <th scope="col" className="px-4 py-3">
-                Status
-              </th>
-              <th scope="col" className="px-4 py-3">
-                Ações
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {suppliers.map((supplier) => (
-              <SupplierRow key={supplier.id} supplier={supplier} />
-            ))}
-          </tbody>
-        </table>
-      </ScrollableRegion>
-    </div>
+    <ul
+      className="grid gap-3 lg:grid-cols-2"
+      aria-label="Fornecedores cadastrados"
+    >
+      {suppliers.map((supplier) => (
+        <SupplierRow key={supplier.id} supplier={supplier} />
+      ))}
+    </ul>
   );
 }
 
@@ -117,18 +93,38 @@ function SupplierRow({ supplier }: { supplier: Supplier }) {
     initialFinanceActionState,
   );
   return (
-    <tr className="align-top">
-      <td className="px-4 py-4 font-medium">{supplier.name}</td>
-      <td className="max-w-sm px-4 py-4 text-muted-foreground">
-        {supplier.notes || "—"}
-      </td>
-      <td className="px-4 py-4">
-        <span className="rounded-full border px-2.5 py-1 text-xs font-medium">
-          {supplier.is_active ? "Ativo" : "Inativo"}
-        </span>
-      </td>
-      <td className="px-4 py-4">
-        <div className="flex flex-wrap items-center gap-2">
+    <li className="min-w-0 rounded-xl border bg-card p-4">
+      <article className="grid gap-4">
+        <header className="flex min-w-0 items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <span
+              aria-hidden="true"
+              className="grid size-10 shrink-0 place-items-center rounded-full bg-muted text-sm font-semibold text-foreground"
+            >
+              {supplier.name.trim().slice(0, 1).toLocaleUpperCase("pt-BR")}
+            </span>
+            <div className="min-w-0">
+              <h3 className="truncate text-base font-semibold">
+                {supplier.name}
+              </h3>
+              {supplier.notes ? (
+                <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                  {supplier.notes}
+                </p>
+              ) : (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Sem observação
+                </p>
+              )}
+            </div>
+          </div>
+          <span
+            className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium ${supplier.is_active ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-border bg-muted text-muted-foreground"}`}
+          >
+            {supplier.is_active ? "Ativo" : "Inativo"}
+          </span>
+        </header>
+        <div className="flex flex-wrap items-center justify-end gap-2 border-t pt-3">
           <details>
             <summary className="cursor-pointer rounded-md px-2 py-1 text-sm text-link hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
               Editar
@@ -176,8 +172,8 @@ function SupplierRow({ supplier }: { supplier: Supplier }) {
             </Button>
           </form>
         </div>
-      </td>
-    </tr>
+      </article>
+    </li>
   );
 }
 
