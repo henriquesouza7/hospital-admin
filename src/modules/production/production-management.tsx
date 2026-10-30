@@ -123,15 +123,15 @@ function CategoryRow({ category }: { category: ProcedureCategory }) {
     initialProductionActionState,
   );
   return (
-    <li className="grid gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
-      <div className="grid gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-medium">{category.name}</span>
-          <StatusBadge
-            label={category.active ? "Ativa" : "Inativa"}
-            tone={category.active ? "success" : "neutral"}
-          />
-        </div>
+    <li className="grid gap-3 p-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-medium">{category.name}</span>
+        <StatusBadge
+          label={category.active ? "Ativa" : "Inativa"}
+          tone={category.active ? "success" : "neutral"}
+        />
+      </div>
+      <div className="flex flex-wrap items-start gap-2">
         <details>
           <summary
             className={buttonVariants({
@@ -171,25 +171,25 @@ function CategoryRow({ category }: { category: ProcedureCategory }) {
             </div>
           </form>
         </details>
-        <ActionFeedback state={statusState} />
+        <form action={statusAction}>
+          <input type="hidden" name="id" value={category.id} />
+          <input type="hidden" name="active" value={String(!category.active)} />
+          <Button
+            type="submit"
+            variant={category.active ? "caution" : "outline"}
+            size="sm"
+            disabled={statusPending}
+          >
+            {category.active ? (
+              <PowerOff aria-hidden="true" />
+            ) : (
+              <Check aria-hidden="true" />
+            )}
+            {category.active ? "Inativar" : "Reativar"}
+          </Button>
+        </form>
       </div>
-      <form action={statusAction}>
-        <input type="hidden" name="id" value={category.id} />
-        <input type="hidden" name="active" value={String(!category.active)} />
-        <Button
-          type="submit"
-          variant={category.active ? "caution" : "outline"}
-          size="sm"
-          disabled={statusPending}
-        >
-          {category.active ? (
-            <PowerOff aria-hidden="true" />
-          ) : (
-            <Check aria-hidden="true" />
-          )}
-          {category.active ? "Inativar" : "Reativar"}
-        </Button>
-      </form>
+      <ActionFeedback state={statusState} />
     </li>
   );
 }
