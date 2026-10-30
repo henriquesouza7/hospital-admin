@@ -252,7 +252,12 @@ export function AdmissionCsvImportForm() {
             className="h-10 w-full min-w-0 rounded-lg border bg-background px-3 py-1.5 font-normal file:mr-3 file:rounded-md file:border-0 file:bg-muted file:px-2 file:py-1"
           />
         </label>
-        <Button type="submit" variant="outline" disabled={previewPending}>
+        <Button
+          type="submit"
+          variant="outline"
+          disabled={previewPending}
+          className="h-10"
+        >
           <FileSpreadsheet aria-hidden="true" />
           {previewPending ? "Validando…" : "Gerar prévia"}
         </Button>
@@ -326,7 +331,7 @@ export function AdmissionCsvImportForm() {
                   className="h-10 w-full min-w-0 rounded-lg border bg-background px-3 py-1.5 font-normal file:mr-3 file:rounded-md file:border-0 file:bg-muted file:px-2 file:py-1"
                 />
               </label>
-              <Button type="submit" disabled={confirmPending}>
+              <Button type="submit" disabled={confirmPending} className="h-10">
                 {confirmPending ? "Importando…" : "Confirmar importação"}
               </Button>
             </form>

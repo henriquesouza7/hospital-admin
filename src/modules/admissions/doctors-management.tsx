@@ -88,7 +88,7 @@ function CreateDoctorForm() {
         </label>
         <ActionMessage state={state} />
       </div>
-      <Button type="submit" disabled={pending}>
+      <Button type="submit" disabled={pending} className="h-10">
         <UserRoundPlus aria-hidden="true" />
         {pending ? "Salvando…" : "Cadastrar médico"}
       </Button>

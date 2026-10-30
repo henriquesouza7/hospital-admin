@@ -142,7 +142,7 @@ test.describe("seletores administrativos", () => {
     }
   });
 
-  test("should_match_filter_action_height_to_controls_across_modules", async ({
+  test("should_match_form_action_height_to_controls_across_modules", async ({
     page,
   }) => {
     for (const [path, name] of [
@@ -150,8 +150,12 @@ test.describe("seletores administrativos", () => {
       ["/financeiro/indicadores", "Aplicar"],
       ["/internacoes", "Aplicar período"],
       ["/internacoes/lancamentos", "Aplicar período"],
+      ["/internacoes/lancamentos", "Gerar prévia"],
+      ["/internacoes/medicos", "Cadastrar médico"],
       ["/producao/procedimentos", "Filtrar"],
+      ["/producao/procedimentos", "Cadastrar"],
       ["/producao/lancamentos", "Filtrar"],
+      ["/producao/lancamentos", "Registrar lançamento"],
       ["/auditoria", "Aplicar filtros"],
       ["/exportacoes", "Baixar CSV"],
     ] as const) {
