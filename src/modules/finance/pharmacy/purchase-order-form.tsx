@@ -1,5 +1,6 @@
 "use client";
 import { SelectField } from "@/components/ui/select";
+import { DatePickerField } from "@/components/ui/date-picker-field";
 
 import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
@@ -157,12 +158,11 @@ export function PurchaseOrderForm({
           <span className="text-destructive" aria-hidden="true">
             *
           </span>
-          <input
+          <DatePickerField
             name="order_date"
-            type="date"
             required
             defaultValue={localOrderDate}
-            className="h-10 w-full min-w-0 rounded-lg border bg-background px-3 font-normal"
+            className="w-full min-w-0"
           />
         </label>
         <label className="grid min-w-0 gap-1.5 text-sm font-medium sm:col-span-2">

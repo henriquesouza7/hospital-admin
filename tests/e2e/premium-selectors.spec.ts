@@ -64,6 +64,38 @@ test.describe("seletores administrativos", () => {
     await expect(moduleSelect).toContainText("Financeiro");
   });
 
+  test("should_select_a_day_and_apply_audit_date_filter", async ({ page }) => {
+    await page.goto("/auditoria");
+    const from = page.getByRole("button", { name: "De", exact: true });
+    await from.click();
+    await expect(page.getByRole("grid", { name: /2026/ })).toBeVisible();
+    await page
+      .getByRole("button", { name: "1 de outubro de 2026", exact: true })
+      .click();
+    await expect(from).toContainText("01/10/2026");
+    await page.getByRole("button", { name: "Aplicar filtros" }).click();
+    await expect(page).toHaveURL(/from=2026-10-01/);
+  });
+
+  test("should_keep_daily_date_popover_within_mobile_viewport", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/auditoria");
+    await page.getByRole("button", { name: "De", exact: true }).click();
+    const grid = page.getByRole("grid", { name: /2026/ });
+    await expect(grid).toBeVisible();
+    const bounds = await grid.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return { left: rect.left, right: rect.right, viewport: innerWidth };
+    });
+    expect(bounds.left).toBeGreaterThanOrEqual(0);
+    expect(bounds.right).toBeLessThanOrEqual(bounds.viewport);
+    expect(
+      await page.evaluate(() => document.body.scrollWidth),
+    ).toBeLessThanOrEqual(390);
+  });
+
   for (const width of [390, 1440]) {
     test(`should_keep_open_selectors_inside_${width}px_viewport`, async ({
       page,

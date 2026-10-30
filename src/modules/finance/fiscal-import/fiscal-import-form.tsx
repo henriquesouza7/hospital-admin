@@ -1,5 +1,6 @@
 "use client";
 import { SelectField } from "@/components/ui/select";
+import { DatePickerField } from "@/components/ui/date-picker-field";
 import { ScrollableRegion } from "@/components/scrollable-region";
 
 import {
@@ -321,16 +322,14 @@ export function FiscalImportForm({
               <span className="text-destructive" aria-hidden="true">
                 *
               </span>
-              <input
+              <DatePickerField
                 name="order_date"
-                type="date"
                 required
                 value={sameDraft && orderDate ? orderDate : document.orderDate}
                 onChange={(event) => {
                   setDraftHash(state.hash);
                   setOrderDate(event.target.value);
                 }}
-                className="h-10 rounded-lg border bg-background px-3 font-normal"
               />
             </label>
             <label className="grid gap-1.5 text-sm font-medium sm:col-span-2">

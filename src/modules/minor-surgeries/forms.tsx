@@ -1,5 +1,6 @@
 "use client";
 import { SelectField } from "@/components/ui/select";
+import { DatePickerField } from "@/components/ui/date-picker-field";
 
 import { useActionState, useId, useState, useTransition } from "react";
 import {
@@ -160,11 +161,10 @@ export function CreateSurgeryDayForm() {
     >
       <label className={labelClass}>
         Data do procedimento
-        <input
+        <DatePickerField
           required
-          type="date"
           name="procedure_date"
-          className={fieldClass}
+          className="mt-1 w-full"
         />
       </label>
       <label className={labelClass}>
