@@ -1,4 +1,5 @@
 import { SelectField } from "@/components/ui/select";
+import { DatePickerField } from "@/components/ui/date-picker-field";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { SectionHeader } from "@/components/section-header";
@@ -82,18 +83,14 @@ export default async function AuditPage({ searchParams }: Props) {
         >
           <label className="grid gap-1 text-sm">
             De
-            <input
-              className="h-10 rounded-md border bg-background px-3"
-              type="date"
+            <DatePickerField
               name="from"
               defaultValue={one(search.from) ?? ""}
             />
           </label>
           <label className="grid gap-1 text-sm">
             Até
-            <input
-              className="h-10 rounded-md border bg-background px-3"
-              type="date"
+            <DatePickerField
               name="through"
               defaultValue={one(search.through) ?? ""}
             />

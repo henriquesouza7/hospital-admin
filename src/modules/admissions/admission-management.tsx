@@ -1,5 +1,6 @@
 "use client";
 import { SelectField } from "@/components/ui/select";
+import { DatePickerField } from "@/components/ui/date-picker-field";
 import { ScrollableRegion } from "@/components/scrollable-region";
 
 import { useActionState, useState } from "react";
@@ -64,12 +65,10 @@ export function AdmissionEntryCreateForm({
       </div>
       <label className="grid gap-1.5 text-sm font-medium">
         Data
-        <input
+        <DatePickerField
           name="entry_date"
-          type="date"
           required
           defaultValue={defaultDate}
-          className="h-10 rounded-lg border bg-background px-3 font-normal"
         />
       </label>
       <label className="grid gap-1.5 text-sm font-medium">
