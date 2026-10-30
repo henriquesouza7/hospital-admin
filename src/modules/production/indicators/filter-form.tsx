@@ -166,24 +166,30 @@ export function IndicatorFilterForm({
           </label>
         </div>
       </fieldset>
-      <div className="flex flex-col gap-3 border-t border-border/70 pt-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="max-w-3xl text-xs leading-5 text-muted-foreground">
+      <div className="grid gap-3 border-t border-border/70 pt-4">
+        <p className="text-xs leading-5 text-muted-foreground">
           Somente o período selecionado é aplicado. Competências, intervalos,
           anos, procedimentos, unidades e origens permanecem identificados nos
           resultados.
         </p>
-        <div className="flex shrink-0 flex-wrap gap-2">
-          <Button type="submit" className="gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
+          <Button
+            type="submit"
+            className="h-10 min-w-0 gap-1.5 px-2 text-xs sm:px-4 sm:text-sm"
+          >
             <Filter aria-hidden="true" className="size-4" />
             Aplicar filtros
           </Button>
-          <Link
-            href="/producao/indicadores"
-            className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-border/80 bg-card px-3 text-sm font-medium shadow-sm transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          <Button
+            role="link"
+            nativeButton={false}
+            variant="outline"
+            render={<Link href="/producao/indicadores" />}
+            className="h-10 min-w-0 gap-1.5 px-2 text-xs sm:px-4 sm:text-sm"
           >
             <RotateCcw aria-hidden="true" className="size-4" />
             Limpar filtros
-          </Link>
+          </Button>
         </div>
       </div>
     </form>

@@ -101,7 +101,7 @@ export default async function MarketPage({ searchParams }: MarketPageProps) {
                 ))}
               </SelectField>
             </label>
-            <Button type="submit" variant="outline" size="sm">
+            <Button type="submit" variant="outline" className="h-10">
               Consultar
             </Button>
           </form>

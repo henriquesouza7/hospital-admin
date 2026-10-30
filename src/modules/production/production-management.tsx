@@ -486,7 +486,7 @@ export function ProcedureFilters({
           <option value="inativos">Inativos</option>
         </SelectField>
       </label>
-      <Button type="submit" variant="outline" size="sm">
+      <Button type="submit" variant="outline" className="h-10">
         Filtrar
       </Button>
     </form>
@@ -812,7 +812,7 @@ export function ProductionEntryFilters({
         Até
         <MonthYearPicker id="filter-entry-to" name="ate" defaultValue={to} />
       </label>
-      <Button type="submit" variant="outline" size="sm">
+      <Button type="submit" variant="outline" className="h-10">
         Filtrar
       </Button>
     </form>
