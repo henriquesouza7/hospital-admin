@@ -2,6 +2,8 @@
 
 import { useActionState, useState } from "react";
 import {
+  ClipboardList,
+  Pencil,
   Stethoscope,
   UserRoundCheck,
   UserRoundPlus,
@@ -9,7 +11,8 @@ import {
 } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { StatusBadge } from "@/components/status-badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import Link from "next/link";
 import type { Doctor } from "./domain";
 import {
   createDoctorAction,
@@ -108,10 +111,21 @@ function DoctorEditor({ doctor }: { doctor: Doctor }) {
   const [name, setName] = useState(doctor.name);
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap justify-end gap-2">
+      <Link
+        href={`/internacoes/medicos/${doctor.id}`}
+        aria-label="Ver histórico"
+        className={buttonVariants({ variant: "outline", size: "sm" })}
+      >
+        <ClipboardList aria-hidden="true" />
+        Histórico
+      </Link>
       <details className="relative">
-        <summary className="cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-          Editar nome
+        <summary
+          className={`${buttonVariants({ variant: "outline", size: "sm" })} list-none`}
+        >
+          <Pencil aria-hidden="true" />
+          Editar
         </summary>
         <form
           action={editAction}
@@ -184,14 +198,22 @@ export function DoctorsManagement({
             icon={Stethoscope}
           />
         ) : (
-          <ul className="divide-y rounded-xl border bg-card">
+          <ul className="grid gap-3 lg:grid-cols-2">
             {doctors.map((doctor) => (
               <li
                 key={doctor.id}
-                className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5"
+                className="grid gap-3 rounded-xl border bg-card p-4"
               >
-                <div className="grid gap-2">
-                  <p className="font-medium text-foreground">{doctor.name}</p>
+                <div className="flex min-w-0 items-center gap-3">
+                  <span
+                    aria-hidden="true"
+                    className="grid size-10 shrink-0 place-items-center rounded-full bg-muted text-sm font-semibold text-foreground"
+                  >
+                    {doctor.name.trim().slice(0, 1).toLocaleUpperCase("pt-BR")}
+                  </span>
+                  <p className="min-w-0 flex-1 break-words font-semibold text-foreground">
+                    {doctor.name}
+                  </p>
                   <StatusBadge
                     label={doctor.active ? "Ativo" : "Inativo"}
                     tone={doctor.active ? "success" : "neutral"}

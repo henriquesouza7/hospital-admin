@@ -1,6 +1,7 @@
 "use client";
 import { SelectField } from "@/components/ui/select";
 import { DatePickerField } from "@/components/ui/date-picker-field";
+import { MonthYearPicker } from "@/components/ui/month-year-picker";
 import { ScrollableRegion } from "@/components/scrollable-region";
 
 import { useActionState, useState } from "react";
@@ -382,37 +383,18 @@ export function AdmissionTargetsTable({
   targets: readonly AdmissionTarget[];
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border bg-card">
-      <ScrollableRegion
-        aria-label="Metas de internações"
-        className="overflow-x-auto"
-      >
-        <table className="w-full min-w-[580px] text-left text-sm">
-          <thead className="bg-muted/70 text-xs uppercase text-muted-foreground">
-            <tr>
-              <th scope="col" className="px-4 py-3">
-                Granularidade
-              </th>
-              <th scope="col" className="px-4 py-3">
-                Período
-              </th>
-              <th scope="col" className="px-4 py-3">
-                Meta de internações
-              </th>
-              <th scope="col" className="px-4 py-3">
-                Ação
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {targets.map((target) => (
-              <tr key={target.id}>
-                <th scope="row" className="px-4 py-4 font-medium">
+    <ul className="grid gap-3 lg:grid-cols-2" aria-label="Metas de internações">
+      {targets.map((target) => (
+        <li key={target.id} className="rounded-xl border bg-card p-4">
+          <article className="grid gap-4">
+            <header className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">
                   {target.period_type === "month"
                     ? "Mensal · hospital"
                     : "Anual · hospital"}
-                </th>
-                <td className="px-4 py-4">
+                </p>
+                <h3 className="mt-1 font-semibold capitalize">
                   {target.period_type === "month"
                     ? new Intl.DateTimeFormat("pt-BR", {
                         month: "long",
@@ -422,27 +404,29 @@ export function AdmissionTargetsTable({
                         new Date(`${target.reference_period}T00:00:00Z`),
                       )
                     : target.reference_period.slice(0, 4)}
-                </td>
-                <td className="px-4 py-4">{target.target_quantity}</td>
-                <td className="px-4 py-3">
-                  <AdmissionTargetEditor target={target} />
-                </td>
-              </tr>
-            ))}
-            {targets.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={4}
-                  className="px-4 py-8 text-center text-muted-foreground"
-                >
-                  Nenhuma meta configurada.
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </ScrollableRegion>
-    </div>
+                </h3>
+              </div>
+            </header>
+            <div className="flex items-end justify-between gap-4 border-t pt-3">
+              <div>
+                <p className="text-xs text-muted-foreground">
+                  Meta de internações
+                </p>
+                <p className="mt-1 text-xl font-semibold tabular-nums">
+                  {target.target_quantity}
+                </p>
+              </div>
+              <AdmissionTargetEditor target={target} />
+            </div>
+          </article>
+        </li>
+      ))}
+      {targets.length === 0 ? (
+        <li className="rounded-xl border border-dashed bg-card px-6 py-10 text-center text-sm text-muted-foreground">
+          Nenhuma meta configurada.
+        </li>
+      ) : null}
+    </ul>
   );
 }
 
@@ -488,17 +472,29 @@ export function AdmissionTargetCreateForm({
       </label>
       <label className="grid gap-1.5 text-sm font-medium">
         Período
-        <input
-          name="period"
-          type={periodType === "month" ? "month" : "number"}
-          min={periodType === "year" ? 1900 : undefined}
-          max={periodType === "year" ? 2100 : undefined}
-          step={periodType === "year" ? 1 : undefined}
-          required
-          value={period}
-          onChange={(event) => setPeriod(event.target.value)}
-          className="h-10 rounded-lg border bg-background px-3 font-normal"
-        />
+        {periodType === "month" ? (
+          <MonthYearPicker
+            name="period"
+            required
+            value={period}
+            onChange={(event) => setPeriod(event.target.value)}
+          />
+        ) : (
+          <SelectField
+            name="period"
+            required
+            value={period}
+            onChange={(event) => setPeriod(event.target.value)}
+          >
+            {Array.from({ length: 201 }, (_, index) => 1900 + index).map(
+              (year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ),
+            )}
+          </SelectField>
+        )}
       </label>
       <label className="grid gap-1.5 text-sm font-medium">
         Quantidade alvo
