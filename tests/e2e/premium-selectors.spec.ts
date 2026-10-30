@@ -116,4 +116,50 @@ test.describe("seletores administrativos", () => {
       ).toBeLessThanOrEqual(width);
     });
   }
+
+  test("should_align_filter_actions_and_keep_them_on_one_row", async ({
+    page,
+  }) => {
+    for (const width of [390, 768, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/producao/indicadores");
+      const apply = page.getByRole("button", { name: "Aplicar filtros" });
+      const clear = page.getByRole("link", { name: "Limpar filtros" });
+      await expect(apply).toBeVisible();
+      await expect(clear).toBeVisible();
+      const applyBox = await apply.boundingBox();
+      const clearBox = await clear.boundingBox();
+      if (!applyBox || !clearBox) {
+        throw new Error("Ações dos filtros não estão visíveis.");
+      }
+      expect(Math.abs(applyBox.y - clearBox.y)).toBeLessThan(1);
+      expect(applyBox.height).toBe(40);
+      expect(clearBox.height).toBe(40);
+      expect(clearBox.x).toBeGreaterThan(applyBox.x);
+      expect(
+        await page.evaluate(() => document.body.scrollWidth),
+      ).toBeLessThanOrEqual(width);
+    }
+  });
+
+  test("should_match_filter_action_height_to_controls_across_modules", async ({
+    page,
+  }) => {
+    for (const [path, name] of [
+      ["/financeiro/feira", "Consultar"],
+      ["/financeiro/indicadores", "Aplicar"],
+      ["/internacoes", "Aplicar período"],
+      ["/internacoes/lancamentos", "Aplicar período"],
+      ["/producao/procedimentos", "Filtrar"],
+      ["/producao/lancamentos", "Filtrar"],
+      ["/auditoria", "Aplicar filtros"],
+      ["/exportacoes", "Baixar CSV"],
+    ] as const) {
+      await page.goto(path);
+      const action = page.getByRole("button", { name, exact: true });
+      await expect(action).toBeVisible();
+      const box = await action.boundingBox();
+      expect(box?.height, path).toBe(40);
+    }
+  });
 });

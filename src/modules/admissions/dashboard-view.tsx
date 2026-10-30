@@ -91,7 +91,7 @@ export function AdmissionsDashboardView({
             className="h-10 rounded-lg border bg-background px-3 font-normal"
           />
         </label>
-        <Button type="submit" variant="outline">
+        <Button type="submit" variant="outline" className="h-10">
           Aplicar período
         </Button>
       </form>
