@@ -287,7 +287,7 @@ export function PurchaseOrderForm({
                 </div>
                 <Button
                   type="button"
-                  variant="ghost"
+                  variant="destructive"
                   size="icon"
                   className="size-10"
                   aria-label={`Remover item ${index + 1}`}
@@ -298,10 +298,7 @@ export function PurchaseOrderForm({
                     )
                   }
                 >
-                  <Trash2
-                    aria-hidden="true"
-                    className="text-muted-foreground"
-                  />
+                  <Trash2 aria-hidden="true" />
                 </Button>
               </fieldset>
             );

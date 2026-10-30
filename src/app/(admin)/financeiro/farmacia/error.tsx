@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@/components/ui/button";
 
 export default function PharmacyError({
   reset,
@@ -18,13 +19,9 @@ export default function PharmacyError({
         Verifique a conexão e tente novamente. Nenhuma alteração foi confirmada
         nesta tela.
       </p>
-      <button
-        type="button"
-        onClick={reset}
-        className="mt-4 rounded-lg border px-3 py-2 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
+      <Button type="button" onClick={reset} variant="outline" className="mt-4">
         Tentar novamente
-      </button>
+      </Button>
     </div>
   );
 }
