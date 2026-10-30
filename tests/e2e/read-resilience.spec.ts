@@ -1,5 +1,18 @@
 import { existsSync } from "node:fs";
 import { expect, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
+
+async function openThroughNetlifyChallenge(page: Page, route: string) {
+  let response = await page.goto(route);
+  if (response?.status() === 403) {
+    await expect(
+      page.getByText("We are verifying your connection."),
+    ).toBeVisible();
+    await page.waitForTimeout(3_000);
+    response = await page.goto(route);
+  }
+  expect(response?.status()).toBe(200);
+}
 
 const storageState = process.env.PLAYWRIGHT_AUTH_STORAGE_STATE;
 test("should_preserve_administrative_reads_across_renewal_and_concurrency", async ({
@@ -25,8 +38,7 @@ test("should_preserve_administrative_reads_across_renewal_and_concurrency", asyn
       }
       await Promise.all(
         pages.map(async (page) => {
-          const response = await page.goto("/");
-          expect(response?.status()).toBe(200);
+          await openThroughNetlifyChallenge(page, "/");
           await expect(page.locator("main h1")).toHaveText("Visão Geral");
           await expect(page.locator("main")).not.toContainText("Indisponível");
           await expect(page.locator("main")).not.toContainText("Sem permissão");
@@ -42,8 +54,7 @@ test("should_preserve_administrative_reads_across_renewal_and_concurrency", asyn
       "/producao",
       "/pequenas-cirurgias",
     ]) {
-      const response = await pages[0].goto(route);
-      expect(response?.status()).toBe(200);
+      await openThroughNetlifyChallenge(pages[0], route);
       await expect(pages[0].locator("main h1")).toBeVisible();
       await expect(pages[0].locator("main")).not.toContainText(
         "Não foi possível carregar",
