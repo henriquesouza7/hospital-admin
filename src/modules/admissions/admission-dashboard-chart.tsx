@@ -49,7 +49,7 @@ export function AdmissionDashboardChart({
   return (
     <div className="grid gap-5">
       <div
-        className="h-72 w-full"
+        className="h-64 w-full"
         role="img"
         aria-label={`Evolução mensal das internações em ${dashboard.year}`}
       >

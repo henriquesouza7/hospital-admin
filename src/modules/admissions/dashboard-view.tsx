@@ -65,7 +65,7 @@ export function AdmissionsDashboardView({
       </nav>
       <form
         method="get"
-        className="grid gap-3 rounded-xl border bg-card p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+        className="grid gap-3 rounded-xl border border-border bg-card p-4 shadow-[0_1px_3px_rgba(0,0,0,0.05)] sm:grid-cols-[1fr_1fr_auto] sm:items-end"
       >
         <label className="grid gap-1.5 text-sm font-medium">
           Ano
@@ -97,7 +97,7 @@ export function AdmissionsDashboardView({
       </form>
       <section
         aria-label="Indicadores do período"
-        className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+        className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2"
       >
         <KpiCard
           label={`Total em ${periodLabel}`}

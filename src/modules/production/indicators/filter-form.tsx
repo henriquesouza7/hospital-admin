@@ -22,7 +22,7 @@ export function IndicatorFilterForm({
   return (
     <form
       method="get"
-      className="space-y-5 rounded-2xl border border-border/80 bg-card p-4 shadow-sm sm:p-5"
+      className="space-y-4 rounded-xl border border-border/80 bg-card p-4 shadow-[0_1px_3px_rgba(0,0,0,0.05)] sm:p-5"
       aria-label="Filtros dos indicadores de produção"
     >
       <fieldset className="min-w-0">
@@ -166,7 +166,7 @@ export function IndicatorFilterForm({
           </label>
         </div>
       </fieldset>
-      <div className="grid gap-3 border-t border-border/70 pt-4">
+      <div className="grid gap-3 border-t border-border/70 pt-3">
         <p className="text-xs leading-5 text-muted-foreground">
           Somente o período selecionado é aplicado. Competências, intervalos,
           anos, procedimentos, unidades e origens permanecem identificados nos

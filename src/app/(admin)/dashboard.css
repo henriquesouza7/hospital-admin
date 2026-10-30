@@ -117,7 +117,7 @@
 
 @media (min-width: 1181px) {
   .dashboard-shell {
-    --dashboard-kpi-columns: 4;
+    --dashboard-kpi-columns: 2;
   }
 
   .dashboard-analytics-grid {
@@ -326,9 +326,9 @@
 
 .dashboard-surface {
   border: 1px solid var(--border);
-  border-radius: var(--radius-dashboard-card);
+  border-radius: var(--radius-analytics-card);
   background-color: var(--card);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-analytics-card);
 }
 
 .dashboard-motion-safe .recharts-default-tooltip {

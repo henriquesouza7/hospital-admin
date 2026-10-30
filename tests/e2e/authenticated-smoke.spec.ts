@@ -126,6 +126,55 @@ test.describe("smokes administrativos autenticados", () => {
     ).toContainText("Total no mês");
   });
 
+  test("should_keep_analytics_metric_grids_balanced_across_viewports", async ({
+    page,
+  }) => {
+    const cases = [
+      { route: "/", selector: ".dashboard-kpi-grid", desktopColumns: 2 },
+      {
+        route: "/financeiro/indicadores",
+        selector: 'section[aria-labelledby="overview-title"] > div.grid',
+        desktopColumns: 2,
+      },
+      {
+        route: "/internacoes",
+        selector: 'section[aria-label="Indicadores do período"]',
+        desktopColumns: 2,
+      },
+      {
+        route: "/producao/indicadores",
+        selector: 'section[aria-label="Resumo do recorte"]',
+        desktopColumns: 3,
+      },
+    ] as const;
+
+    for (const item of cases) {
+      await page.goto(item.route);
+      const grid = page.locator(item.selector);
+      await expect(grid).toBeVisible();
+
+      for (const width of [390, 768, 1024, 1440]) {
+        await page.setViewportSize({ width, height: 900 });
+        const layout = await grid.evaluate((element) => {
+          const style = getComputedStyle(element);
+          return {
+            columns: style.gridTemplateColumns.split(" ").length,
+            radius: getComputedStyle(
+              element.querySelector("article") ?? element,
+            ).borderRadius,
+            overflow: document.documentElement.scrollWidth > window.innerWidth,
+          };
+        });
+
+        expect(layout.overflow, `${item.route} em ${width}px`).toBe(false);
+        expect(layout.columns, `${item.route} em ${width}px`).toBe(
+          width === 390 ? 1 : width === 1440 ? item.desktopColumns : 2,
+        );
+        expect(layout.radius, `${item.route} em ${width}px`).toBe("12px");
+      }
+    }
+  });
+
   test("should_keep_dashboard_available_for_concurrent_authenticated_requests", async ({
     browser,
   }) => {

@@ -132,6 +132,7 @@ export function ProductionIndicatorDashboard({
               title="Sem lançamento nesta competência"
               description="Nenhum registro foi encontrado para o procedimento e os filtros selecionados. Isso não representa automaticamente quantidade zero."
               icon={ClipboardList}
+              density="compact"
             />
           )}
         </section>
@@ -325,6 +326,7 @@ export function ProductionIndicatorDashboard({
             title="Nenhum registro para agrupar"
             description="As categorias aparecerão quando houver lançamentos dentro do período e filtros selecionados."
             icon={Layers3}
+            density="compact"
           />
         )}
       </section>
@@ -410,6 +412,7 @@ export function ProductionIndicatorDashboard({
             }
             description="O histórico de variação precisa de registros persistidos para um procedimento. A primeira competência não recebe variação calculada."
             icon={Activity}
+            density="compact"
           />
         )}
       </section>

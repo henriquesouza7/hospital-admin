@@ -204,7 +204,7 @@ export function IndicatorsPageView({
             mensal.
           </p>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
           <KpiCard
             label="Total Financeiro"
             value={formatCurrency(data.totalCents)}
@@ -326,12 +326,14 @@ export function IndicatorsPageView({
             title="Selecione um produto"
             description="Escolha Farmácia ou Laboratório e um produto para consultar as compras dentro do período."
             icon={PackageSearch}
+            density="compact"
           />
         ) : selectedHistory.length === 0 ? (
           <EmptyState
             title="Sem compras no período"
             description="Este produto não possui itens registrados no intervalo selecionado. Produtos inativos continuam disponíveis para consultar períodos antigos."
             icon={PackageSearch}
+            density="compact"
           />
         ) : (
           <ScrollableRegion
@@ -400,6 +402,7 @@ export function IndicatorsPageView({
             title="Sem histórico comparável"
             description="Não há itens de compra para os setores e período selecionados."
             icon={TrendingUp}
+            density="compact"
           />
         ) : (
           <ScrollableRegion
@@ -487,6 +490,7 @@ export function IndicatorsPageView({
             title="Nenhum aumento observado"
             description="Não foram encontradas compras consecutivas equivalentes com aumento de preço neste período."
             icon={TrendingUp}
+            density="compact"
           />
         ) : (
           <ScrollableRegion
@@ -590,6 +594,7 @@ export function IndicatorsPageView({
             title="Sem oportunidades comparáveis"
             description="Não há diferença positiva frente ao benchmark histórico em grupos com pelo menos dois fornecedores observados."
             icon={TrendingUp}
+            density="compact"
           />
         ) : (
           <ScrollableRegion

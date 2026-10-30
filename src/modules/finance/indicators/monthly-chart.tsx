@@ -40,7 +40,7 @@ export function MonthlyChart({
 }) {
   return (
     <div
-      className="h-72 w-full"
+      className="h-64 w-full"
       role="img"
       aria-label="Gráfico da evolução mensal dos gastos por setor e total consolidado"
     >
@@ -104,7 +104,7 @@ export function MonthlyChart({
             type="monotone"
             dataKey="total"
             name="Total"
-            stroke="var(--primary)"
+            stroke="var(--analytic-accent, var(--primary))"
             strokeWidth={3}
             dot={{ r: 3 }}
           />

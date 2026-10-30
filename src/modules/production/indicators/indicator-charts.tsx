@@ -64,6 +64,7 @@ export function MonthlyEvolutionCharts({
             : "A evolução mensal é apresentada para um procedimento por vez. Assim, procedimentos diferentes nunca são somados ou comparados na mesma série."
         }
         icon={TrendingUp}
+        density="compact"
       />
     );
   }
@@ -92,7 +93,7 @@ export function MonthlyEvolutionCharts({
             badge="Por competência e origem"
           >
             <div
-              className="h-72 w-full"
+              className="h-64 w-full"
               role="img"
               aria-label={`Evolução mensal de ${procedureName}, unidade ${unit}, separada por origem`}
             >
@@ -176,6 +177,7 @@ export function ComparisonCharts({
         title="Dados insuficientes para comparação"
         description="Selecione um procedimento com registros no período atual ou no período de comparação."
         icon={BarChart3}
+        density="compact"
       />
     );
   }
@@ -196,7 +198,7 @@ export function ComparisonCharts({
             badge="Comparação por unidade e origem"
           >
             <div
-              className="h-72 w-full"
+              className="h-64 w-full"
               role="img"
               aria-label={`${title} de ${procedureName}, em ${unit}, por origem`}
             >
@@ -323,6 +325,7 @@ export function TopProcedureCharts({
         title="Sem produção no período"
         description="Não há lançamentos persistidos para os filtros selecionados."
         icon={BarChart3}
+        density="compact"
       />
     );
   }
@@ -346,7 +349,7 @@ export function TopProcedureCharts({
             badge="Até 10 combinações"
           >
             <div
-              className="h-[22rem] w-full"
+              className="h-[20rem] w-full"
               role="img"
               aria-label={`Maiores volumes por procedimento e origem, unidade ${unit}`}
             >

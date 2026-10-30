@@ -14,7 +14,7 @@ export function ChartCard({
   badge = "Demonstração",
 }: ChartCardProps) {
   return (
-    <section className="min-w-0 rounded-[var(--radius-dashboard-card)] border bg-card p-5 shadow-[var(--shadow-card)] sm:p-6">
+    <section className="min-w-0 rounded-[var(--radius-analytics-card)] border border-border bg-card p-4 shadow-[var(--shadow-analytics-card)] sm:p-5">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
@@ -26,7 +26,7 @@ export function ChartCard({
           {badge}
         </span>
       </div>
-      <div className="mt-6">{children}</div>
+      <div className="mt-5">{children}</div>
     </section>
   );
 }
