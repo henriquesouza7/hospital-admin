@@ -4,7 +4,8 @@ import { SelectField } from "@/components/ui/select";
 import { ScrollableRegion } from "@/components/scrollable-region";
 
 import { useActionState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Check, Pencil, PowerOff } from "lucide-react";
 import { StatusBadge } from "@/components/status-badge";
 import type {
   ProcedureCategory,
@@ -132,7 +133,14 @@ function CategoryRow({ category }: { category: ProcedureCategory }) {
           />
         </div>
         <details>
-          <summary className="w-fit cursor-pointer rounded-md px-2 py-1 text-sm text-link hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <summary
+            className={buttonVariants({
+              variant: "outline",
+              size: "sm",
+              className: "list-none [&::-webkit-details-marker]:hidden",
+            })}
+          >
+            <Pencil aria-hidden="true" />
             Editar nome
           </summary>
           <form
@@ -170,10 +178,15 @@ function CategoryRow({ category }: { category: ProcedureCategory }) {
         <input type="hidden" name="active" value={String(!category.active)} />
         <Button
           type="submit"
-          variant="outline"
+          variant={category.active ? "caution" : "outline"}
           size="sm"
           disabled={statusPending}
         >
+          {category.active ? (
+            <PowerOff aria-hidden="true" />
+          ) : (
+            <Check aria-hidden="true" />
+          )}
           {category.active ? "Inativar" : "Reativar"}
         </Button>
       </form>
@@ -370,7 +383,14 @@ function ProcedureRow({
       <td className="px-4 py-4">
         <div className="flex flex-wrap items-center gap-2">
           <details>
-            <summary className="cursor-pointer rounded-md px-2 py-1 text-sm text-link hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <summary
+              className={buttonVariants({
+                variant: "outline",
+                size: "sm",
+                className: "list-none [&::-webkit-details-marker]:hidden",
+              })}
+            >
+              <Pencil aria-hidden="true" />
               Editar
             </summary>
             <form
@@ -428,10 +448,15 @@ function ProcedureRow({
             />
             <Button
               type="submit"
-              variant="outline"
+              variant={procedure.active ? "caution" : "outline"}
               size="sm"
               disabled={statusPending}
             >
+              {procedure.active ? (
+                <PowerOff aria-hidden="true" />
+              ) : (
+                <Check aria-hidden="true" />
+              )}
               {procedure.active ? "Inativar" : "Reativar"}
             </Button>
           </form>
@@ -703,7 +728,14 @@ function ProductionEntryRow({
       <td className="px-4 py-4">{entry.source}</td>
       <td className="px-4 py-4">
         <details>
-          <summary className="w-fit cursor-pointer rounded-md px-2 py-1 text-sm text-link hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <summary
+            className={buttonVariants({
+              variant: "outline",
+              size: "sm",
+              className: "list-none [&::-webkit-details-marker]:hidden",
+            })}
+          >
+            <Pencil aria-hidden="true" />
             Editar
           </summary>
           <form

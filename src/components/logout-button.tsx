@@ -10,7 +10,7 @@ export function LogoutButton() {
       <Button
         className="logout-button h-10 w-full justify-start"
         type="submit"
-        variant="destructive"
+        variant="ghost"
       >
         <LogOut aria-hidden="true" />
         Sair

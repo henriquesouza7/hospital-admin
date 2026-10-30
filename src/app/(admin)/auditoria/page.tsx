@@ -89,10 +89,7 @@ export default async function AuditPage({ searchParams }: Props) {
           title="Filtros"
           description="Refine por período e módulo. Os filtros são preservados ao navegar entre páginas."
         />
-        <form
-          method="get"
-          className="mt-4 grid gap-3 [&_input]:min-w-0 [&_input]:w-full"
-        >
+        <form method="get" className="mt-4 grid gap-3">
           <div className="grid gap-3 sm:grid-cols-3">
             <label className="grid gap-1 text-sm">
               De
@@ -137,7 +134,7 @@ export default async function AuditPage({ searchParams }: Props) {
               <label className="grid gap-1 text-sm">
                 Tipo de registro
                 <input
-                  className="h-10 rounded-md border bg-background px-3"
+                  className="h-10 min-w-0 w-full rounded-md border bg-background px-3"
                   name="entity"
                   maxLength={80}
                   defaultValue={one(search.entity) ?? ""}
@@ -146,7 +143,7 @@ export default async function AuditPage({ searchParams }: Props) {
               <label className="grid gap-1 text-sm">
                 Código da ação
                 <input
-                  className="h-10 rounded-md border bg-background px-3"
+                  className="h-10 min-w-0 w-full rounded-md border bg-background px-3"
                   name="action"
                   maxLength={80}
                   defaultValue={one(search.action) ?? ""}
@@ -155,7 +152,7 @@ export default async function AuditPage({ searchParams }: Props) {
               <label className="grid gap-1 text-sm">
                 ID do responsável
                 <input
-                  className="h-10 rounded-md border bg-background px-3"
+                  className="h-10 min-w-0 w-full rounded-md border bg-background px-3"
                   name="actor"
                   maxLength={160}
                   defaultValue={one(search.actor) ?? ""}

@@ -1,206 +1,42 @@
-# Design System — Fundação Visual
+# Design System — Hospital Sistema
 
-## Direção visual
+## Fonte de verdade
 
-A aplicação deve ter aparência de dashboard administrativo hospitalar moderno, limpo e profissional.
+O sistema usa uma única identidade clara, com Geist Sans, superfícies neutras e azul institucional para ações e foco. As quatro referências aprovadas orientam responsabilidades diferentes: estrutura e Auditoria (01), registros (02), análises (03) e Financeiro (04). Elas não criam temas separados.
 
-Referência conceitual fornecida pelo projeto:
-- sidebar fixa à esquerda;
-- conteúdo principal amplo;
-- cards de indicadores grandes;
-- forte hierarquia tipográfica;
-- filtros compactos;
-- gráficos em cartões;
-- bastante espaço em branco;
-- bordas suaves;
-- sem aparência de landing page.
+- `src/app/globals.css`: tokens semânticos de base e estilos globais, inclusive páginas públicas.
+- `src/components/admin-shell.css`: escala visual da aplicação autenticada, cores, espaçamentos, raios, sombras, sidebar e variações de gráficos por módulo. `.dashboard-shell` e `.module-shell` compartilham essa base.
+- `src/components/page-header.css` e componentes em `src/components/ui/`: comportamento e acabamento dos controles reutilizáveis.
+- CSS Modules e classes utilitárias de cada módulo: somente composição e necessidades específicas do domínio.
 
-A referência serve como linguagem visual, não como layout para copiar literalmente.
+Não declarar valores equivalentes em outra folha quando já houver um token ou componente compartilhado. As cores de gráfico por módulo não mudam a cor da ação principal.
 
-## Tema
+## Cores e tipografia
 
-Nesta fase, o sistema terá somente tema claro.
+O shell autenticado usa `--surface-page: #f5f5f7`, `--surface-card: #fff`, `--text-primary: #1d1d1f`, `--text-secondary: #6e6e73` e `--accent-blue: #0071e3`. Usar `--action-primary` para confirmar e aplicar ações; `--destructive` somente para ações destrutivas. Estados de sucesso, aviso e erro têm tokens de texto, fundo e borda no shell.
 
-Modo escuro fica fora do escopo até decisão futura.
+Geist Sans é carregada no layout global. Títulos usam `--type-page-title` e `--type-section-title`; KPIs usam `--type-metric`; valores comparáveis e colunas numéricas usam algarismos tabulares. Cor reforça informação, sempre acompanhada por texto.
 
-## Paleta base
+## Escala e estrutura
 
-### Institucional
-- Brand / Baby Blue: `#90D5FF`
-- Background principal: `#FFFFFF`
-- Background secundário: azul muito claro derivado da cor institucional
-- Superfícies/cards: `#FFFFFF`
-- Texto principal: quase preto / azul-preto
-- Texto secundário: cinza frio
-- Bordas: cinza-azulado muito claro
+Os tokens `--space-1/2/3/4/5/6/8` equivalem a 4/8/12/16/20/24/32 px. Usar esses passos para gaps, margens e padding. O cabeçalho compartilhado tem 8 px entre identificação e título e 12 px entre título e descrição. Seções comuns usam 24 px; separações de grandes blocos, 32 px. A largura do conteúdo é fluida dentro do `AdminShell`; tabelas largas recebem região de rolagem própria.
 
-### Uso da cor institucional
+Cards mantêm superfície branca, borda leve e sombra discreta. O raio de 20 px identifica painéis de dashboard; cartões analíticos compactos podem usar 12 px. A largura e o padding dos cards respondem ao conteúdo e ao viewport.
 
-`#90D5FF` é a cor de identidade e deve aparecer em:
-- item ativo da navegação;
-- badges;
-- ícones;
-- destaques;
-- superfícies suaves;
-- gráficos;
-- botões quando houver contraste suficiente.
+## Ações e campos
 
-Não usar texto branco sobre `#90D5FF` por padrão. Para botões com essa cor, preferir texto escuro.
+Usar `Button` como fonte de hierarquia: `default` para cadastrar, salvar, confirmar e aplicar; `outline` ou `secondary` para editar, voltar, ativar e cancelar; `caution` para inativar; `ghost` para ações auxiliares e sair; `destructive` para remover definitivamente. `summary` que abre edição reutiliza `buttonVariants` e mantém a semântica de expansão. Links que navegam preservam `<a>` com a mesma aparência quando necessário. Alturas: 40 px padrão, 36 px pequeno, 32 px extra pequeno e 48 px grande. Padding padrão: 16 px; gap texto/ícone: 8 px. Raio padrão: 8 px. Botões com apenas ícone exigem nome acessível. Foco visível, hover, disabled e feedback de envio são obrigatórios.
 
-Quando estados hover/focus exigirem mais contraste, utilizar tons derivados mais escuros da mesma família, documentados como tokens, sem introduzir outra cor principal concorrente.
+Ícones Lucide seguem a intenção: `Pencil` para editar, `PowerOff` para inativar, `Check` para ativar, `LogOut` para sair, `Trash2` para remoção, `ArrowLeft` para voltar e `Download` para exportar. Setas não representam edição. A cor de cautela usa os tokens `--status-warning-*` existentes e não indica perda definitiva de dados. Ações próximas usam `gap-2` ou `gap-3`; controles mobile mantêm nome e foco acessíveis, sem largura total indiscriminada.
 
-## Tipografia
+Usar `SelectField`, `MonthYearPicker` e `DatePickerField` para controles equivalentes. Labels permanecem associados aos campos. Campos em filtros mantêm altura de 40 px e largura proporcional ao conteúdo. Inputs internos apenas para envio ou acessibilidade não recebem regras de largura destinadas aos campos visíveis.
 
-Objetivo:
-- títulos fortes e claros;
-- números/KPIs com alta legibilidade;
-- textos auxiliares discretos;
-- boa leitura em operação diária.
+## Dados, estados e navegação
 
-Manter fonte sans-serif moderna da aplicação, salvo futura decisão de branding.
+`PageHeader`, `SectionHeader`, `KpiCard`, `ChartCard`, `StatusBadge` e `EmptyState` mantêm hierarquia entre módulos. Gráficos mostram unidade, período, legenda e estado vazio; Financeiro nunca exibe receitas, saldos ou variações sem cálculo homologado. Tabelas alinham números à direita, possuem cabeçalho identificável e rolagem própria no mobile. Os textos de erro distinguem indisponibilidade de ausência de registros.
 
-## Layout
+A sidebar e a conta usam o `AdminShell`; links navegam e botões executam ações. Detalhes interativos e popovers devem funcionar por teclado, ter foco visível e permanecer dentro da área visível. Em mobile, controles podem empilhar, mas suas funções e rótulos permanecem acessíveis. Respeitar `prefers-reduced-motion`.
 
-### Desktop
-Prioridade principal do MVP.
+## Revisão
 
-- sidebar fixa ou sticky;
-- conteúdo com largura fluida;
-- grid responsivo de cards;
-- espaçamento consistente;
-- evitar páginas excessivamente largas sem agrupamento visual.
-
-### Mobile/tablet
-- navegação adaptativa;
-- cards empilhados;
-- tabelas com estratégia responsiva apropriada;
-- preservar funções críticas.
-
-## Sidebar
-
-Estrutura prevista:
-- área superior reservada para logo futura;
-- identificação temporária do sistema enquanto a logo não for adicionada;
-- grupos de navegação;
-- item ativo destacado com fundo azul institucional suave;
-- ícones Lucide;
-- Financeiro com subitens Farmácia, Laboratório e Feira;
-- Internações;
-- Produção;
-- Pequenas Cirurgias;
-- Configurações.
-
-A logo oficial será adicionada posteriormente.
-
-## Cabeçalho de página
-
-Cada módulo deve poder usar:
-- eyebrow/identificador opcional;
-- título principal;
-- descrição curta quando necessária;
-- ações principais à direita ou abaixo no mobile;
-- filtros de período próximos ao contexto que controlam.
-
-## Cards de KPI
-
-Padrão visual:
-- superfície branca;
-- borda sutil;
-- radius médio/grande;
-- sombra muito discreta ou nenhuma;
-- rótulo pequeno;
-- valor com alta ênfase;
-- comparação/legenda secundária;
-- ícone ou badge opcional.
-
-Cards de destaque podem usar fundo azul institucional ou azul derivado, desde que o contraste do conteúdo seja validado.
-
-## Gráficos
-
-- Recharts.
-- Paleta consistente e documentada.
-- Eixos e grades discretos.
-- Legendas simples.
-- Tooltips claros.
-- Evitar efeitos 3D, gradientes excessivos e decoração sem função.
-- Sempre mostrar unidade e período.
-
-## Tabelas
-
-Priorizar leitura operacional:
-- cabeçalho claro;
-- linhas com bom espaçamento;
-- busca e filtros quando necessários;
-- ações por linha sem poluição visual;
-- ordenação apenas quando útil;
-- estados vazios bem definidos;
-- paginação quando volume exigir.
-
-## Formulários
-
-- labels explícitos;
-- mensagens de erro próximas ao campo;
-- indicar obrigatoriedade de forma consistente;
-- formulários longos divididos em seções;
-- confirmação para ações destrutivas;
-- feedback de sucesso/erro.
-
-## Status
-
-Não comunicar estado apenas por cor.
-
-Status devem combinar:
-- texto;
-- badge;
-- ícone quando útil;
-- cor como reforço visual.
-
-## Componentes-base previstos
-
-- AppShell
-- Sidebar
-- SidebarItem / SidebarGroup
-- PageHeader
-- SectionHeader
-- KpiCard
-- DataTable
-- SearchInput
-- PeriodFilter
-- DatePicker
-- FormField
-- StatusBadge
-- Dialog
-- ConfirmDialog
-- Alert
-- EmptyState
-- Skeleton
-- ChartCard
-- Button
-- Input
-- Select
-- Textarea
-
-## Acessibilidade
-
-- contraste suficiente;
-- foco de teclado visível;
-- navegação por teclado;
-- labels corretos;
-- sem depender exclusivamente de cor;
-- elementos interativos com estados hover/focus/disabled;
-- sem reduzir legibilidade para imitar a referência visual.
-
-## Restrições
-
-- Não criar dark mode nesta fase.
-- Não usar gradientes decorativos como linguagem principal.
-- Não adicionar múltiplas cores fortes sem função semântica.
-- Não exagerar em sombras.
-- Não transformar dashboard em landing page.
-- Não inventar logo ou identidade visual do hospital.
-- Não usar dados reais em mockups.
-- A logo será fornecida futuramente.
-
-## Evolução
-
-Este documento define a fundação visual. Tokens e componentes podem ser refinados conforme os módulos reais forem implementados, evitando redesigns arbitrários entre páginas.
+Cada mudança visual precisa de inspeção renderizada em 390, 768, 1024, 1440 e 1920 px, incluindo páginas filhas, detalhes com dados sintéticos, estados vazios e controles abertos. Registrar as capturas e divergências por rota. ESLint, TypeScript, build, testes pertinentes e `git diff --check` completam a validação técnica; nenhum deles substitui a revisão visual.

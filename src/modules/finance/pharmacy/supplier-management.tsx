@@ -1,6 +1,7 @@
 "use client";
 import { useActionState } from "react";
-import { Button } from "@/components/ui/button";
+import { Pencil, PowerOff, Check } from "lucide-react";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   createSupplierAction,
   setSupplierStatusAction,
@@ -126,7 +127,14 @@ function SupplierRow({ supplier }: { supplier: Supplier }) {
         </header>
         <div className="flex flex-wrap items-center justify-end gap-2 border-t pt-3">
           <details>
-            <summary className="cursor-pointer rounded-md px-2 py-1 text-sm text-link hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <summary
+              className={buttonVariants({
+                variant: "outline",
+                size: "sm",
+                className: "list-none [&::-webkit-details-marker]:hidden",
+              })}
+            >
+              <Pencil aria-hidden="true" />
               Editar
             </summary>
             <form
@@ -167,7 +175,16 @@ function SupplierRow({ supplier }: { supplier: Supplier }) {
               name="is_active"
               value={String(!supplier.is_active)}
             />
-            <Button type="submit" variant="outline" size="sm">
+            <Button
+              type="submit"
+              variant={supplier.is_active ? "caution" : "outline"}
+              size="sm"
+            >
+              {supplier.is_active ? (
+                <PowerOff aria-hidden="true" />
+              ) : (
+                <Check aria-hidden="true" />
+              )}
               {supplier.is_active ? "Inativar" : "Ativar"}
             </Button>
           </form>

@@ -3,9 +3,9 @@ import { MonthYearPicker } from "@/components/ui/month-year-picker";
 import { ScrollableRegion } from "@/components/scrollable-region";
 
 import { useActionState } from "react";
-import { ShoppingBasket } from "lucide-react";
+import { Pencil, ShoppingBasket } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { formatCurrency } from "@/modules/finance/pharmacy/format";
 import tableStyles from "@/modules/finance/finance-history.module.css";
 import type { FinanceActionState } from "@/modules/finance/pharmacy/action-state";
@@ -201,7 +201,14 @@ function FairExpenseEditor({ expense }: { expense: FairExpense }) {
 
   return (
     <details>
-      <summary className="cursor-pointer rounded-md px-2 py-1 text-sm text-link hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      <summary
+        className={buttonVariants({
+          variant: "outline",
+          size: "sm",
+          className: "list-none [&::-webkit-details-marker]:hidden",
+        })}
+      >
+        <Pencil aria-hidden="true" />
         Editar
       </summary>
       <form

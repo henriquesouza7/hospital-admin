@@ -122,7 +122,11 @@ function DoctorEditor({ doctor }: { doctor: Doctor }) {
       </Link>
       <details className="relative">
         <summary
-          className={`${buttonVariants({ variant: "outline", size: "sm" })} list-none`}
+          className={buttonVariants({
+            variant: "outline",
+            size: "sm",
+            className: "list-none [&::-webkit-details-marker]:hidden",
+          })}
         >
           <Pencil aria-hidden="true" />
           Editar
@@ -157,7 +161,7 @@ function DoctorEditor({ doctor }: { doctor: Doctor }) {
         <Button
           type="submit"
           size="sm"
-          variant={doctor.active ? "outline" : "secondary"}
+          variant={doctor.active ? "caution" : "outline"}
           disabled={statusPending}
         >
           {doctor.active ? (

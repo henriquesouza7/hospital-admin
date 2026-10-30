@@ -2,7 +2,8 @@
 import { ScrollableRegion } from "@/components/scrollable-region";
 
 import { useActionState } from "react";
-import { Button } from "@/components/ui/button";
+import { Pencil, PowerOff, Check } from "lucide-react";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   createProductAction,
   setProductStatusAction,
@@ -145,7 +146,14 @@ function ProductRow({ product }: { product: Product }) {
       <td className="px-4 py-4">
         <div className="flex flex-wrap items-center gap-2">
           <details>
-            <summary className="cursor-pointer rounded-md px-2 py-1 text-sm text-link hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <summary
+              className={buttonVariants({
+                variant: "outline",
+                size: "sm",
+                className: "list-none [&::-webkit-details-marker]:hidden",
+              })}
+            >
+              <Pencil aria-hidden="true" />
               Editar
             </summary>
             <form
@@ -197,7 +205,16 @@ function ProductRow({ product }: { product: Product }) {
               name="is_active"
               value={String(!product.is_active)}
             />
-            <Button type="submit" variant="outline" size="sm">
+            <Button
+              type="submit"
+              variant={product.is_active ? "caution" : "outline"}
+              size="sm"
+            >
+              {product.is_active ? (
+                <PowerOff aria-hidden="true" />
+              ) : (
+                <Check aria-hidden="true" />
+              )}
               {product.is_active ? "Inativar" : "Ativar"}
             </Button>
           </form>
