@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import {
   ClipboardList,
+  Pencil,
   Stethoscope,
   UserRoundCheck,
   UserRoundPlus,
@@ -120,7 +121,10 @@ function DoctorEditor({ doctor }: { doctor: Doctor }) {
         Histórico
       </Link>
       <details className="relative">
-        <summary className="cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <summary
+          className={`${buttonVariants({ variant: "outline", size: "sm" })} list-none`}
+        >
+          <Pencil aria-hidden="true" />
           Editar
         </summary>
         <form
