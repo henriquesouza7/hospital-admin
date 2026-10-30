@@ -21,7 +21,7 @@ function getSparklinePaths(points: readonly DashboardMetricTrendPoint[]) {
   const values = points.flatMap((point) =>
     point.value === null ? [] : [point.value],
   );
-  if (values.length < 6) return [];
+  if (values.length < 6 || values.every((value) => value === 0)) return [];
 
   const minimum = Math.min(...values);
   const range = Math.max(...values) - minimum || 1;

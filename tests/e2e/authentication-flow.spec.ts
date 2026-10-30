@@ -45,7 +45,9 @@ test.describe("autenticação com Neon Auth isolado", () => {
       await expect(page.getByText(expectedEnvironmentLabel)).toBeVisible();
     }
     await page.getByLabel("Email").fill("login-test@invalid.example");
-    await page.getByLabel("Senha").fill("synthetic-invalid-password");
+    await page
+      .getByLabel("Senha", { exact: true })
+      .fill("synthetic-invalid-password");
     const invalidLoginResponse = page.waitForResponse(
       (response) =>
         new URL(response.url()).pathname === "/api/auth/sign-in/email" &&
@@ -66,12 +68,12 @@ test.describe("autenticação com Neon Auth isolado", () => {
     await expect(page.getByText("Email ou senha inválidos.")).toBeVisible();
 
     await page.getByLabel("Email").fill(credentials.email);
-    await page.getByLabel("Senha").fill(credentials.password);
+    await page.getByLabel("Senha", { exact: true }).fill(credentials.password);
     await page.getByRole("button", { name: "Entrar" }).click();
 
     await expect(page).not.toHaveURL(/\/login/);
     await expect(
-      page.getByRole("heading", { level: 1, name: "Painel administrativo" }),
+      page.getByRole("heading", { level: 1, name: "Visão Geral" }),
     ).toBeVisible();
     const session = (await page.evaluate(async () => {
       const response = await fetch("/api/auth/get-session");
@@ -97,17 +99,20 @@ test.describe("autenticação com Neon Auth isolado", () => {
       page.getByRole("heading", { level: 1, name: "Pequenas cirurgias" }),
     ).toBeVisible();
 
+    await page
+      .locator('summary[aria-label="Menu da conta: administrador"]')
+      .click();
     await page.getByRole("button", { name: "Sair" }).click();
     await expect(page).toHaveURL(/\/login$/);
     await page.goto("/");
     await expect(page).toHaveURL(/\/login/);
 
     await page.getByLabel("Email").fill(credentials.email);
-    await page.getByLabel("Senha").fill(credentials.password);
+    await page.getByLabel("Senha", { exact: true }).fill(credentials.password);
     await page.getByRole("button", { name: "Entrar" }).click();
     await expect(page).not.toHaveURL(/\/login/);
     await expect(
-      page.getByRole("heading", { level: 1, name: "Painel administrativo" }),
+      page.getByRole("heading", { level: 1, name: "Visão Geral" }),
     ).toBeVisible();
     const tokenResponse = await page.request.get("/api/auth/token");
     expect(tokenResponse.ok()).toBe(true);

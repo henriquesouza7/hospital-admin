@@ -22,11 +22,11 @@ test.describe("smokes administrativos autenticados", () => {
 
     await expect(page).not.toHaveURL(/\/login/);
     await expect(
-      page.getByRole("heading", { level: 1, name: "Painel administrativo" }),
+      page.getByRole("heading", { level: 1, name: "Visão Geral" }),
     ).toBeVisible();
     await expect(
-      page.locator("article").filter({ hasText: "Gastos registrados" }),
-    ).toContainText(/R\$/);
+      page.locator("article").filter({ hasText: "Financeiro" }).first(),
+    ).toContainText("Total no mês");
   });
 
   test("should_keep_dashboard_available_for_concurrent_authenticated_requests", async ({
@@ -44,7 +44,7 @@ test.describe("smokes administrativos autenticados", () => {
         await expect(
           page.getByRole("heading", {
             level: 1,
-            name: "Painel administrativo",
+            name: "Visão Geral",
           }),
         ).toBeVisible();
       }
@@ -110,27 +110,27 @@ test.describe("smokes administrativos autenticados", () => {
       for (const [width, height] of viewportHeights) {
         await page.setViewportSize({ width, height });
 
-        const layout = await page.evaluate(() => {
-          const heading = document.querySelector("main h1");
-          const bounds = heading?.getBoundingClientRect();
-          return {
-            horizontalOverflow: document.body.scrollWidth > window.innerWidth,
-            mainOverflow:
-              (document.querySelector("main")?.scrollWidth ?? 0) >
-              (document.querySelector("main")?.clientWidth ?? 0),
-            headingOutsideViewport:
-              !bounds || bounds.left < 0 || bounds.right > window.innerWidth,
-          };
-        });
+        const layout = async () =>
+          page.evaluate(() => {
+            const heading = document.querySelector("main h1");
+            const bounds = heading?.getBoundingClientRect();
+            return {
+              horizontalOverflow: document.body.scrollWidth > window.innerWidth,
+              mainOverflow:
+                (document.querySelector("main")?.scrollWidth ?? 0) >
+                (document.querySelector("main")?.clientWidth ?? 0),
+              headingOutsideViewport:
+                !bounds || bounds.left < 0 || bounds.right > window.innerWidth,
+            };
+          });
 
-        expect(
-          layout,
-          `Layout fora do viewport em ${route} (${width}px).`,
-        ).toEqual({
-          horizontalOverflow: false,
-          mainOverflow: false,
-          headingOutsideViewport: false,
-        });
+        await expect
+          .poll(layout, `Layout fora do viewport em ${route} (${width}px).`)
+          .toEqual({
+            horizontalOverflow: false,
+            mainOverflow: false,
+            headingOutsideViewport: false,
+          });
       }
     }
 
@@ -286,7 +286,7 @@ test.describe("smokes administrativos autenticados", () => {
       ".recharts-legend-item-text > span.text-foreground",
     );
     const emptyState = page.getByText(
-      "A evolução aparecerá quando houver lançamentos nesta competência.",
+      "Sem lançamentos de Produção até a competência selecionada.",
     );
     await expect(legendLabels.first().or(emptyState)).toBeVisible();
     if (await emptyState.isVisible()) {

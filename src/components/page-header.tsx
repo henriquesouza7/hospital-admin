@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import "./page-header.css";
 
 type PageHeaderProps = Readonly<{
   eyebrow?: string;
@@ -14,26 +15,18 @@ export function PageHeader({
   actions,
 }: PageHeaderProps) {
   return (
-    <header className="flex min-w-0 flex-col gap-5 border-b pb-6 sm:flex-row sm:items-end sm:justify-between">
-      <div className="min-w-0 max-w-3xl">
+    <header className="admin-page-header">
+      <div className="admin-page-header-copy">
         {eyebrow ? (
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary-foreground/70">
-            {eyebrow}
-          </p>
+          <p className="admin-page-header-eyebrow">{eyebrow}</p>
         ) : null}
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-          {title}
-        </h1>
+        <h1 className="admin-page-header-title">{title}</h1>
         {description ? (
-          <p className="mt-2 text-sm leading-6 text-muted-foreground sm:text-base">
-            {description}
-          </p>
+          <p className="admin-page-header-description">{description}</p>
         ) : null}
       </div>
       {actions ? (
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
-          {actions}
-        </div>
+        <div className="admin-page-header-actions">{actions}</div>
       ) : null}
     </header>
   );

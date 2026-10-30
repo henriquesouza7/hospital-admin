@@ -77,7 +77,7 @@ export default async function AuditPage({ searchParams }: Props) {
         />
         <form
           method="get"
-          className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-6"
+          className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-[repeat(6,minmax(0,1fr))] [&_input]:min-w-0 [&_input]:w-full [&_select]:min-w-0 [&_select]:w-full"
         >
           <label className="grid gap-1 text-sm">
             De

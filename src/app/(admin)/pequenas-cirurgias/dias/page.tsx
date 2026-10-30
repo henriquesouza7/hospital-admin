@@ -73,7 +73,7 @@ export default async function SurgeryDaysPage({
                   <th className="px-4 py-3">Ocupadas</th>
                   <th className="px-4 py-3">Livres</th>
                   <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">
+                  <th className="relative px-4 py-3">
                     <span className="sr-only">Detalhe</span>
                   </th>
                 </tr>
