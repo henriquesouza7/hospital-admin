@@ -128,7 +128,7 @@ export function MonthYearPicker({
         aria-label={ariaLabel}
         aria-required={required}
         className={cn(
-          "group/month inline-flex min-h-10 w-full min-w-0 items-center gap-2.5 rounded-xl border border-input bg-background px-3.5 text-left text-sm font-normal text-foreground shadow-xs outline-none transition-[background-color,border-color,box-shadow] duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-muted/40 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none",
+          "group/month inline-flex min-h-10 w-full min-w-0 items-center gap-2.5 rounded-xl border border-border/80 bg-card px-3.5 text-left text-sm font-normal text-foreground shadow-sm outline-none transition-[background-color,border-color,box-shadow] duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-muted/30 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none",
           className,
         )}
       >
@@ -249,7 +249,7 @@ export function MonthYearPicker({
                     className={cn(
                       "relative min-h-10 rounded-lg px-2 text-sm font-medium outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none",
                       active &&
-                        "bg-accent text-accent-foreground ring-1 ring-link/30 hover:bg-accent",
+                        "bg-primary text-primary-foreground ring-1 ring-primary hover:bg-primary",
                       isCurrent && !active && "text-link",
                     )}
                   >

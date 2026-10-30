@@ -142,7 +142,7 @@ export function DatePickerField({
         aria-label={ariaLabel}
         aria-required={required}
         className={cn(
-          "group/date inline-flex min-h-10 w-full min-w-0 items-center gap-2.5 rounded-xl border border-input bg-background px-3.5 text-left text-sm font-normal text-foreground shadow-xs outline-none transition-[background-color,border-color,box-shadow] duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-muted/40 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none",
+          "group/date inline-flex min-h-10 w-full min-w-0 items-center gap-2.5 rounded-xl border border-border/80 bg-card px-3.5 text-left text-sm font-normal text-foreground shadow-sm outline-none transition-[background-color,border-color,box-shadow] duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-muted/30 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none",
           className,
         )}
       >
@@ -298,7 +298,7 @@ export function DatePickerField({
                             className={cn(
                               "mx-auto grid size-9 place-items-center rounded-lg text-sm outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-35",
                               active &&
-                                "bg-accent font-semibold text-accent-foreground ring-1 ring-link/30 hover:bg-accent",
+                                "bg-primary font-semibold text-primary-foreground ring-1 ring-primary hover:bg-primary",
                               isToday && !active && "font-semibold text-link",
                             )}
                           >

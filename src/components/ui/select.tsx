@@ -166,7 +166,7 @@ function SelectField({
           "group/select flex w-full min-w-0 items-center justify-between gap-3 text-left text-foreground outline-none transition-[color,background-color,border-color,box-shadow] duration-[var(--motion-fast)] ease-[var(--motion-ease)] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground motion-reduce:transition-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
           variant === "pill"
             ? "min-h-9 rounded-full border-0 bg-transparent px-3 text-sm font-medium shadow-none hover:bg-muted/50"
-            : "min-h-10 rounded-xl border border-input bg-background px-3.5 pr-3.5 text-sm font-normal shadow-xs hover:bg-muted/40",
+            : "min-h-10 rounded-xl border border-border/80 bg-card px-3.5 pr-3.5 text-sm font-normal shadow-sm hover:bg-muted/30",
           className,
         )}
       >
