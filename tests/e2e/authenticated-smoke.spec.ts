@@ -66,9 +66,11 @@ test.describe("smokes administrativos autenticados", () => {
     page,
   }) => {
     await page.goto("/internacoes/medicos");
-    const historyLink = page.getByRole("link", {
-      name: "Ver histórico",
-    }).first();
+    const historyLink = page
+      .getByRole("link", {
+        name: "Ver histórico",
+      })
+      .first();
     await expect(historyLink).toBeVisible();
     await historyLink.click();
     await expect(page).toHaveURL(/\/internacoes\/medicos\/[^/]+$/);
@@ -76,6 +78,38 @@ test.describe("smokes administrativos autenticados", () => {
     await expect(
       page.getByRole("heading", { name: "Lançamentos deste médico" }),
     ).toBeVisible();
+  });
+
+  test("should_keep_doctor_names_and_actions_readable_in_record_cards", async ({
+    page,
+  }) => {
+    const card = page.locator("main ul > li").first();
+    const history = page.getByRole("link", { name: "Ver histórico" }).first();
+    const edit = card.locator("summary");
+    const status = card.getByRole("button", { name: "Inativar" });
+
+    for (const width of [390, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/internacoes/medicos");
+      await expect(card).toBeVisible();
+      await expect(history).toBeVisible();
+
+      const [historyBox, editBox, statusBox] = await Promise.all([
+        history.boundingBox(),
+        edit.boundingBox(),
+        status.boundingBox(),
+      ]);
+      if (!historyBox || !editBox || !statusBox) {
+        throw new Error("As ações do cartão de médico não estão visíveis.");
+      }
+      expect(Math.abs(historyBox.y - editBox.y)).toBeLessThan(1);
+      expect(Math.abs(editBox.y - statusBox.y)).toBeLessThan(1);
+
+      const nameTextOverflow = await card
+        .locator("p.font-semibold")
+        .evaluate((element) => getComputedStyle(element).textOverflow);
+      expect(nameTextOverflow).not.toBe("ellipsis");
+    }
   });
 
   test("should_render_administrative_dashboard_with_a_real_admin_session", async ({

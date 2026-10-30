@@ -110,17 +110,18 @@ function DoctorEditor({ doctor }: { doctor: Doctor }) {
   const [name, setName] = useState(doctor.name);
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap justify-end gap-2">
       <Link
         href={`/internacoes/medicos/${doctor.id}`}
+        aria-label="Ver histórico"
         className={buttonVariants({ variant: "outline", size: "sm" })}
       >
         <ClipboardList aria-hidden="true" />
-        Ver histórico
+        Histórico
       </Link>
       <details className="relative">
         <summary className="cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-          Editar nome
+          Editar
         </summary>
         <form
           action={editAction}
@@ -197,7 +198,7 @@ export function DoctorsManagement({
             {doctors.map((doctor) => (
               <li
                 key={doctor.id}
-                className="grid gap-4 rounded-xl border bg-card p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+                className="grid gap-3 rounded-xl border bg-card p-4"
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <span
@@ -206,7 +207,7 @@ export function DoctorsManagement({
                   >
                     {doctor.name.trim().slice(0, 1).toLocaleUpperCase("pt-BR")}
                   </span>
-                  <p className="min-w-0 flex-1 truncate font-semibold text-foreground">
+                  <p className="min-w-0 flex-1 break-words font-semibold text-foreground">
                     {doctor.name}
                   </p>
                   <StatusBadge
