@@ -42,6 +42,16 @@ function formatDate(value: string) {
     : "Selecione a data";
 }
 
+function formatLongDate(value: string) {
+  const date = parseDate(value);
+  return date
+    ? new Intl.DateTimeFormat("pt-BR", {
+        dateStyle: "long",
+        timeZone: "UTC",
+      }).format(date)
+    : "Nenhuma data selecionada";
+}
+
 type DatePickerFieldProps = Readonly<{
   id?: string;
   name?: string;
@@ -186,41 +196,41 @@ export function DatePickerField({
         <Popover.Positioner
           align="start"
           sideOffset={7}
+          collisionPadding={8}
           className="z-[100] max-w-[calc(100vw-1rem)]"
         >
           <Popover.Popup
             aria-labelledby={titleId}
-            className="w-[min(21rem,calc(100vw-2rem))] rounded-2xl border border-border bg-popover p-4 text-popover-foreground shadow-xl outline-none"
+            className="max-h-[calc(100dvh-1rem)] w-[min(24rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl border border-border bg-popover p-4 text-popover-foreground shadow-xl outline-none sm:p-5"
           >
-            <div className="flex items-center justify-between gap-3 border-b border-border/70 pb-3">
-              <div>
-                <p id={titleId} className="text-sm font-semibold">
-                  Escolher data
-                </p>
-                <p className="text-xs capitalize text-muted-foreground">
+            <div className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center gap-2 border-b border-border/70 pb-4">
+              <button
+                type="button"
+                aria-label="Mês anterior"
+                disabled={!canGoPrevious}
+                onClick={() => shiftMonth(-1)}
+                className="grid size-10 place-items-center rounded-xl border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 motion-reduce:transition-none"
+              >
+                <ChevronLeft aria-hidden="true" className="size-4" />
+              </button>
+              <div className="min-w-0 text-center">
+                <p
+                  id={titleId}
+                  className="text-base font-semibold capitalize leading-6"
+                >
                   {monthLabel.format(displayMonth)}
                 </p>
+                <p className="text-xs text-muted-foreground">Escolha um dia</p>
               </div>
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  aria-label="Mês anterior"
-                  disabled={!canGoPrevious}
-                  onClick={() => shiftMonth(-1)}
-                  className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
-                >
-                  <ChevronLeft aria-hidden="true" className="size-4" />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Próximo mês"
-                  disabled={!canGoNext}
-                  onClick={() => shiftMonth(1)}
-                  className="grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
-                >
-                  <ChevronRight aria-hidden="true" className="size-4" />
-                </button>
-              </div>
+              <button
+                type="button"
+                aria-label="Próximo mês"
+                disabled={!canGoNext}
+                onClick={() => shiftMonth(1)}
+                className="grid size-10 place-items-center rounded-xl border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 motion-reduce:transition-none"
+              >
+                <ChevronRight aria-hidden="true" className="size-4" />
+              </button>
             </div>
             <div
               role="grid"
@@ -229,10 +239,14 @@ export function DatePickerField({
             >
               <div
                 role="row"
-                className="grid grid-cols-7 text-center text-xs font-medium text-muted-foreground"
+                className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-muted-foreground"
               >
                 {weekDays.map((day) => (
-                  <span role="columnheader" key={day} className="py-2">
+                  <span
+                    role="columnheader"
+                    key={day}
+                    className="grid min-h-9 place-items-center"
+                  >
                     {day}
                   </span>
                 ))}
@@ -240,7 +254,7 @@ export function DatePickerField({
               {Array.from(
                 { length: Math.ceil((offset + daysInMonth) / 7) },
                 (_, row) => (
-                  <div role="row" key={row} className="grid grid-cols-7">
+                  <div role="row" key={row} className="grid grid-cols-7 gap-1">
                     {Array.from({ length: 7 }, (_, column) => {
                       const day = row * 7 + column - offset + 1;
                       if (day < 1 || day > daysInMonth)
@@ -296,10 +310,12 @@ export function DatePickerField({
                               }
                             }}
                             className={cn(
-                              "mx-auto grid size-9 place-items-center rounded-lg text-sm outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-35",
+                              "grid min-h-10 w-full place-items-center rounded-xl text-sm outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-35 disabled:line-through motion-reduce:transition-none sm:min-h-11",
                               active &&
                                 "bg-primary font-semibold text-primary-foreground ring-1 ring-primary hover:bg-primary",
-                              isToday && !active && "font-semibold text-link",
+                              isToday &&
+                                !active &&
+                                "bg-primary/10 font-semibold text-link ring-1 ring-primary/25",
                             )}
                           >
                             {day}
@@ -311,25 +327,35 @@ export function DatePickerField({
                 ),
               )}
             </div>
-            <div className="mt-3 flex items-center justify-between border-t border-border/70 pt-3">
-              <button
-                type="button"
-                disabled={required || !selected}
-                onClick={() => choose("")}
-                className="rounded-lg px-2 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
-              >
-                Limpar
-              </button>
-              <button
-                type="button"
-                disabled={Boolean(
-                  (min && currentDate < min) || (max && currentDate > max),
-                )}
-                onClick={() => choose(currentDate)}
-                className="rounded-lg bg-secondary px-3 py-1.5 text-xs font-semibold text-secondary-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
-              >
-                Hoje
-              </button>
+            <div className="mt-4 flex flex-wrap items-end justify-between gap-3 border-t border-border/70 pt-4">
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">
+                  Data selecionada
+                </p>
+                <p className="text-sm font-medium">
+                  {formatLongDate(selected)}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={required || !selected}
+                  onClick={() => choose("")}
+                  className="min-h-9 rounded-lg px-2.5 text-xs font-medium text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
+                >
+                  Limpar
+                </button>
+                <button
+                  type="button"
+                  disabled={Boolean(
+                    (min && currentDate < min) || (max && currentDate > max),
+                  )}
+                  onClick={() => choose(currentDate)}
+                  className="min-h-9 rounded-lg border border-primary/35 bg-primary/10 px-3 text-xs font-semibold text-link hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40"
+                >
+                  Hoje
+                </button>
+              </div>
             </div>
           </Popover.Popup>
         </Popover.Positioner>

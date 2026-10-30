@@ -69,10 +69,21 @@ test.describe("seletores administrativos", () => {
     const from = page.getByRole("button", { name: "De", exact: true });
     await from.click();
     await expect(page.getByRole("grid", { name: /2026/ })).toBeVisible();
-    await page
-      .getByRole("button", { name: "1 de outubro de 2026", exact: true })
-      .click();
+    const firstDay = page.getByRole("button", {
+      name: "1 de outubro de 2026",
+      exact: true,
+    });
+    await firstDay.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(
+      page.getByRole("button", { name: "2 de outubro de 2026", exact: true }),
+    ).toBeFocused();
+    await firstDay.click();
     await expect(from).toContainText("01/10/2026");
+    await from.click();
+    await expect(firstDay).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByText("1 de outubro de 2026")).toBeVisible();
+    await page.keyboard.press("Escape");
     await page.getByRole("button", { name: "Aplicar filtros" }).click();
     await expect(page).toHaveURL(/from=2026-10-01/);
   });
@@ -85,15 +96,40 @@ test.describe("seletores administrativos", () => {
     await page.getByRole("button", { name: "De", exact: true }).click();
     const grid = page.getByRole("grid", { name: /2026/ });
     await expect(grid).toBeVisible();
-    const bounds = await grid.evaluate((element) => {
+    const bounds = await grid.locator("..").evaluate((element) => {
       const rect = element.getBoundingClientRect();
-      return { left: rect.left, right: rect.right, viewport: innerWidth };
+      return {
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        bottom: rect.bottom,
+        viewport: innerWidth,
+        height: innerHeight,
+      };
     });
     expect(bounds.left).toBeGreaterThanOrEqual(0);
     expect(bounds.right).toBeLessThanOrEqual(bounds.viewport);
+    expect(bounds.top).toBeGreaterThanOrEqual(0);
+    expect(bounds.bottom).toBeLessThanOrEqual(bounds.height);
     expect(
       await page.evaluate(() => document.body.scrollWidth),
     ).toBeLessThanOrEqual(390);
+  });
+
+  test("should_preserve_required_surgery_day_selection_without_submitting", async ({
+    page,
+  }) => {
+    await page.goto("/pequenas-cirurgias");
+    const dateField = page.locator('input[name="procedure_date"]');
+    const trigger = dateField.locator("..").getByRole("button").first();
+    await trigger.click();
+    await expect(page.getByRole("button", { name: "Limpar" })).toBeDisabled();
+    const day = page.getByRole("grid").getByRole("button", {
+      name: /15 de outubro de 2026/,
+    });
+    await day.click();
+    await expect(dateField).toHaveValue("2026-10-15");
+    await expect(trigger).toContainText("15/10/2026");
   });
 
   for (const width of [390, 1440]) {
