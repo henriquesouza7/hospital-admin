@@ -668,12 +668,6 @@
   animation: admin-content-enter var(--motion-enter) var(--motion-ease) both;
 }
 
-.module-shell .admin-content > div {
-  width: 100%;
-  max-width: 80rem;
-  margin-inline: auto;
-}
-
 .module-environment-label {
   margin: 0;
   padding: 10px 11px 12px;

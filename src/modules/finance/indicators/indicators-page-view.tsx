@@ -110,7 +110,7 @@ export function IndicatorsPageView({
   );
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
+    <div className="space-y-6">
       <PageHeader
         eyebrow="Financeiro"
         title="Indicadores e comparativos"

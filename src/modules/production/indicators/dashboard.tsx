@@ -50,7 +50,7 @@ export function ProductionIndicatorDashboard({
   const annualComparisons = data.comparisons.yearOverYear;
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
+    <div className="space-y-6">
       <PageHeader
         eyebrow="Produção · Fase 5"
         title="Indicadores de produção"

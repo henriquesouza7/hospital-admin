@@ -25,7 +25,7 @@ export default async function SuppliersPage({
 
   const suppliers = await listSuppliers();
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
+    <div className="space-y-6">
       <PageHeader
         eyebrow="Financeiro"
         title="Fornecedores"
