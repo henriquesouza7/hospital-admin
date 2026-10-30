@@ -90,7 +90,7 @@ const series: ReadonlyArray<{
   {
     key: "total",
     label: "Total",
-    color: "var(--chart-1)",
+    color: "var(--analytic-accent, var(--chart-1))",
     exactKey: "totalExact",
     compactKey: "totalCompact",
     recordsKey: "totalHasRecords",
