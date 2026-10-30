@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@/components/ui/button";
 
 import { useActionState } from "react";
 import {
@@ -49,13 +50,9 @@ export function RequestPasswordResetForm() {
         </p>
       ) : null}
 
-      <button
-        className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/80 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-60"
-        disabled={isPending}
-        type="submit"
-      >
+      <Button className="h-11 w-full" disabled={isPending} type="submit">
         {isPending ? "Enviando..." : "Enviar link de recuperação"}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -94,13 +91,9 @@ export function ResetPasswordForm({ token }: Readonly<{ token: string }>) {
         </p>
       ) : null}
 
-      <button
-        className="inline-flex h-11 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/80 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-60"
-        disabled={isPending}
-        type="submit"
-      >
+      <Button className="h-11 w-full" disabled={isPending} type="submit">
         {isPending ? "Salvando..." : "Definir senha"}
-      </button>
+      </Button>
     </form>
   );
 }

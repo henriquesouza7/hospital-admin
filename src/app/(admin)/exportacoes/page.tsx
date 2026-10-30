@@ -1,5 +1,6 @@
 import { MonthYearPicker } from "@/components/ui/month-year-picker";
 import { SelectField } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { SectionHeader } from "@/components/section-header";
@@ -83,13 +84,13 @@ export default function ExportsPage() {
               ))}
             </SelectField>
           </label>
-          <button
-            className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground sm:col-span-2 xl:col-span-1 xl:w-auto"
+          <Button
+            className="h-10 w-full sm:col-span-2 xl:col-span-1 xl:w-auto"
             type="submit"
           >
             <Download aria-hidden="true" className="size-4" />
             Baixar CSV
-          </button>
+          </Button>
         </form>
       </section>
       <section className="rounded-xl border bg-card p-5 shadow-sm sm:p-6">

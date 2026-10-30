@@ -1,6 +1,7 @@
 "use client";
 import { SelectField } from "@/components/ui/select";
 import { DatePickerField } from "@/components/ui/date-picker-field";
+import { Button } from "@/components/ui/button";
 
 import { useActionState, useId, useState, useTransition } from "react";
 import {
@@ -19,8 +20,6 @@ import type { SurgeryDaySummary, SurgeryPatient } from "./domain";
 const fieldClass =
   "mt-1 h-10 w-full rounded-md border bg-background px-3 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring";
 const labelClass = "text-sm font-medium text-foreground";
-const buttonClass =
-  "inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-60";
 
 function Feedback({ state }: { state: { status: string; message: string } }) {
   if (!state.message) return null;
@@ -84,14 +83,15 @@ function PatientSelector() {
               setError("");
             }}
           />
-          <button
+          <Button
             type="button"
-            className={`${buttonClass} shrink-0`}
+            variant="secondary"
+            className="h-10 shrink-0"
             disabled={pending || queryIsTooShort}
             onClick={() => search(0)}
           >
             {pending ? "Buscando…" : "Buscar"}
-          </button>
+          </Button>
         </div>
         {patients.length > 0 ? (
           <>
@@ -113,14 +113,15 @@ function PatientSelector() {
               ))}
             </SelectField>
             {hasMore ? (
-              <button
+              <Button
                 type="button"
-                className="h-9 rounded-md border px-3 text-sm font-medium hover:bg-muted disabled:opacity-60"
+                variant="outline"
+                className="h-9"
                 disabled={pending}
                 onClick={() => search(patients.length)}
               >
                 {pending ? "Carregando…" : "Mais resultados"}
-              </button>
+              </Button>
             ) : null}
           </>
         ) : (
@@ -178,9 +179,9 @@ export function CreateSurgeryDayForm() {
           className={fieldClass}
         />
       </label>
-      <button className={buttonClass} disabled={pending}>
+      <Button type="submit" className="h-10" disabled={pending}>
         Criar dia
-      </button>
+      </Button>
       <div className="sm:col-span-3">
         <Feedback state={state} />
       </div>
@@ -209,9 +210,9 @@ export function CreateAppointmentForm({ dayId }: { dayId: string }) {
         </SelectField>
       </label>
       <div className="flex flex-col gap-3 sm:col-span-2 sm:flex-row sm:items-center">
-        <button className={buttonClass} disabled={pending}>
+        <Button type="submit" className="h-10" disabled={pending}>
           Agendar pessoa
-        </button>
+        </Button>
         <Feedback state={state} />
       </div>
     </form>
@@ -241,9 +242,9 @@ export function UpdateSurgeryDayCapacityForm({
           className={`${fieldClass} w-32`}
         />
       </label>
-      <button className={buttonClass} disabled={pending}>
+      <Button type="submit" className="h-10" disabled={pending}>
         Salvar capacidade
-      </button>
+      </Button>
       <Feedback state={state} />
     </form>
   );
@@ -279,12 +280,14 @@ export function UpdateAppointmentStatusForm({
         <option value="confirmed">Confirmado</option>
         <option value="cancelled">Cancelado</option>
       </SelectField>
-      <button
-        className="h-10 rounded-md border px-3 text-sm font-medium hover:bg-muted"
+      <Button
+        type="submit"
+        variant="outline"
+        className="h-10"
         disabled={pending}
       >
         Atualizar
-      </button>
+      </Button>
       <Feedback state={state} />
     </form>
   );
@@ -299,9 +302,9 @@ export function CreateWaitlistEntryForm() {
     <form action={action} className="grid gap-4 sm:grid-cols-2">
       <PatientSelector />
       <div className="flex flex-col gap-3 sm:col-span-2 sm:flex-row sm:items-center">
-        <button className={buttonClass} disabled={pending}>
+        <Button type="submit" className="h-10" disabled={pending}>
           Adicionar à fila
-        </button>
+        </Button>
         <Feedback state={state} />
       </div>
     </form>
@@ -348,12 +351,14 @@ export function TransferWaitlistForm({
           </option>
         ))}
       </SelectField>
-      <button
-        className="h-10 rounded-md border px-3 text-sm font-medium hover:bg-muted"
+      <Button
+        type="submit"
+        variant="outline"
+        className="h-10"
         disabled={pending}
       >
         Transferir
-      </button>
+      </Button>
       <Feedback state={state} />
     </form>
   );
@@ -385,12 +390,14 @@ export function UpdatePatientNameForm({
         defaultValue={patient.name}
         className={`${fieldClass} mt-0 w-64`}
       />
-      <button
-        className="h-10 rounded-md border px-3 text-sm font-medium hover:bg-muted"
+      <Button
+        type="submit"
+        variant="outline"
+        className="h-10"
         disabled={pending}
       >
         Salvar nome
-      </button>
+      </Button>
       <Feedback state={state} />
     </form>
   );

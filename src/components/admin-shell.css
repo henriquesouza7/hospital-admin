@@ -687,19 +687,11 @@
   padding-top: 7px;
 }
 
-.module-account-menu button {
+.module-account-menu .logout-button {
   width: 100%;
   justify-content: flex-start;
-  border-color: transparent;
   border-radius: 12px;
-  background: transparent;
   padding-inline: 11px;
-  color: var(--foreground);
-  box-shadow: none;
-}
-
-.module-account-menu button:hover {
-  background: var(--surface-soft);
 }
 
 .admin-main {

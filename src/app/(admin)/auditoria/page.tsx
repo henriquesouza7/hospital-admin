@@ -1,4 +1,5 @@
 import { SelectField } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { DatePickerField } from "@/components/ui/date-picker-field";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
@@ -133,12 +134,9 @@ export default async function AuditPage({ searchParams }: Props) {
               defaultValue={one(search.actor) ?? ""}
             />
           </label>
-          <button
-            className="h-10 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground sm:col-span-2 xl:col-span-6"
-            type="submit"
-          >
+          <Button className="h-10 sm:col-span-2 xl:col-span-6" type="submit">
             Aplicar filtros
-          </button>
+          </Button>
         </form>
       </section>
       <section className="rounded-xl border bg-card p-5 shadow-sm sm:p-6">

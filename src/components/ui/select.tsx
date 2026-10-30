@@ -163,15 +163,15 @@ function SelectField({
         {...triggerProps}
         id={id}
         className={cn(
-          "group/select flex w-full min-w-0 items-center justify-between gap-3 text-left text-foreground outline-none transition-[color,background-color,border-color,box-shadow] duration-[var(--motion-fast)] ease-[var(--motion-ease)] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground motion-reduce:transition-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+          "group/select flex w-full min-w-0 cursor-pointer items-center justify-between gap-3 text-left text-foreground outline-none transition-[color,background-color,border-color,box-shadow] duration-[var(--motion-fast)] ease-[var(--motion-ease)] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground motion-reduce:transition-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
           variant === "pill"
-            ? "min-h-9 rounded-full border-0 bg-transparent px-3 text-sm font-medium shadow-none hover:bg-muted/50"
-            : "min-h-10 rounded-xl border border-border/80 bg-card px-3.5 pr-3.5 text-sm font-normal shadow-sm hover:bg-muted/30",
+            ? "min-h-9 rounded-full border border-primary/40 bg-primary/10 px-3 text-sm font-medium shadow-sm hover:border-ring hover:bg-primary/15 data-[popup-open]:border-ring data-[popup-open]:bg-primary/15"
+            : "min-h-10 rounded-xl border border-primary/40 bg-primary/10 px-3.5 pr-3.5 text-sm font-normal shadow-sm hover:border-ring hover:bg-primary/15 data-[popup-open]:border-ring data-[popup-open]:bg-primary/15",
           className,
         )}
       >
         <SelectPrimitive.Value className="min-w-0 flex-1 truncate" />
-        <SelectPrimitive.Icon className="shrink-0 text-muted-foreground transition-transform duration-[var(--motion-fast)] ease-[var(--motion-ease)] group-data-[popup-open]/select:rotate-180 motion-reduce:transition-none">
+        <SelectPrimitive.Icon className="shrink-0 text-link transition-transform duration-[var(--motion-fast)] ease-[var(--motion-ease)] group-data-[popup-open]/select:rotate-180 motion-reduce:transition-none">
           <ChevronDown aria-hidden="true" />
         </SelectPrimitive.Icon>
       </SelectPrimitive.Trigger>

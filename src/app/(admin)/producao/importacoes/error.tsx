@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@/components/ui/button";
 
 export default function ProductionImportsError({
   reset,
@@ -17,13 +18,9 @@ export default function ProductionImportsError({
       <p className="mt-2 text-sm text-muted-foreground">
         Verifique a conexão e tente carregar a página novamente.
       </p>
-      <button
-        type="button"
-        onClick={() => reset()}
-        className="mt-4 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
+      <Button type="button" onClick={() => reset()} className="mt-4">
         Tentar novamente
-      </button>
+      </Button>
     </section>
   );
 }

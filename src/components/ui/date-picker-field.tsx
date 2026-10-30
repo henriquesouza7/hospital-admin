@@ -142,7 +142,7 @@ export function DatePickerField({
         aria-label={ariaLabel}
         aria-required={required}
         className={cn(
-          "group/date inline-flex min-h-10 w-full min-w-0 items-center gap-2.5 rounded-xl border border-border/80 bg-card px-3.5 text-left text-sm font-normal text-foreground shadow-sm outline-none transition-[background-color,border-color,box-shadow] duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-muted/30 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none",
+          "group/date inline-flex min-h-10 w-full min-w-0 cursor-pointer items-center gap-2.5 rounded-xl border border-primary/40 bg-primary/10 px-3.5 text-left text-sm font-normal text-foreground shadow-sm outline-none transition-[background-color,border-color,box-shadow] duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:border-ring hover:bg-primary/15 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 aria-expanded:border-ring aria-expanded:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none",
           className,
         )}
       >
@@ -160,7 +160,7 @@ export function DatePickerField({
         </span>
         <ChevronDown
           aria-hidden="true"
-          className="size-4 shrink-0 text-muted-foreground transition-transform group-aria-expanded/date:rotate-180"
+          className="size-4 shrink-0 text-link transition-transform group-aria-expanded/date:rotate-180"
         />
       </Popover.Trigger>
       <input
