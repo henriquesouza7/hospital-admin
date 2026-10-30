@@ -7,6 +7,7 @@ import { ShoppingBasket } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/modules/finance/pharmacy/format";
+import tableStyles from "@/modules/finance/finance-history.module.css";
 import type { FinanceActionState } from "@/modules/finance/pharmacy/action-state";
 import {
   calculateMonthlyComparison,
@@ -126,41 +127,37 @@ export function FairExpenseHistory({
         aria-label="Despesas mensais da Feira"
         className="overflow-x-auto"
       >
-        <table className="w-full min-w-[760px] text-left text-sm">
-          <thead className="bg-muted/70 text-xs uppercase tracking-wide text-muted-foreground">
+        <table
+          className={`${tableStyles.table} w-full min-w-[760px] text-left text-sm`}
+        >
+          <thead>
             <tr>
-              <th scope="col" className="px-4 py-3">
-                Competência
-              </th>
-              <th scope="col" className="px-4 py-3">
+              <th scope="col">Competência</th>
+              <th scope="col" className={tableStyles.amount}>
                 Total mensal
               </th>
-              <th scope="col" className="px-4 py-3">
+              <th scope="col" className={tableStyles.amount}>
                 Variação versus mês anterior
               </th>
-              <th scope="col" className="px-4 py-3">
-                Observação
-              </th>
-              <th scope="col" className="px-4 py-3">
-                Ações
-              </th>
+              <th scope="col">Observação</th>
+              <th scope="col">Ações</th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody>
             {expenses.map((expense) => {
               const previous = byCompetence.get(
                 previousCompetence(expense.competence),
               );
               const comparison = calculateMonthlyComparison(expense, previous);
               return (
-                <tr key={expense.id} className="align-top">
-                  <th scope="row" className="px-4 py-4 font-medium capitalize">
+                <tr key={expense.id}>
+                  <th scope="row" className="font-medium capitalize">
                     {formatCompetence(expense.competence)}
                   </th>
-                  <td className="px-4 py-4 font-medium">
+                  <td className={`${tableStyles.amount} font-medium`}>
                     {formatCurrency(expense.total_amount)}
                   </td>
-                  <td className="px-4 py-4">
+                  <td className={tableStyles.amount}>
                     {comparison ? (
                       <div className="grid gap-1">
                         <span>
@@ -180,10 +177,10 @@ export function FairExpenseHistory({
                       </span>
                     )}
                   </td>
-                  <td className="max-w-xs px-4 py-4 text-muted-foreground">
+                  <td className="max-w-xs text-muted-foreground">
                     {expense.notes || "—"}
                   </td>
-                  <td className="px-4 py-4">
+                  <td>
                     <FairExpenseEditor expense={expense} />
                   </td>
                 </tr>

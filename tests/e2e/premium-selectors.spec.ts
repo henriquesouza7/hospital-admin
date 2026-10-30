@@ -183,7 +183,7 @@ test.describe("seletores administrativos", () => {
   }) => {
     for (const [path, name] of [
       ["/financeiro/feira", "Consultar"],
-      ["/financeiro/indicadores", "Aplicar"],
+      ["/financeiro/indicadores", "Aplicar filtros"],
       ["/internacoes", "Aplicar período"],
       ["/internacoes/lancamentos", "Aplicar período"],
       ["/internacoes/lancamentos", "Gerar prévia"],

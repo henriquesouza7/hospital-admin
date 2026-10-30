@@ -1,9 +1,10 @@
 "use client";
 
 import {
+  Bar,
+  BarChart,
   CartesianGrid,
-  Line,
-  LineChart,
+  Cell,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -34,81 +35,74 @@ const currency = new Intl.NumberFormat("pt-BR", {
 export function MonthlyChart({
   points,
   scale,
+  highlightedMonth,
 }: {
   points: readonly ChartPoint[];
   scale: string;
+  highlightedMonth: string;
 }) {
   return (
     <div
       className="h-64 w-full"
       role="img"
-      aria-label="Gráfico da evolução mensal dos gastos por setor e total consolidado"
+      aria-label="Gráfico de barras do total mensal de gastos. O mês final do período está destacado."
     >
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart
+        <BarChart
           data={points}
-          margin={{ top: 8, right: 12, bottom: 8, left: 4 }}
+          margin={{ top: 12, right: 8, bottom: 4, left: 4 }}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-          <XAxis dataKey="label" tickLine={false} axisLine={false} />
-          <YAxis
-            width={84}
+          <CartesianGrid
+            vertical={false}
+            strokeDasharray="3 3"
+            stroke="var(--border)"
+          />
+          <XAxis
+            dataKey="label"
             tickLine={false}
             axisLine={false}
+            tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
+          />
+          <YAxis
+            width={76}
+            tickLine={false}
+            axisLine={false}
+            tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
             tickFormatter={(value: number) =>
               formatCurrency(currencyChartTickCents(value, BigInt(scale)))
             }
           />
           <Tooltip
+            cursor={{ fill: "var(--muted)", opacity: 0.45 }}
             formatter={(value, name, item) => {
               const point = item.payload as ChartPoint;
-              const exactValue =
-                name === "Farmácia"
-                  ? point.pharmacyExact
-                  : name === "Laboratório"
-                    ? point.laboratoryExact
-                    : name === "Feira"
-                      ? point.fairExact
-                      : point.totalExact;
-              return [exactValue ?? currency.format(Number(value)), name ?? ""];
+              return [
+                point.totalExact ?? currency.format(Number(value)),
+                name ?? "Total",
+              ];
             }}
             labelFormatter={(label) =>
               `${label} · ${points.find((point) => point.label === label)?.hasRecords ? "Com registros" : "Sem registros"}`
             }
           />
-          <Line
-            type="monotone"
-            dataKey="pharmacy"
-            name="Farmácia"
-            stroke="var(--chart-1)"
-            strokeWidth={2}
-            dot={false}
-          />
-          <Line
-            type="monotone"
-            dataKey="laboratory"
-            name="Laboratório"
-            stroke="var(--chart-2)"
-            strokeWidth={2}
-            dot={false}
-          />
-          <Line
-            type="monotone"
-            dataKey="fair"
-            name="Feira"
-            stroke="var(--chart-3)"
-            strokeWidth={2}
-            dot={false}
-          />
-          <Line
-            type="monotone"
+          <Bar
             dataKey="total"
             name="Total"
-            stroke="var(--analytic-accent, var(--primary))"
-            strokeWidth={3}
-            dot={{ r: 3 }}
-          />
-        </LineChart>
+            maxBarSize={36}
+            radius={[5, 5, 1, 1]}
+          >
+            {points.map((point) => (
+              <Cell
+                key={point.month}
+                fill={
+                  point.month === highlightedMonth && point.hasRecords
+                    ? "var(--chart-1)"
+                    : "var(--border)"
+                }
+              />
+            ))}
+          </Bar>
+        </BarChart>
       </ResponsiveContainer>
     </div>
   );
