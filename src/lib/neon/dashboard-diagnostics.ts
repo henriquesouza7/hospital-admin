@@ -43,11 +43,22 @@ function safeHttpStatus(error: unknown): number | null {
 }
 
 function safePermissionCategory(error: unknown): string | null {
-  if (safeErrorCode(error) !== "42501" || typeof error !== "object" || error === null || !("message" in error) || typeof error.message !== "string") return null;
-  if (error.message === "Administrator access required") return "administrator_required";
-  if (/^permission denied for schema\b/i.test(error.message)) return "schema_denied";
-  if (/^permission denied for function\b/i.test(error.message)) return "function_denied";
-  if (/^permission denied for (?:table|relation)\b/i.test(error.message)) return "relation_denied";
+  if (
+    safeErrorCode(error) !== "42501" ||
+    typeof error !== "object" ||
+    error === null ||
+    !("message" in error) ||
+    typeof error.message !== "string"
+  )
+    return null;
+  if (error.message === "Administrator access required")
+    return "administrator_required";
+  if (/^permission denied for schema\b/i.test(error.message))
+    return "schema_denied";
+  if (/^permission denied for function\b/i.test(error.message))
+    return "function_denied";
+  if (/^permission denied for (?:table|relation)\b/i.test(error.message))
+    return "relation_denied";
   return "other_permission_denied";
 }
 
